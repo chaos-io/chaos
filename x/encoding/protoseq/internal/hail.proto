@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "github.com/chaos-io/chaos/x/encoding/protoseq/internal";
+
+message Hail {
+    string whom = 1;
+}
+
+message NotHail {
+    map<string, string> fields = 1;
+}
