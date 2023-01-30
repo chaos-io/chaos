@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/chaos-io/chaos/x/encoding/protoseq/internal";
+option go_package = "./internal";
 
 message Hail {
     string whom = 1;

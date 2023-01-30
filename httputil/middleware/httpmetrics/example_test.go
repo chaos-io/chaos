@@ -7,7 +7,7 @@ import (
 
 	"github.com/chaos-io/chaos/core/metrics/solomon"
 	"github.com/chaos-io/chaos/httputil/middleware/httpmetrics"
-	"github.com/chaos-io/chaos/yandex/solomon/reporters/puller/httppuller"
+	//"github.com/chaos-io/chaos/yandex/solomon/reporters/puller/httppuller"
 )
 
 func Example_chi() {
@@ -21,7 +21,7 @@ func Example_chi() {
 	r.Use(httpmetrics.New(registry.WithPrefix("http"), httpmetrics.WithPathEndpoint()))
 
 	// Expose metrics to solomon fetcher.
-	r.Handle("/solomon", httppuller.NewHandler(registry))
+	//r.Handle("/solomon", httppuller.NewHandler(registry))
 }
 
 func Example_stdlib() {
@@ -38,5 +38,5 @@ func Example_stdlib() {
 	http.Handle("/endpoint", middleware(myHandler))
 
 	// Expose metrics to solomon fetcher.
-	http.Handle("/solomon", httppuller.NewHandler(registry))
+	//http.Handle("/solomon", httppuller.NewHandler(registry))
 }

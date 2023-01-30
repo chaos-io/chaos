@@ -19,7 +19,7 @@ import (
 	"github.com/chaos-io/chaos/core/xerrors"
 	"github.com/chaos-io/chaos/httputil/headers"
 	"github.com/chaos-io/chaos/httputil/render"
-	"github.com/chaos-io/chaos/httputil/render/testproto"
+	//"github.com/chaos-io/chaos/httputil/render/testproto"
 )
 
 type testRenderer struct {
@@ -162,8 +162,8 @@ func TestWrite(t *testing.T) {
 		{
 			"protobuf",
 			headers.TypeApplicationProtobuf,
-			&testproto.Test{Value: 42},
-
+			//&testproto.Test{Value: 42},
+			map[string]interface{}{"test": 42},
 			string(headers.TypeApplicationProtobuf),
 			[]byte{0x8, 0x2a},
 			2,
@@ -334,7 +334,8 @@ func TestWriteAcceptable(t *testing.T) {
 		{
 			"protobuf",
 			ctReq(string(headers.TypeApplicationProtobuf)),
-			&testproto.Test{Value: 42},
+			//&testproto.Test{Value: 42},
+			map[string]interface{}{"test": 42},
 
 			string(headers.TypeApplicationProtobuf),
 			[]byte{0x8, 0x2a},
