@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/chaos-io/chaos/test/grpctest/testproto";
+option go_package = "./testproto";
 
 message Empty {
 }
