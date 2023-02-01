@@ -5,14 +5,13 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	
+
 	log2 "github.com/chaos-io/chaos/core/log"
 	"github.com/sirupsen/logrus"
 )
 
 /* Call frame calculations are copied from logrus package */
 var (
-
 	// qualified package name, cached at first use
 	logrusPackage string
 

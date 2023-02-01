@@ -347,9 +347,9 @@ func NamedError(key string, value error) Field {
 }
 
 // Error constructs field of error type with default field name
-func Error(value error) Field {
-	return NamedError(DefaultErrorFieldName, value)
-}
+//func Error(value error) Field {
+//	return NamedError(DefaultErrorFieldName, value)
+//}
 
 // Errors constructs Field from []error
 func Errors(key string, value []error) Field {

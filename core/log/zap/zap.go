@@ -2,7 +2,7 @@ package zap
 
 import (
 	"fmt"
-	
+
 	log2 "github.com/chaos-io/chaos/core/log"
 	encoders2 "github.com/chaos-io/chaos/core/log/zap/encoders"
 	"go.uber.org/zap"
@@ -43,7 +43,7 @@ func New(cfg zap.Config) (*Logger, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &Logger{
 		L: zl,
 	}, nil
