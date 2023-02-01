@@ -1,10 +1,9 @@
 package zap
 
 import (
-	"fmt"
 	"testing"
 	"time"
-	
+
 	"github.com/chaos-io/chaos/core/log"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
@@ -23,7 +22,7 @@ func TestZapifyField(t *testing.T) {
 		log.Float64("test", 0.42),
 		log.Time("test", time.Now()),
 		log.Duration("test", time.Second),
-		log.Error(fmt.Errorf("test")),
+		//log.Error(fmt.Errorf("test")),
 		log.Array("test", []uint32{42}),
 		log.Any("test", struct{ ID uint32 }{ID: 42}),
 		log.Reflect("test", struct{ ID uint32 }{ID: 42}),

@@ -81,6 +81,21 @@ type LoggerWith interface {
 	With(fields ...Field) Logger
 }
 
+type LoggerW interface {
+	// Trace logs at Trace log level using fields
+	TraceW(msg string, fields ...Field)
+	// Debug logs at Debug log level using fields
+	DebugW(msg string, fields ...Field)
+	// Info logs at Info log level using fields
+	InfoW(msg string, fields ...Field)
+	// Warn logs at Warn log level using fields
+	WarnW(msg string, fields ...Field)
+	// Error logs at Error log level using fields
+	ErrorW(msg string, fields ...Field)
+	// Fatal logs at Fatal log level using fields
+	FatalW(msg string, fields ...Field)
+}
+
 // With for loggers that implement LoggerWith interface, returns logger that
 // always adds provided key/value to every log entry. Otherwise returns same logger.
 func With(l Logger, fields ...Field) Logger {

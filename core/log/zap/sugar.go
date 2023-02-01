@@ -1,6 +1,8 @@
 package zap
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/chaos-io/chaos/config"
+	"github.com/chaos-io/chaos/core/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -15,14 +18,15 @@ import (
 
 type SugaredLogger = zap.SugaredLogger
 
-var DefaultLog *SugaredLogger
-var DefaultLevel zap.AtomicLevel
+var defaultLog *SugaredLogger
+var defaultLevel zap.AtomicLevel
 var eLog *SugaredLogger
 
 func init() {
 	logCfg := &Config{}
 	config.Get("log").Scan(logCfg)
-	DefaultLog = NewZap(logCfg)
+	fmt.Printf("logCfg=%+v\n", logCfg)
+	defaultLog = NewZap(logCfg)
 
 	elogCfg := &Config{}
 	config.Get("elog").Scan(elogCfg)
@@ -30,7 +34,7 @@ func init() {
 }
 
 func ZapLogger() *SugaredLogger {
-	return DefaultLog
+	return defaultLog
 }
 
 func ELogger() *SugaredLogger {
@@ -57,11 +61,11 @@ func NewZap(cfg *Config) *SugaredLogger {
 	opts = append(opts, zap.AddCallerSkip(1))
 	opts = append(opts, zap.AddStacktrace(zap.ErrorLevel))
 
-	DefaultLevel = zap.NewAtomicLevel()
+	defaultLevel = zap.NewAtomicLevel()
 	SetLevel(cfg.Level)
 
 	if len(cfg.LevelPattern) > 0 && cfg.LevelPort > 0 {
-		http.HandleFunc(cfg.LevelPattern, DefaultLevel.ServeHTTP)
+		http.HandleFunc(cfg.LevelPattern, defaultLevel.ServeHTTP)
 		go func() {
 			fmt.Printf("level serve on port:%d\nusage: [GET] curl http://localhost:%d%s\nusage: [PUT] curl -XPUT --data '{\"level\":\"debug\"}' http://localhost:%d%s\n", cfg.LevelPort, cfg.LevelPort, cfg.LevelPattern, cfg.LevelPort, cfg.LevelPattern)
 			if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.LevelPort), nil); err != nil {
@@ -98,19 +102,19 @@ func NewZap(cfg *Config) *SugaredLogger {
 func SetLevel(level string) {
 	l := strings.ToLower(level)
 	if l == "info" {
-		DefaultLevel.SetLevel(zap.InfoLevel)
+		defaultLevel.SetLevel(zap.InfoLevel)
 	} else if l == "debug" {
-		DefaultLevel.SetLevel(zap.DebugLevel)
+		defaultLevel.SetLevel(zap.DebugLevel)
 	} else if l == "error" {
-		DefaultLevel.SetLevel(zap.ErrorLevel)
+		defaultLevel.SetLevel(zap.ErrorLevel)
 	} else if l == "warn" {
-		DefaultLevel.SetLevel(zap.WarnLevel)
+		defaultLevel.SetLevel(zap.WarnLevel)
 	} else if l == "panic" {
-		DefaultLevel.SetLevel(zap.PanicLevel)
+		defaultLevel.SetLevel(zap.PanicLevel)
 	} else if l == "fatal" {
-		DefaultLevel.SetLevel(zap.FatalLevel)
+		defaultLevel.SetLevel(zap.FatalLevel)
 	} else {
-		DefaultLevel.SetLevel(zap.InfoLevel)
+		defaultLevel.SetLevel(zap.InfoLevel)
 	}
 }
 
@@ -142,7 +146,7 @@ func newConsoleCore(encode string) zapcore.Core {
 		formatEncoder = zapcore.NewConsoleEncoder(encodeConfig)
 	}
 	consoleDebugging := zapcore.Lock(os.Stdout)
-	return zapcore.NewCore(formatEncoder, consoleDebugging, DefaultLevel)
+	return zapcore.NewCore(formatEncoder, consoleDebugging, defaultLevel)
 }
 
 func newFileCore(encode, filename string, maxSize, maxBackups, maxAge int) zapcore.Core {
@@ -165,7 +169,7 @@ func newFileCore(encode, filename string, maxSize, maxBackups, maxAge int) zapco
 		Compress:   true,
 	})
 
-	return zapcore.NewCore(formatEncoder, w, DefaultLevel)
+	return zapcore.NewCore(formatEncoder, w, defaultLevel)
 }
 
 func handleFileName(filename string) string {
@@ -218,4 +222,110 @@ func handleTemplateFileName(template string) string {
 		ret = ret[:lefts[i]] + v + ret[rights[i]+1:]
 	}
 	return ret
+}
+
+func LevelEnabled(level log.Level) bool {
+	return defaultLevel.Enabled(zapcore.Level(level))
+}
+
+func With(args ...interface{}) *zap.SugaredLogger {
+	return defaultLog.With(args...)
+}
+
+// Debug logs a message at DebugLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func Debug(args ...interface{}) {
+	ZapLogger().Debug(args...)
+}
+
+// Info logs a message at InfoLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func Info(args ...interface{}) {
+	ZapLogger().Info(args...)
+}
+
+// Warn logs a message at WarnLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func Warn(args ...interface{}) {
+	ZapLogger().Warn(args...)
+}
+
+// Error logs a message at ErrorLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func Error(args ...interface{}) {
+	ZapLogger().Error(args...)
+}
+
+// Fatal uses fmt.Sprint to construct and log a message, then calls os.Exit.
+func Fatal(args ...interface{}) {
+	ZapLogger().Fatal(args...)
+}
+
+// Debugf uses fmt.Sprintf to log a templated message.
+func Debugf(template string, args ...interface{}) {
+	ZapLogger().Debugf(template, args...)
+}
+
+// Infof uses fmt.Sprintf to log a templated message.
+func Infof(template string, args ...interface{}) {
+	ZapLogger().Infof(template, args...)
+}
+
+// Warnf uses fmt.Sprintf to log a templated message.
+func Warnf(template string, args ...interface{}) {
+	ZapLogger().Warnf(template, args...)
+}
+
+// Errorf uses fmt.Sprintf to log a templated message.
+func Errorf(template string, args ...interface{}) {
+	ZapLogger().Errorf(template, args...)
+}
+
+func Fatalf(template string, args ...interface{}) {
+	ZapLogger().Fatalf(template, args...)
+}
+
+func Debugw(msg string, keysAndValues ...interface{}) {
+	ZapLogger().Debugw(msg, keysAndValues...)
+}
+
+func Infow(msg string, keysAndValues ...interface{}) {
+	ZapLogger().Infow(msg, keysAndValues...)
+}
+
+func Warnw(msg string, keysAndValues ...interface{}) {
+	ZapLogger().Warnw(msg, keysAndValues...)
+}
+
+func Errorw(msg string, keysAndValues ...interface{}) {
+	ZapLogger().Errorw(msg, keysAndValues...)
+}
+
+func Fatalw(msg string, keysAndValues ...interface{}) {
+	ZapLogger().Fatalw(msg, keysAndValues...)
+}
+
+func NewError(args ...interface{}) error {
+	ZapLogger().Error(args...)
+	return errors.New(fmt.Sprint(args...))
+}
+
+func NewErrorf(template string, args ...interface{}) error {
+	ZapLogger().Errorf(template, args...)
+	return fmt.Errorf(template, args...)
+}
+
+func NewErrorw(msg string, keysAndValues ...interface{}) error {
+	ZapLogger().Errorw(msg, keysAndValues...)
+
+	buffer := bytes.NewBufferString(msg)
+	buffer.WriteString(" ")
+	for i := 0; i < len(keysAndValues)-1; i += 2 {
+		if i > 0 {
+			buffer.WriteString(", ")
+		}
+		buffer.WriteString(fmt.Sprintf("%v: %v", keysAndValues[i], keysAndValues[i+1]))
+	}
+
+	return errors.New(buffer.String())
 }
