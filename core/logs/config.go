@@ -1,4 +1,4 @@
-package zap
+package logs
 
 type Config struct {
 	Level        string                 `json:"level" default:"debug"`

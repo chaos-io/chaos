@@ -8,6 +8,8 @@ import (
 	"time"
 
 	simple "github.com/bitly/go-simplejson"
+	"github.com/chaos-io/chaos/config/tag"
+	"github.com/fatih/structs"
 
 	"github.com/chaos-io/chaos/config/reader"
 	"github.com/chaos-io/chaos/config/source"
@@ -185,6 +187,20 @@ func (j *jsonValue) Scan(v interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	if structs.IsStruct(v) {
+		d := &tag.Loader{}
+		if err = d.Load(v); err != nil {
+			return err
+		}
+	} else {
+		// todo map
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
 	return json.Unmarshal(b, v)
 }
 

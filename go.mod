@@ -4,8 +4,10 @@ go 1.18
 
 require (
 	cuelang.org/go v0.4.3
+	github.com/BurntSushi/toml v1.0.0
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/bitly/go-simplejson v0.5.0
+	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-resty/resty/v2 v2.7.0
@@ -32,7 +34,7 @@ require (
 	github.com/tinylib/msgp v1.1.8
 	github.com/valyala/fastjson v1.6.4
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	go.uber.org/atomic v1.7.0
+	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.3.0
 	golang.org/x/exp v0.0.0-20230129154200-a960b3787bd2
@@ -68,9 +70,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
-	google.golang.org/appengine v1.6.6 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368 // indirect
 )
