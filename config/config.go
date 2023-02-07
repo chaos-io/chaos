@@ -72,6 +72,19 @@ func Scan(v interface{}) error {
 	return DefaultConfig.Scan(v)
 }
 
+// ScanFrom scan from the specifier keys to a go type
+func ScanFrom(v interface{}, key string, alternatives ...string) error {
+	val := Get(key)
+	for _, alter := range alternatives {
+		if !val.Null() {
+			break
+		}
+
+		val = Get(alter)
+	}
+	return val.Scan(v)
+}
+
 // Force a source changeset sync.
 func Sync() error {
 	return DefaultConfig.Sync()

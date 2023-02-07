@@ -12,6 +12,10 @@ func newValue() reader.Value {
 	return new(value)
 }
 
+func (v *value) Null() bool {
+	return true
+}
+
 func (v *value) Bool(def bool) bool {
 	return false
 }

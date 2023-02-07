@@ -26,6 +26,7 @@ type Values interface {
 
 // Value represents a value of any type.
 type Value interface {
+	Null() bool
 	Bool(def bool) bool
 	Int(def int) int
 	String(def string) string

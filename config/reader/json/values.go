@@ -81,6 +81,23 @@ func (j *jsonValues) String() string {
 	return "json"
 }
 
+func (j *jsonValue) Null() bool {
+	if j == nil || j.Json == nil {
+		return true
+	}
+
+	data := j.Json.Interface()
+	if data == nil {
+		return true
+	}
+
+	if obj, ok := data.(map[string]interface{}); ok && len(obj) == 0 {
+		return true
+	}
+
+	return false
+}
+
 func (j *jsonValue) Bool(def bool) bool {
 	b, err := j.Json.Bool()
 	if err == nil {
