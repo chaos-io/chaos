@@ -3,7 +3,7 @@ package test
 import (
 	"fmt"
 	"testing"
-	
+
 	log2 "github.com/chaos-io/chaos/core/log"
 )
 

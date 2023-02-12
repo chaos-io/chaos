@@ -7,7 +7,6 @@ import (
 	"github.com/chaos-io/chaos/core"
 	"github.com/chaos-io/chaos/core/logs"
 	"github.com/chaos-io/chaos/storage"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -51,7 +50,7 @@ func (a *Aliyun) SetBucket(name string) error {
 			return err
 		} else if !ok {
 			if err = a.client.CreateBucket(name); err != nil {
-				return errors.Wrap(err, fmt.Sprintf("minio failed to create bucket %s", name))
+				return logs.NewErrorf("minio failed to create bucket %s, err=%v", name, err)
 			}
 		}
 		if bucket, err := a.client.Bucket(name); err != nil {

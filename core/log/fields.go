@@ -46,9 +46,9 @@ const (
 
 // Field stores one structured logging field
 type Field struct {
-	key    string
-	ftype  FieldType
-	string string
+	key      string
+	ftype    FieldType
+	string   string
 	signed   int64
 	unsigned uint64
 	float    float64

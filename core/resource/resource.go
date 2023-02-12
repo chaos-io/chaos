@@ -2,11 +2,11 @@
 //
 // Use RESOURCE macro to "link" file into the library or executable.
 //
-//     RESOURCE(my_file.txt some_key)
+//	RESOURCE(my_file.txt some_key)
 //
 // And then retrieve file content in the runtime.
 //
-//     blob := resource.Get("some_key")
+//	blob := resource.Get("some_key")
 //
 // Warning: Excessive consumption of resource leads to obesity.
 package resource

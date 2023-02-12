@@ -6,8 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	log2 "github.com/chaos-io/chaos/core/log"
 	"github.com/sirupsen/logrus"
+
+	log2 "github.com/chaos-io/chaos/core/log"
 )
 
 /* Call frame calculations are copied from logrus package */

@@ -138,7 +138,6 @@ func TextCSV(w http.ResponseWriter, v interface{}) (int, error) {
 	return writeBytes(w, headers.TypeTextCSV, b)
 }
 
-//
 func Write(w http.ResponseWriter, ct headers.ContentType, v interface{}) (n int, err error) {
 	// render based on interface type
 	switch tv := v.(type) {

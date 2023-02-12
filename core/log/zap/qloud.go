@@ -1,9 +1,10 @@
 package zap
 
 import (
-	"github.com/chaos-io/chaos/core/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/chaos-io/chaos/core/log"
 )
 
 // NewQloudLogger constructs fully-fledged Qloud compatible logger

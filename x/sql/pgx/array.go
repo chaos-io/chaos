@@ -20,15 +20,16 @@ type Arr struct {
 // Array is a helper function for Postgres array values manupulations.
 // It implements basic database/sql interfaces.
 // Example:
-//     ids := []int64{42, 189032, 1489}
-//     var names []string
-//     err := conn.QueryRow(`
-//     			SELECT
-//     				array_agg(name) AS names
-//     			FROM users
-//     			WHERE id = ANY($1)
-//     		`, pgxutil.Array(ids)).
-//     	Scan(pgxutil.Array(&names))
+//
+//	ids := []int64{42, 189032, 1489}
+//	var names []string
+//	err := conn.QueryRow(`
+//				SELECT
+//					array_agg(name) AS names
+//				FROM users
+//				WHERE id = ANY($1)
+//			`, pgxutil.Array(ids)).
+//		Scan(pgxutil.Array(&names))
 func Array(v interface{}) interface {
 	driver.Valuer
 	sql.Scanner

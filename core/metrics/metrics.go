@@ -1,6 +1,4 @@
 // Package metrics provides interface collecting performance metrics.
-//
-//
 package metrics
 
 import (

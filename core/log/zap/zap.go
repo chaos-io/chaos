@@ -3,10 +3,11 @@ package zap
 import (
 	"fmt"
 
-	log2 "github.com/chaos-io/chaos/core/log"
-	encoders2 "github.com/chaos-io/chaos/core/log/zap/encoders"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	log2 "github.com/chaos-io/chaos/core/log"
+	encoders2 "github.com/chaos-io/chaos/core/log/zap/encoders"
 )
 
 const (

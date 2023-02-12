@@ -8,11 +8,11 @@ import (
 	"time"
 
 	simple "github.com/bitly/go-simplejson"
-	"github.com/chaos-io/chaos/config/tag"
 	"github.com/fatih/structs"
 
 	"github.com/chaos-io/chaos/config/reader"
 	"github.com/chaos-io/chaos/config/source"
+	"github.com/chaos-io/chaos/config/tag"
 )
 
 type jsonValues struct {

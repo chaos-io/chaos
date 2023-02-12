@@ -2,7 +2,7 @@ package nop
 
 import (
 	"os"
-	
+
 	log2 "github.com/chaos-io/chaos/core/log"
 )
 

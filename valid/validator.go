@@ -13,8 +13,9 @@ type ValidatorFunc func(value reflect.Value, param string) error
 
 // WrapValidator converts any predefined validation func to ValidatorFunc.
 // Example:
-//     ctx := valid.NewValidationCtx()
-//     ctx.Add("uuid4", valid.WrapValidator(valid.UUIDv4))
+//
+//	ctx := valid.NewValidationCtx()
+//	ctx.Add("uuid4", valid.WrapValidator(valid.UUIDv4))
 func WrapValidator(f interface{}) ValidatorFunc {
 	switch ft := f.(type) {
 	// basic string validator

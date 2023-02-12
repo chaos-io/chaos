@@ -2,13 +2,14 @@ package zap
 
 import (
 	"testing"
-	
-	log2 "github.com/chaos-io/chaos/core/log"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	log2 "github.com/chaos-io/chaos/core/log"
 )
 
 func TestNewQloudLogger(t *testing.T) {

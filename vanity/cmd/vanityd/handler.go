@@ -5,8 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/chaos-io/chaos/core/log"
-	"github.com/chaos-io/chaos/vanity/internal/logger"
+	"github.com/chaos-io/chaos/core/logs"
 	"github.com/chaos-io/chaos/vanity/internal/repos"
 	"github.com/chaos-io/chaos/vanity/web/template"
 )
@@ -14,7 +13,7 @@ import (
 func handleIndex(w http.ResponseWriter, _ *http.Request) {
 	err := template.Index.Execute(w, repos.Repos)
 	if err != nil {
-		logger.Log.Error("error while rendering template", log.Error(err))
+		logs.Error("error while rendering template", "error", err)
 	}
 }
 
@@ -37,7 +36,7 @@ func handleGoGet(w http.ResponseWriter, r *http.Request) {
 
 	err := template.GoGet.Execute(w, data)
 	if err != nil {
-		logger.Log.Error("error while rendering template", log.Error(err))
+		logs.Error("error while rendering template", "error", err)
 	}
 }
 

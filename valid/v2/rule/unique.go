@@ -3,8 +3,9 @@ package rule
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 
-	"cuelang.org/go/pkg/strconv"
+	// "cuelang.org/go/pkg/strconv"
 
 	"github.com/chaos-io/chaos/valid/v2/inspection"
 )

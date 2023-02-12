@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"net"
 
-	"github.com/gofrs/uuid"
 	"golang.org/x/exp/slices"
 )
 
@@ -81,10 +80,10 @@ func ContainsIP(haystack []net.IP, needle net.IP) bool {
 
 // ContainsUUID checks if UUID slice contains given UUID.
 // Deprecated: use golang.org/x/exp/slices.Contains instead
-var ContainsUUID = slices.Contains[uuid.UUID]
+//var ContainsUUID = slices.Contains[uuid.UUID]
 
 // Contains checks if slice of T contains given T
 // Deprecated: use golang.org/x/exp/slices.Contains instead.
-func Contains[E comparable](haystack []E, needle E) (bool, error) {
-	return slices.Contains(haystack, needle), nil
-}
+//func Contains[E comparable](haystack []E, needle E) (bool, error) {
+//	return slices.Contains(haystack, needle), nil
+//}

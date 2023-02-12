@@ -93,11 +93,12 @@ type Metric interface {
 
 // Rated marks given Solomon metric or vector as rated
 // Example:
-//     cnt := r.Counter("mycounter")
-//     Rated(cnt)
 //
-//     cntvec := r.CounterVec("mycounter", []string{"mytag"})
-//     Rated(cntvec)
+//	cnt := r.Counter("mycounter")
+//	Rated(cnt)
+//
+//	cntvec := r.CounterVec("mycounter", []string{"mytag"})
+//	Rated(cntvec)
 //
 // For additional info: https://wiki.yandex-team.ru/solomon/api/dataformat/json
 func Rated(s interface{}) {

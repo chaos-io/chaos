@@ -18,14 +18,15 @@ const (
 // validation context, struct tags and Validator interface.
 // This function always returns valid.Errors type.
 // Example:
-//     vctx := valid.NewValidationCtx()
-//     vctx.Add("uuid4", valid.WrapStringValidator(valid.UUIDv4))
-//     errs := valid.Struct(vctx, struct{
-//         ID string `valid:"uuid4"`
-//	   }{
-//         ID: userInput.ID,
-//	   })
-//     // errs might output something like `[]errors{valid.ErrInvalidCharsSequence}`
+//
+//	    vctx := valid.NewValidationCtx()
+//	    vctx.Add("uuid4", valid.WrapStringValidator(valid.UUIDv4))
+//	    errs := valid.Struct(vctx, struct{
+//	        ID string `valid:"uuid4"`
+//		   }{
+//	        ID: userInput.ID,
+//		   })
+//	    // errs might output something like `[]errors{valid.ErrInvalidCharsSequence}`
 func Struct(ctx *ValidationCtx, s interface{}) error {
 	if s == nil {
 		return nil

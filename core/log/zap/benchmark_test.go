@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 	"time"
-	
+
 	log2 "github.com/chaos-io/chaos/core/log"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"

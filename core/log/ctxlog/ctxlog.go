@@ -3,7 +3,7 @@ package ctxlog
 import (
 	"context"
 	"fmt"
-	
+
 	log2 "github.com/chaos-io/chaos/core/log"
 )
 

@@ -1,14 +1,15 @@
 // Package output provides functions to easily capture stdout/stderr streams data.
 //
 // Example:
-//     func TestMyOutput(t *testing.T) {
-//         output.Replace(output.Stdout)
-//         defer output.Reset(output.Stdout)
 //
-//         fmt.Println("hello")
-//         captured := output.Catch(output.Stdout)
-//         assert.Equal(t, "hello", string(captured))
-//     }
+//	func TestMyOutput(t *testing.T) {
+//	    output.Replace(output.Stdout)
+//	    defer output.Reset(output.Stdout)
+//
+//	    fmt.Println("hello")
+//	    captured := output.Catch(output.Stdout)
+//	    assert.Equal(t, "hello", string(captured))
+//	}
 package output
 
 import (

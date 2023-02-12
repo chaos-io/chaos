@@ -22,4 +22,3 @@ func (y yamlEncoder) String() string {
 func NewEncoder() encoder.Encoder {
 	return yamlEncoder{}
 }
-

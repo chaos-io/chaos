@@ -2,10 +2,11 @@ package zap
 
 import (
 	"fmt"
-	
-	log2 "github.com/chaos-io/chaos/core/log"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	log2 "github.com/chaos-io/chaos/core/log"
 )
 
 // ZapifyLevel turns interface log level to zap log level

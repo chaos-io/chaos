@@ -2,12 +2,13 @@ package test
 
 import (
 	"testing"
-	
+
+	"github.com/stretchr/testify/require"
+	uzap "go.uber.org/zap"
+
 	log2 "github.com/chaos-io/chaos/core/log"
 	"github.com/chaos-io/chaos/core/log/nop"
 	"github.com/chaos-io/chaos/core/log/zap"
-	"github.com/stretchr/testify/require"
-	uzap "go.uber.org/zap"
 )
 
 var (

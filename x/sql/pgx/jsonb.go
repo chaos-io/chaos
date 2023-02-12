@@ -15,15 +15,15 @@ type JB struct {
 // JSONB is a helper function for Postgres jsonb values manupulations.
 // It implements basic database/sql interfaces.
 // Example:
-//  type J struct {
-//    id int `json:"id"`
-//  }
 //
-//  db.Query(`SELECT * FROM t WHERE json_data = $1`, pgxutil.JSONB(J{42}))
+//	type J struct {
+//	  id int `json:"id"`
+//	}
 //
-//  var j J
-//  db.QueryRow('SELECT json_data').Scan(pgxutil.JSONB(&j))
+//	db.Query(`SELECT * FROM t WHERE json_data = $1`, pgxutil.JSONB(J{42}))
 //
+//	var j J
+//	db.QueryRow('SELECT json_data').Scan(pgxutil.JSONB(&j))
 func JSONB(v interface{}) interface {
 	driver.Valuer
 	sql.Scanner

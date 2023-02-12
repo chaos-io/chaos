@@ -27,10 +27,10 @@ var SyncWord = [32]byte{
 // decoderState encodes a internal state of Protoseq decoder. Possible states
 // are init, more, decode, and terminal. They have the following transition table.
 //
-//  init -> more | terminal
-//  more -> more | decode | terminal
-//  decode -> more | decode | terminal
-//  terminal -> terminal
+//	init -> more | terminal
+//	more -> more | decode | terminal
+//	decode -> more | decode | terminal
+//	terminal -> terminal
 //
 // Decoder object is instantiated in init state. Terminal state is achievable
 // from any state. If a decoder is in more or init state then invocation of

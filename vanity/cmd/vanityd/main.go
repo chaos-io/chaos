@@ -11,15 +11,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/chaos-io/chaos/core/log"
-	"github.com/chaos-io/chaos/vanity/internal/logger"
+	"github.com/chaos-io/chaos/core/logs"
 )
 
 func main() {
-	logger.Setup(log.InfoLevel)
-
 	if err := run(); err != nil {
-		logger.Log.Fatal("unexpected error", log.Error(err))
+		logs.Fatal("unexpected error", "error", err)
 		os.Exit(1)
 	}
 }
@@ -32,7 +29,7 @@ func run() error {
 
 	errChan := make(chan error, 1)
 	go func() {
-		logger.Log.Info("starting HTTP server", log.String("addr", flagRunAddr))
+		logs.Infow("starting HTTP server", "addr", flagRunAddr)
 		if err := srv.ListenAndServe(); err != nil {
 			errChan <- fmt.Errorf("cannot run HTTP server: %w", err)
 		}
@@ -43,7 +40,7 @@ func run() error {
 
 	select {
 	case sig := <-stop:
-		logger.Log.Info("shutting down gracefully", log.String("signal", sig.String()))
+		logs.Infow("shutting down gracefully", "signal", sig.String())
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

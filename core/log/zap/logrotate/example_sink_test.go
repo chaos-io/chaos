@@ -7,12 +7,13 @@ import (
 	"net/url"
 	"path/filepath"
 	"syscall"
-	
+
+	uberzap "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/chaos-io/chaos/core/log"
 	"github.com/chaos-io/chaos/core/log/zap"
 	"github.com/chaos-io/chaos/core/log/zap/logrotate"
-	uberzap "go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func Example_simpleUsage() {

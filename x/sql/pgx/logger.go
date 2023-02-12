@@ -17,13 +17,14 @@ type logger struct {
 // NewLogger returns new pgx logger wrapper for log.Structured
 //
 // Example:
-//     l := zap.Must(zap.JSONConfig(log.DebugLevel))
 //
-//     connConfig, _ := pgx.ParseConfig(postgresDSN)
-//	   connConfig.Logger = pgxutil.NewLogger(l)
-//	   connStr := stdlib.RegisterConnConfig(connConfig)
+//	    l := zap.Must(zap.JSONConfig(log.DebugLevel))
 //
-//	   conn, err := sql.Open("pgx", connStr)
+//	    connConfig, _ := pgx.ParseConfig(postgresDSN)
+//		   connConfig.Logger = pgxutil.NewLogger(l)
+//		   connStr := stdlib.RegisterConnConfig(connConfig)
+//
+//		   conn, err := sql.Open("pgx", connStr)
 func NewLogger(l log.Structured) *logger {
 	return &logger{l: l}
 }

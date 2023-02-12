@@ -2,9 +2,10 @@ package log_test
 
 import (
 	"testing"
-	
-	"github.com/chaos-io/chaos/core/log"
+
 	"github.com/stretchr/testify/require"
+
+	"github.com/chaos-io/chaos/core/log"
 )
 
 var levelsToTest = []struct {
