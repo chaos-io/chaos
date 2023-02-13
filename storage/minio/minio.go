@@ -6,12 +6,13 @@ import (
 	"io"
 	"strings"
 
+	"github.com/minio/minio-go"
+	"github.com/pkg/errors"
+
 	"github.com/chaos-io/chaos/core"
 	"github.com/chaos-io/chaos/core/logs"
 	"github.com/chaos-io/chaos/core/xerrors"
 	"github.com/chaos-io/chaos/storage"
-	"github.com/minio/minio-go"
-	"github.com/pkg/errors"
 )
 
 func init() {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+
 	"github.com/chaos-io/chaos/core"
 	"github.com/chaos-io/chaos/core/logs"
 	"github.com/chaos-io/chaos/storage"

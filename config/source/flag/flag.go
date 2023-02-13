@@ -6,8 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chaos-io/chaos/config/source"
 	"github.com/imdario/mergo"
+
+	"github.com/chaos-io/chaos/config/source"
 )
 
 type flagsrc struct {

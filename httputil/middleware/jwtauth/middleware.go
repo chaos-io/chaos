@@ -7,8 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	jwtreq "github.com/golang-jwt/jwt/v4/request"
 
-	"github.com/chaos-io/chaos/core/log"
-	"github.com/chaos-io/chaos/core/log/nop"
+	"github.com/chaos-io/chaos/core/logs"
 	"github.com/chaos-io/chaos/httputil/headers"
 )
 
@@ -23,7 +22,7 @@ type middleware struct {
 	keyFunc       jwt.Keyfunc
 	signingMethod jwt.SigningMethod
 	claimsFunc    func() jwt.Claims
-	l             log.Structured
+	l             *logs.ZapLogger
 	extractors    jwtreq.MultiExtractor
 	onError       func(http.ResponseWriter, *http.Request, error)
 }
@@ -40,7 +39,7 @@ func VerifyToken(opts ...MiddlewareOpt) func(next http.Handler) http.Handler {
 		onError: func(w http.ResponseWriter, _ *http.Request, _ error) {
 			w.WriteHeader(http.StatusUnauthorized)
 		},
-		l: new(nop.Logger),
+		l: logs.New(&logs.Config{}),
 	}
 
 	for _, opt := range opts {

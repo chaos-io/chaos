@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/chaos-io/chaos/config/encoder"
 )
 

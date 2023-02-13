@@ -6,8 +6,9 @@ package file
 import (
 	"os"
 
-	"github.com/chaos-io/chaos/config/source"
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/chaos-io/chaos/config/source"
 )
 
 type watcher struct {

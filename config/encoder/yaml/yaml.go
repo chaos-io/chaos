@@ -1,8 +1,9 @@
 package yaml
 
 import (
-	"github.com/chaos-io/chaos/config/encoder"
 	"gopkg.in/yaml.v3"
+
+	"github.com/chaos-io/chaos/config/encoder"
 )
 
 type yamlEncoder struct{}

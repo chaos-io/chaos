@@ -4,19 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/chaos-io/chaos/core/log"
-	"github.com/chaos-io/chaos/core/log/nop"
+	"github.com/chaos-io/chaos/core/logs"
 )
 
 type middleware struct {
-	l             log.Structured
+	l             *logs.ZapLogger
 	panicCallback func(http.ResponseWriter, *http.Request, error)
 }
 
 // New returns a middleware that recovers from panics.
 func New(opts ...MiddlewareOpt) func(http.Handler) http.Handler {
 	mw := middleware{
-		l: new(nop.Logger),
+		l: logs.Logger(),
 	}
 
 	for _, opt := range opts {
@@ -39,7 +38,7 @@ func (mw middleware) wrap(next http.Handler) http.Handler {
 				err = fmt.Errorf("%+v", rv)
 			}
 
-			mw.l.Error("panic recovered", log.Error(err))
+			mw.l.Error("panic recovered", err)
 
 			if mw.panicCallback != nil {
 				mw.panicCallback(w, r, err)

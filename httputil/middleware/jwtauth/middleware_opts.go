@@ -6,7 +6,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	jwtreq "github.com/golang-jwt/jwt/v4/request"
 
-	"github.com/chaos-io/chaos/core/log"
+	"github.com/chaos-io/chaos/core/logs"
 )
 
 type MiddlewareOpt func(*middleware)
@@ -37,7 +37,7 @@ func WithClaims(fn func() jwt.Claims) MiddlewareOpt {
 
 // WithLogger sets custom logger to middleware.
 // If none given - nop.Logger used by default.
-func WithLogger(l log.Structured) MiddlewareOpt {
+func WithLogger(l *logs.ZapLogger) MiddlewareOpt {
 	return func(mw *middleware) {
 		mw.l = l
 	}

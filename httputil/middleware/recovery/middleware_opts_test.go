@@ -6,22 +6,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	"github.com/chaos-io/chaos/core/log"
-	"github.com/chaos-io/chaos/core/log/zap"
+	"github.com/chaos-io/chaos/core/logs"
 )
 
 func TestWithLogger(t *testing.T) {
 	var mw middleware
 
-	input, err := zap.NewQloudLogger(log.DebugLevel)
-	require.NoError(t, err)
-
-	opt := WithLogger(input)
+	logger := logs.New(&logs.Config{})
+	opt := WithLogger(logger)
 	opt(&mw)
 
-	assert.Same(t, input, mw.l)
+	assert.Same(t, logger, mw.l)
 }
 
 func TestWithCallBack(t *testing.T) {

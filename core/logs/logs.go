@@ -10,10 +10,11 @@ import (
 	"strings"
 	_ "unsafe"
 
-	"github.com/chaos-io/chaos/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	"github.com/chaos-io/chaos/config"
 )
 
 type ZapLogger = zap.SugaredLogger
@@ -209,6 +210,7 @@ func handleTemplateFileName(template string) string {
 		v := os.Getenv(variableName)
 		ret = ret[:lefts[i]] + v + ret[rights[i]+1:]
 	}
+
 	return ret
 }
 

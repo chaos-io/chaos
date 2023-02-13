@@ -1,9 +1,10 @@
 package logs
 
 import (
-	"github.com/chaos-io/chaos/config/reader"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/chaos-io/chaos/config/reader"
 )
 
 type Level = zapcore.Level

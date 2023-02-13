@@ -8,10 +8,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	jwtreq "github.com/golang-jwt/jwt/v4/request"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	"github.com/chaos-io/chaos/core/log"
-	"github.com/chaos-io/chaos/core/log/zap"
+	"github.com/chaos-io/chaos/core/logs"
 	"github.com/chaos-io/chaos/httputil/headers"
 )
 
@@ -56,9 +54,7 @@ func TestWithClaims(t *testing.T) {
 func TestWithLogger(t *testing.T) {
 	var mw middleware
 
-	input, err := zap.NewQloudLogger(log.DebugLevel)
-	require.NoError(t, err)
-
+	input := logs.New(&logs.Config{})
 	opt := WithLogger(input)
 	opt(&mw)
 
