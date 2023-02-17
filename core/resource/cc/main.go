@@ -43,12 +43,15 @@ func main() {
 	if flag.NArg()%2 != 0 {
 		fatalf("cc: must provide even number of arguments")
 	}
+	nArg := flag.NArg
+	fmt.Println("nArg=", nArg())
 
 	var keys []string
 	var blobs [][]byte
 	for i := 0; 2*i < flag.NArg(); i++ {
 		file := flag.Arg(2 * i)
 		key := flag.Arg(2*i + 1)
+		fmt.Printf("file=%v, key=%v\n", file, key)
 
 		if !strings.HasPrefix(key, "notafile") {
 			fatalf("cc: key argument must start with \"notafile\" string")

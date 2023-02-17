@@ -16,3 +16,7 @@ gotest
 ya.make
 
 # vendor/
+
+#
+.k8s
+*.pb.go

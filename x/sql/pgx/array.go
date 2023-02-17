@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	uuid "github.com/gofrs/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/jackc/pgtype"
 
 	"github.com/chaos-io/chaos/core/xerrors"
