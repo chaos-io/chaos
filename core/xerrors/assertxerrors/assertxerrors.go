@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/chaos-io/chaos/core/xerrors/internal/modes"
-	"github.com/chaos-io/chaos/test/testhelpers"
+	"github.com/chaos-io/chaos/testhelpers"
 )
 
 func RunTestsPerMode(t *testing.T, expected Expectations, constructor func(t *testing.T) error) {

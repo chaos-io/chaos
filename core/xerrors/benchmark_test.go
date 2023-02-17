@@ -9,7 +9,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/chaos-io/chaos/core/xerrors/benchxerrors"
-	"github.com/chaos-io/chaos/test/testhelpers"
+	"github.com/chaos-io/chaos/testhelpers"
 )
 
 const (

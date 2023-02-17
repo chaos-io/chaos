@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chaos-io/chaos/test/testhelpers"
+	"github.com/chaos-io/chaos/testhelpers"
 )
 
 func BenchmarkNew(b *testing.B) {
