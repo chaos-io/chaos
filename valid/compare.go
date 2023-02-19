@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/spf13/cast"
+	// "github.com/spf13/cast"
+	xtime "github.com/chaos-io/chaos/x/time"
 )
 
 var (
@@ -244,7 +245,8 @@ func compareValues(value reflect.Value, param string, cmp comparator) (bool, err
 	// reflect types without predefined kind
 	switch v := value.Interface().(type) {
 	case time.Time:
-		pv, err := cast.ToTimeE(param)
+		// pv, err := cast.ToTimeE(param)
+		pv, err := xtime.StringToDate(param)
 		if err != nil {
 			return false, ErrInvalidType.Wrap(err)
 		}
