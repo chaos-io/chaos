@@ -3,44 +3,37 @@
 // By default, collects aggregate metrics.
 package httpmetrics
 
-import (
-	"net/http"
-	"sync"
-
-	"github.com/chaos-io/chaos/core/metrics"
-)
-
-type (
-	MiddlewareOption func(*metricsMiddleware)
-
-	metricsMiddleware struct {
-		r metrics.Registry
-
-		endpointKey func(req *http.Request) string
-
-		durationBuckets metrics.DurationBuckets
-
-		httpcodes []int
-
-		solomonRated bool
-
-		defaultEndpoint endpointMetrics
-		endpoints       sync.Map
-	}
-
-	endpointMetrics struct {
-		registerOnce sync.Once
-
-		m *metricsMiddleware
-
-		requestCount     metrics.Counter
-		requestDuration  metrics.Timer
-		panicsCount      metrics.Counter
-		inflightRequests metrics.Gauge
-
-		httpCodes map[string]metrics.Counter
-	}
-)
+// type (
+// 	MiddlewareOption func(*metricsMiddleware)
+//
+// 	metricsMiddleware struct {
+// 		r metrics.Registry
+//
+// 		endpointKey func(req *http.Request) string
+//
+// 		durationBuckets metrics.DurationBuckets
+//
+// 		httpcodes []int
+//
+// 		solomonRated bool
+//
+// 		defaultEndpoint endpointMetrics
+// 		endpoints       sync.Map
+// 	}
+//
+// 	endpointMetrics struct {
+// 		registerOnce sync.Once
+//
+// 		m *metricsMiddleware
+//
+// 		requestCount     metrics.Counter
+// 		requestDuration  metrics.Timer
+// 		panicsCount      metrics.Counter
+// 		inflightRequests metrics.Gauge
+//
+// 		httpCodes map[string]metrics.Counter
+// 	}
+// )
 
 // func httpCodeSpecificTag(code int) string {
 // 	return strconv.FormatInt(int64(code), 10)
