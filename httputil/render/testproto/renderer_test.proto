@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package testproto;
+
+option go_package = "./testproto";
+option optimize_for = SPEED;
+
+message Test {
+    int64 value = 1;
+}

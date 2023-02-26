@@ -1,6 +1,6 @@
 module github.com/chaos-io/chaos
 
-go 1.19
+go 1.18
 
 require (
 	github.com/BurntSushi/toml v1.0.0
@@ -8,13 +8,21 @@ require (
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
-	github.com/google/uuid v1.3.0
+	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-resty/resty/v2 v2.7.0
+	github.com/gofrs/uuid v4.4.0+incompatible
+	github.com/golang-jwt/jwt/v4 v4.4.3
+	github.com/google/go-cmp v0.5.9
 	github.com/imdario/mergo v0.3.13
 	github.com/json-iterator/go v1.1.12
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.0
+	github.com/valyala/fastjson v1.6.4
 	go.uber.org/zap v1.24.0
+	golang.org/x/exp v0.0.0-20230129154200-a960b3787bd2
+	golang.org/x/sync v0.1.0
+	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
