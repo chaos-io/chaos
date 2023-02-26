@@ -6,8 +6,8 @@ type Config struct {
 	LevelPort    int                    `json:"levelPort" default:"0"`
 	LevelPattern string                 `json:"levelPattern" default:""`
 	Output       string                 `json:"output" default:"console"`
-	InitFields   map[string]interface{} `json:"initFields"`
-	File         FileConfig             `json:"file"`
+	InitFields map[string]interface{} `json:"initFields"`
+	File       FileConfig             `json:"file"`
 }
 
 type FileConfig struct {

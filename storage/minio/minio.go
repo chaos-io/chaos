@@ -11,7 +11,6 @@ import (
 
 	"github.com/chaos-io/chaos/core"
 	"github.com/chaos-io/chaos/core/logs"
-	"github.com/chaos-io/chaos/core/xerrors"
 	"github.com/chaos-io/chaos/storage"
 )
 
@@ -74,7 +73,7 @@ func (m *Minio) Read(key string, options core.Options) (*storage.Object, error) 
 			}
 			if obj, err = m.client.GetObject(bucketName, key, minio.GetObjectOptions{}); err != nil {
 				if errors.As(err, errResponse) && errResponse.Code == "NoSuchKey" {
-					return nil, xerrors.Errorf("failed to found the key %s", key)
+					return nil, fmt.Errorf("failed to found the key %s", key)
 				}
 				return nil, err
 			}
@@ -85,7 +84,7 @@ func (m *Minio) Read(key string, options core.Options) (*storage.Object, error) 
 	if err != nil {
 		errResponse := &minio.ErrorResponse{}
 		if errors.As(err, errResponse) && errResponse.Code == "NoSuchKey" {
-			return nil, xerrors.Errorf("failed to found the key %s", key)
+			return nil, fmt.Errorf("failed to found the key %s", key)
 		}
 		return nil, err
 	}
