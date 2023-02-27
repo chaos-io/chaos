@@ -3,7 +3,7 @@ package reader
 import (
 	"github.com/chaos-io/chaos/config/encoder"
 	"github.com/chaos-io/chaos/config/encoder/json"
-	"github.com/chaos-io/chaos/config/encoder/toml"
+	// "github.com/chaos-io/chaos/config/encoder/toml"
 	"github.com/chaos-io/chaos/config/encoder/xml"
 	"github.com/chaos-io/chaos/config/encoder/yaml"
 )
@@ -18,7 +18,7 @@ func NewOptions(opts ...Option) Options {
 	options := Options{
 		Encoding: map[string]encoder.Encoder{
 			"json": json.NewEncoder(),
-			"toml": toml.NewEncoder(),
+			// "toml": toml.NewEncoder(),
 			"xml":  xml.NewEncoder(),
 			"yaml": yaml.NewEncoder(),
 		},

@@ -1,7 +1,7 @@
 package json
 
 import (
-	jsoniter "github.com/json-iterator/go"
+	"encoding/json"
 
 	"github.com/chaos-io/chaos/config/encoder"
 )
@@ -9,11 +9,11 @@ import (
 type jsonEncoder struct{}
 
 func (j jsonEncoder) Encode(v interface{}) ([]byte, error) {
-	return jsoniter.Marshal(v)
+	return json.Marshal(v)
 }
 
 func (j jsonEncoder) Decode(d []byte, v interface{}) error {
-	return jsoniter.Unmarshal(d, v)
+	return json.Unmarshal(d, v)
 }
 
 func (j jsonEncoder) String() string {

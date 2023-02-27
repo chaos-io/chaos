@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	simple "github.com/bitly/go-simplejson"
 	"github.com/fatih/structs"
 
 	"github.com/chaos-io/chaos/config/reader"
@@ -17,15 +16,15 @@ import (
 
 type jsonValues struct {
 	ch *source.ChangeSet
-	sj *simple.Json
+	sj *Json
 }
 
 type jsonValue struct {
-	*simple.Json
+	*Json
 }
 
 func newValues(ch *source.ChangeSet) (reader.Values, error) {
-	sj := simple.New()
+	sj := New()
 	data, _ := reader.ReplaceEnvVars(ch.Data)
 	if err := sj.UnmarshalJSON(data); err != nil {
 		sj.SetPath(nil, string(ch.Data))
@@ -40,7 +39,7 @@ func (j *jsonValues) Get(path ...string) reader.Value {
 func (j *jsonValues) Del(path ...string) {
 	// delete the tree?
 	if len(path) == 0 {
-		j.sj = simple.New()
+		j.sj = New()
 		return
 	}
 
