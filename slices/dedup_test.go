@@ -35,7 +35,7 @@ func TestDedup(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.Equal(t, tc.expected, slices.DedupStrings(tc.given))
+		assert.Equal(t, tc.expected, slices.Dedup(tc.given))
 	}
 }
 

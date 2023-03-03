@@ -16,7 +16,3 @@ func EqualUnordered[E comparable](a []E, b []E) bool {
 	}
 	return len(ma) == l
 }
-
-// EqualAnyOrderStrings checks if string slices are equal, order independent.
-// Deprecated: use EqualUnordered instead.
-var EqualAnyOrderStrings = EqualUnordered[string]
