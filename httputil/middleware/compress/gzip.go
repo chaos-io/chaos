@@ -62,7 +62,7 @@ func (g *GzipCompressor) WriteHeader(statusCode int) {
 	g.rw.WriteHeader(statusCode)
 }
 
-// Writes compressable data to http.ResponseWriter in efficient way.
+// Writes compressible data to http.ResponseWriter in efficient way.
 // Result data may be compressed at any time or stay uncompressed at all
 func (g *GzipCompressor) Write(b []byte) (int, error) {
 	// start with raw buffer by default
