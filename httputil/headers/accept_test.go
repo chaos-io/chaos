@@ -3,8 +3,8 @@ package headers_test
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
+	// "github.com/google/go-cmp/cmp"
+	// "github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -86,8 +86,18 @@ func TestParseAcceptEncoding(t *testing.T) {
 
 			require.Len(t, acceptableEncodings, len(tc.expected))
 
-			opt := cmpopts.IgnoreUnexported(headers.AcceptableEncoding{})
-			assert.True(t, cmp.Equal(tc.expected, acceptableEncodings, opt), cmp.Diff(tc.expected, acceptableEncodings, opt))
+			// ignore pos field
+			// opt := cmpopts.IgnoreUnexported(headers.AcceptableEncoding{})
+			// assert.True(t, cmp.Equal(tc.expected, acceptableEncodings, opt), cmp.Diff(tc.expected, acceptableEncodings, opt))
+
+			var ae headers.AcceptableEncodings
+			for _, e := range acceptableEncodings {
+				ae = append(ae, headers.AcceptableEncoding{
+					Encoding: e.Encoding,
+					Weight:   e.Weight,
+				})
+			}
+			assert.Equal(t, tc.expected, ae)
 		})
 	}
 }
@@ -223,8 +233,17 @@ func TestParseAccept(t *testing.T) {
 
 			require.Len(t, at, len(tc.expected))
 
-			opt := cmpopts.IgnoreUnexported(headers.AcceptableType{})
-			assert.True(t, cmp.Equal(tc.expected, at, opt), cmp.Diff(tc.expected, at, opt))
+			// opt := cmpopts.IgnoreUnexported(headers.AcceptableType{})
+			// assert.True(t, cmp.Equal(tc.expected, at, opt), cmp.Diff(tc.expected, at, opt))
+			var ats headers.AcceptableTypes
+			for _, a := range at {
+				ats = append(ats, headers.AcceptableType{
+					Type:      a.Type,
+					Weight:    a.Weight,
+					Extension: a.Extension,
+				})
+			}
+			assert.Equal(t, tc.expected, ats)
 		})
 	}
 }

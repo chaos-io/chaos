@@ -9,7 +9,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/gofrs/uuid v4.4.0+incompatible
-	github.com/golang-jwt/jwt/v4 v4.4.3
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-cmp v0.5.9
 	github.com/imdario/mergo v0.3.13
 	github.com/minio/minio-go v6.0.14+incompatible
@@ -36,6 +36,6 @@ require (
 	golang.org/x/net v0.3.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
