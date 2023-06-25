@@ -20,3 +20,4 @@ ya.make
 #
 .k8s
 *.pb.go
+.idea
