@@ -17,14 +17,13 @@ import (
 	"github.com/chaos-io/chaos/config"
 )
 
+var defaultLog *ZapLogger
+
 type ZapLogger = zap.SugaredLogger
 
-var defaultLog *ZapLogger
 var defaultLevel zap.AtomicLevel
 
-type PanicInfo struct {
-	Stack, Panic string
-}
+type Level = zapcore.Level
 
 func init() {
 	logCfg := &Config{}

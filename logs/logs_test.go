@@ -14,7 +14,6 @@ func TestDebugw(t *testing.T) {
 	*i = 8
 	Debugw("debugw", "ptr", i)
 	Debugw("debugw", "addr", &i)
-
 }
 
 var url = "http://192.168.1.1:8800"
