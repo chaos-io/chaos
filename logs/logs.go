@@ -127,8 +127,8 @@ func initWithFile(encode, filename string, maxSize, maxBackups, maxAge int) zapc
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   f,
 		MaxSize:    maxSize, // megabytes
+		MaxAge:     maxAge,  // days
 		MaxBackups: maxBackups,
-		MaxAge:     maxAge, // days
 		Compress:   true,
 	})
 
@@ -220,20 +220,17 @@ func Debug(args ...interface{}) {
 	Logger().Debug(args...)
 }
 
-// Info logs a message at InfoLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
+// Info logs a message at InfoLevel.
 func Info(args ...interface{}) {
 	Logger().Info(args...)
 }
 
-// Warn logs a message at WarnLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
+// Warn logs a message at WarnLevel.
 func Warn(args ...interface{}) {
 	Logger().Warn(args...)
 }
 
-// Error logs a message at ErrorLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
+// Error logs a message at ErrorLevel.
 func Error(args ...interface{}) {
 	Logger().Error(args...)
 }
