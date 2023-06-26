@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/chaos-io/chaos/core"
-	"github.com/chaos-io/chaos/core/logs"
+	"github.com/chaos-io/chaos/logs"
 	"github.com/chaos-io/chaos/storage"
 )
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/chaos-io/chaos/config"
 	"github.com/chaos-io/chaos/core"
-	"github.com/chaos-io/chaos/core/logs"
+	"github.com/chaos-io/chaos/logs"
 )
 
 type initializer func(cfg *Config) Storage

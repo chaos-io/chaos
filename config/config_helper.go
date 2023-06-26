@@ -16,7 +16,7 @@ import (
 
 var supportedFileSuffixes = map[string]bool{
 	"json": true,
-	"toml": true,
+	// "toml": true,
 	"xml":  true,
 	"yaml": true,
 }
@@ -123,16 +123,16 @@ func WatchFunc(handle func(reader.Value), paths ...string) (io.Closer, error) {
 	go func() {
 		for {
 			v, err := w.Next()
-			//if err == err_code.WatchStoppedError {
+			// if err == err_code.WatchStoppedError {
 			//	return
-			//}
+			// }
 			if err != nil {
 				continue
 			}
 
-			//if v.Empty() {
+			// if v.Empty() {
 			//	continue
-			//}
+			// }
 
 			if handle != nil {
 				handle(v)
