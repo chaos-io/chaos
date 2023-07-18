@@ -31,14 +31,6 @@ func New(cfg *Config) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Info),
 	}
 
-	defer func() {
-		if DB != nil {
-			if cfg.Debug {
-				DB = DB.Debug()
-			}
-		}
-	}()
-
 	switch cfg.DriverName {
 	case MysqlDriverName:
 		DB, err = gorm.Open(mysql.Open(cfg.DSN), cfg.Config)
@@ -53,10 +45,15 @@ func New(cfg *Config) *gorm.DB {
 		panic("failed to connect database")
 	}
 
+	if cfg.Debug {
+		DB = DB.Debug()
+	}
+
 	db, err := DB.DB()
 	if err != nil {
-		panic(fmt.Sprintf("get sql db error: %v", err))
+		panic(fmt.Sprintf("get db error: %v", err))
 	}
+
 	db.SetMaxIdleConns(cfg.MaxIdleConns)
 	db.SetMaxOpenConns(cfg.MaxOpenConns)
 	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
