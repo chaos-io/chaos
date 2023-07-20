@@ -68,6 +68,7 @@ func Write(object *Object, options core.Options) error {
 func Download(key string, path string, options core.Options) error {
 	return GetStorage().Download(key, path, options)
 }
+
 func Upload(localFile string, key string, options core.Options) error {
 	return GetStorage().Upload(localFile, key, options)
 }
