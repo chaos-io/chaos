@@ -13,7 +13,7 @@ func TestNew(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"rdb1", args{cfg: nil}, true},
+		{"rdb", args{cfg: nil}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -1,10 +1,17 @@
 package redis
 
-import "github.com/redis/go-redis/v9"
+import (
+	"time"
 
-var Rdb *redis.Client
+	"github.com/redis/go-redis/v9"
+)
 
-func New(cfg *Config) *redis.Client {
+type Redis struct {
+	*redis.Client
+	Config *Config
+}
+
+func New(cfg *Config) *Redis {
 	if cfg == nil {
 		cfg = &Config{&redis.Options{
 			Addr:     "localhost:6379",
@@ -13,7 +20,24 @@ func New(cfg *Config) *redis.Client {
 		}}
 	}
 
-	Rdb = redis.NewClient(cfg.Options)
+	if cfg.ReadTimeout == 0 {
+		cfg.ReadTimeout = time.Second
+	}
 
-	return Rdb
+	if cfg.PoolSize == 0 {
+		cfg.PoolSize = 300
+	}
+
+	if cfg.MinIdleConns == 0 {
+		if cfg.MaxIdleConns > 0 {
+			cfg.MinIdleConns = cfg.MaxIdleConns
+		} else {
+			cfg.MinIdleConns = 100
+		}
+	}
+
+	return &Redis{
+		redis.NewClient(cfg.Options),
+		cfg,
+	}
 }
