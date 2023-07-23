@@ -25,7 +25,7 @@ type UserModel struct {
 	DB *db.DB
 }
 
-func GetAgentStatusModel() *UserModel {
+func CreateUserModel() *UserModel {
 	userModelOnce.Do(func() {
 		userModel = NewUserModel()
 	})
@@ -81,19 +81,19 @@ func (a *UserModel) GetIds(ctx context.Context, condition ...string) ([]string, 
 }
 
 func (a *UserModel) BatchGet(ctx context.Context, ids []string) ([]*User, error) {
-	var agents []*User
-	return agents, a.DB.WithContext(ctx).Find(&agents, ids).Error
+	var users []*User
+	return users, a.DB.WithContext(ctx).Find(&users, ids).Error
 }
 
 func (a *UserModel) Query(ctx context.Context, name string) ([]*User, error) {
-	var agents []*User
+	var users []*User
 
 	tx := a.DB.DB.WithContext(ctx)
 	if len(name) > 0 {
 		tx = tx.Where("name = ?", name)
 	}
 
-	return agents, tx.Find(&agents).Error
+	return users, tx.Find(&users).Error
 }
 
 func (a *UserModel) Delete(ctx context.Context, uid string) (int64, error) {
@@ -106,7 +106,7 @@ func (a *UserModel) BatchDelete(ctx context.Context, ids ...string) (int64, erro
 	return executionResult.RowsAffected, executionResult.Error
 }
 
-func (a *UserModel) Update(ctx context.Context, agent *User) (int64, error) {
-	executionResult := a.DB.WithContext(ctx).Updates(agent)
+func (a *UserModel) Update(ctx context.Context, user *User) (int64, error) {
+	executionResult := a.DB.WithContext(ctx).Updates(user)
 	return executionResult.RowsAffected, executionResult.Error
 }

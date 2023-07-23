@@ -18,11 +18,9 @@ import (
 )
 
 var defaultLog *ZapLogger
-
-type ZapLogger = zap.SugaredLogger
-
 var defaultLevel zap.AtomicLevel
 
+type ZapLogger = zap.SugaredLogger
 type Level = zapcore.Level
 
 func init() {
@@ -43,6 +41,7 @@ func LevelEnabled(level Level) bool {
 	return defaultLevel.Enabled(level)
 }
 
+// TODO test logs.with().WithOptions(zap.AddCallerSkip(-1))
 func With(args ...interface{}) *ZapLogger {
 	return defaultLog.With(args...)
 }

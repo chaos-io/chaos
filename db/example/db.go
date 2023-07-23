@@ -1,6 +1,7 @@
 package example
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/chaos-io/chaos/config"
@@ -14,7 +15,7 @@ func InitDB() *db.DB {
 	dOnce.Do(func() {
 		cfg := &db.Config{}
 		if err := config.Get("db").Scan(cfg); err != nil {
-			panic("failed to get the db config")
+			panic(fmt.Errorf("failed to get the db config, error: %v", err))
 		}
 
 		if d = db.New(cfg); d == nil {
