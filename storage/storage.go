@@ -45,7 +45,7 @@ var storage Storage
 func GetStorage() Storage {
 	(&sync.Once{}).Do(func() {
 		conf := &Config{}
-		if err := config.ScanKey("storage", conf); err != nil {
+		if err := config.ScanFrom(conf, "storage"); err != nil {
 			logs.Warnw("failed to get the server config", "error", err.Error())
 			storage = NewDummyStorage()
 		} else {

@@ -29,29 +29,13 @@ func TestCreateUserModel(t *testing.T) {
 	}
 }
 
-func TestNewUserModel(t *testing.T) {
-	tests := []struct {
-		name string
-		want *UserModel
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewUserModel(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewUserModel() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestUserModel_BatchDelete(t *testing.T) {
+func TestUserModel_Insert(t *testing.T) {
 	type fields struct {
 		DB *db.DB
 	}
 	type args struct {
-		ctx context.Context
-		ids []string
+		ctx   context.Context
+		users []*User
 	}
 	tests := []struct {
 		name    string
@@ -60,88 +44,29 @@ func TestUserModel_BatchDelete(t *testing.T) {
 		want    int64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "insert",
+			fields: fields{InitDB()},
+			args: args{
+				ctx:   context.Background(),
+				users: []*User{{Name: "aaa"}},
+			},
+			want:    1,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &UserModel{
 				DB: tt.fields.DB,
 			}
-			got, err := a.BatchDelete(tt.args.ctx, tt.args.ids...)
+			got, err := a.Insert(tt.args.ctx, tt.args.users...)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BatchDelete() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Insert() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("BatchDelete() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestUserModel_BatchGet(t *testing.T) {
-	type fields struct {
-		DB *db.DB
-	}
-	type args struct {
-		ctx context.Context
-		ids []string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []*User
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &UserModel{
-				DB: tt.fields.DB,
-			}
-			got, err := a.BatchGet(tt.args.ctx, tt.args.ids)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BatchGet() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BatchGet() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestUserModel_Delete(t *testing.T) {
-	type fields struct {
-		DB *db.DB
-	}
-	type args struct {
-		ctx context.Context
-		uid string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    int64
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &UserModel{
-				DB: tt.fields.DB,
-			}
-			got, err := a.Delete(tt.args.ctx, tt.args.uid)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("Delete() got = %v, want %v", got, tt.want)
+				t.Errorf("Insert() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -156,13 +81,22 @@ func TestUserModel_Get(t *testing.T) {
 		uid string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *User
-		wantErr bool
+		name     string
+		fields   fields
+		args     args
+		unwanted *User
+		wantErr  bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "get",
+			fields: fields{InitDB()},
+			args: args{
+				ctx: context.Background(),
+				uid: "772090000",
+			},
+			unwanted: &User{},
+			wantErr:  false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -174,8 +108,8 @@ func TestUserModel_Get(t *testing.T) {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Get() got = %v, want %v", got, tt.want)
+			if reflect.DeepEqual(got, tt.unwanted) {
+				t.Errorf("Get() got = %v, want %v", got, tt.unwanted)
 			}
 		})
 	}
@@ -196,7 +130,15 @@ func TestUserModel_GetIds(t *testing.T) {
 		want    []string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "getIds",
+			fields: fields{InitDB()},
+			args: args{
+				ctx: context.Background(),
+			},
+			want:    []string{"772090000", "929473000"},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -215,35 +157,44 @@ func TestUserModel_GetIds(t *testing.T) {
 	}
 }
 
-func TestUserModel_Insert(t *testing.T) {
+func TestUserModel_BatchGet(t *testing.T) {
 	type fields struct {
 		DB *db.DB
 	}
 	type args struct {
-		ctx   context.Context
-		users []*User
+		ctx context.Context
+		ids []string
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    int64
+		wantLen int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "batchGet",
+			fields: fields{InitDB()},
+			args: args{
+				ctx: context.Background(),
+				ids: []string{"772090000", "929473000"},
+			},
+			wantLen: 2,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &UserModel{
 				DB: tt.fields.DB,
 			}
-			got, err := a.Insert(tt.args.ctx, tt.args.users...)
+			got, err := a.BatchGet(tt.args.ctx, tt.args.ids)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Insert() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BatchGet() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("Insert() got = %v, want %v", got, tt.want)
+			if len(got) != tt.wantLen {
+				t.Errorf("BatchGet() got = %v, want %v", got, tt.wantLen)
 			}
 		})
 	}
@@ -261,23 +212,32 @@ func TestUserModel_Query(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*User
+		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "query",
+			fields: fields{InitDB()},
+			args: args{
+				ctx:  context.Background(),
+				name: "aaa",
+			},
+			want:    2,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &UserModel{
 				DB: tt.fields.DB,
 			}
-			got, err := a.Query(tt.args.ctx, tt.args.name)
+			users, err := a.Query(tt.args.ctx, tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Query() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Query() got = %v, want %v", got, tt.want)
+			if len(users) != tt.want {
+				t.Errorf("Query() got = %v, want %v", len(users), tt.want)
 			}
 		})
 	}
@@ -298,7 +258,16 @@ func TestUserModel_Update(t *testing.T) {
 		want    int64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "update",
+			fields: fields{InitDB()},
+			args: args{
+				ctx:  context.Background(),
+				user: &User{Id: "772090000", Name: "bbb"},
+			},
+			want:    1,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -312,6 +281,92 @@ func TestUserModel_Update(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("Update() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUserModel_Delete(t *testing.T) {
+	type fields struct {
+		DB *db.DB
+	}
+	type args struct {
+		ctx context.Context
+		uid string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{
+			name:   "delete",
+			fields: fields{InitDB()},
+			args: args{
+				ctx: context.Background(),
+				uid: "458973000",
+			},
+			want:    1,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &UserModel{
+				DB: tt.fields.DB,
+			}
+			got, err := a.Delete(tt.args.ctx, tt.args.uid)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Delete() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUserModel_BatchDelete(t *testing.T) {
+	type fields struct {
+		DB *db.DB
+	}
+	type args struct {
+		ctx context.Context
+		ids []string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantLen int64
+		wantErr bool
+	}{
+		{
+			name:   "batchDelete",
+			fields: fields{InitDB()},
+			args: args{
+				ctx: context.Background(),
+				ids: []string{"772090000", "929473000"},
+			},
+			wantLen: 2,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &UserModel{
+				DB: tt.fields.DB,
+			}
+			got, err := a.BatchDelete(tt.args.ctx, tt.args.ids...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BatchDelete() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.wantLen {
+				t.Errorf("BatchDelete() got = %v, want %v", got, tt.wantLen)
 			}
 		})
 	}

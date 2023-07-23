@@ -84,11 +84,6 @@ func newFileSources(dir string, env string) []source.Source {
 	return sources
 }
 
-// ScanKey values to a go type
-func ScanKey(key string, v interface{}) error {
-	return Get(key).Scan(v)
-}
-
 // GetValue a value from the config
 func GetValue(path ...string) reader.Value {
 	if len(path) == 1 {

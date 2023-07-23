@@ -34,7 +34,7 @@ func New(cfg *Config) *DB {
 		// Logger: logger.Default.LogMode(logger.Info),
 	}
 
-	switch cfg.DriverName {
+	switch cfg.Driver {
 	case MysqlDriverName:
 		d, err = gorm.Open(mysql.Open(cfg.DSN), cfg.Config)
 	case SqliteDriverName:
@@ -42,7 +42,7 @@ func New(cfg *Config) *DB {
 	case PostgresDriverName:
 		d, err = gorm.Open(postgres.Open(cfg.DSN), cfg.Config)
 	default:
-		err = fmt.Errorf("database %s is not support", cfg.DriverName)
+		err = fmt.Errorf("database %q is not support", cfg.Driver)
 	}
 	if err != nil {
 		panic(fmt.Errorf("failed to connect database, error: %v", err))

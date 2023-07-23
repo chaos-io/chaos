@@ -2,6 +2,7 @@ package example
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -58,7 +59,7 @@ func (a *UserModel) Insert(ctx context.Context, users ...*User) (int64, error) {
 		}
 
 		if len(cb.Id) == 0 {
-			cb.Id = "1111"
+			cb.Id = strconv.Itoa(time.Now().Nanosecond())
 			executionResult = a.DB.WithContext(ctx).Create(users[0])
 		} else {
 			executionResult = a.DB.WithContext(ctx).Clauses(clause.OnConflict{UpdateAll: true}).Create(users[0])

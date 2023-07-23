@@ -14,7 +14,7 @@ var dOnce sync.Once
 func InitDB() *db.DB {
 	dOnce.Do(func() {
 		cfg := &db.Config{}
-		if err := config.Get("db").Scan(cfg); err != nil {
+		if err := config.ScanFrom(cfg, "db"); err != nil {
 			panic(fmt.Errorf("failed to get the db config, error: %v", err))
 		}
 
