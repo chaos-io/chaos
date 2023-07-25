@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	MysqlDriverName    = "mysql"
-	SqliteDriverName   = "sqlite"
-	PostgresDriverName = "postgres"
+	MysqlDriver    = "mysql"
+	SqliteDriver   = "sqlite"
+	PostgresDriver = "postgres"
 )
 
 type DB struct {
@@ -35,11 +35,11 @@ func New(cfg *Config) *DB {
 	}
 
 	switch cfg.Driver {
-	case MysqlDriverName:
+	case MysqlDriver:
 		d, err = gorm.Open(mysql.Open(cfg.DSN), cfg.Config)
-	case SqliteDriverName:
+	case SqliteDriver:
 		d, err = gorm.Open(sqlite.Open(cfg.DSN), cfg.Config)
-	case PostgresDriverName:
+	case PostgresDriver:
 		d, err = gorm.Open(postgres.Open(cfg.DSN), cfg.Config)
 	default:
 		err = fmt.Errorf("database %q is not support", cfg.Driver)
