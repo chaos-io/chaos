@@ -164,3 +164,26 @@ func TestConfigWatcherDirtyOverwrite(t *testing.T) {
 		equalS(t, conf.Get(k).String(""), v)
 	}
 }
+
+// configs/test.yaml
+// test:
+//
+//	name: vvvv13
+func TestHotReload(t *testing.T) {
+	timer := time.NewTimer(time.Second * 20)
+	ticker := time.NewTicker(time.Second)
+	var tmp struct{ Name string }
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := ScanFrom(&tmp, "test"); err != nil {
+				t.Errorf("sran error: %v", err)
+			} else {
+				t.Logf("get the test: %+v", tmp)
+			}
+		case <-timer.C:
+			return
+		}
+	}
+}
