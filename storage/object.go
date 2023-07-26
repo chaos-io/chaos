@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Object ref to minio.ObjectInfo
 type Object struct {
 	Etag         string    `json:"etag,omitempty"`
 	Key          string    `json:"key,omitempty"`

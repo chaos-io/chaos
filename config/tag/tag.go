@@ -17,7 +17,7 @@ type Loader struct {
 	// DefaultTagName is the default tag name for struct fields to define
 	// default values for a field. Example:
 	//
-	//   // Field's default value is "koding".
+	//   Field's default value is "koding".
 	//   Name string `default:"koding"`
 	//
 	// The default value is "default" if it's not set explicitly.
@@ -64,7 +64,7 @@ func (t *Loader) processField(tagName string, field *structs.Field) error {
 }
 
 // fieldSet sets field value from the given string value. It converts the
-// string value in a sane way and is usefulf or environment variables or flags
+// string value in a sane way and is useful or environment variables or flags
 // which are by nature in string types.
 func fieldSet(field *structs.Field, v string) error {
 	switch f := field.Value().(type) {

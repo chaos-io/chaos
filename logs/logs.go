@@ -303,5 +303,6 @@ func NewErrorw(msg string, keysAndValues ...interface{}) error {
 		}
 		buffer.WriteString(fmt.Sprintf("%v: %v", keysAndValues[i], keysAndValues[i+1]))
 	}
+
 	return errors.New(buffer.String())
 }

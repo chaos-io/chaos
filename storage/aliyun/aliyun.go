@@ -54,6 +54,7 @@ func (a *Aliyun) SetBucket(name string) error {
 				return logs.NewErrorf("minio failed to create bucket %s, err=%v", name, err)
 			}
 		}
+
 		if bucket, err := a.client.Bucket(name); err != nil {
 			return err
 		} else {

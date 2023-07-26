@@ -34,7 +34,7 @@ func NewMinio(cfg *storage.Config) storage.Storage {
 	}
 
 	if err := m.SetBucket(cfg.BucketName); err != nil {
-		logs.Errorw(err.Error())
+		logs.Errorw("failed to get bucket name", "error", err)
 		return nil
 	}
 
@@ -51,7 +51,7 @@ func (m *Minio) SetBucket(name string) error {
 			return err
 		} else if !ok {
 			if err = m.client.MakeBucket(name, ""); err != nil {
-				return errors.Wrap(err, fmt.Sprintf("minio failed to create bucket %s", name))
+				return logs.NewErrorw("minio failed to create bucket", "bucketName", name, "error", err)
 			}
 		}
 		m.bucketName = name
@@ -73,7 +73,7 @@ func (m *Minio) Read(key string, options core.Options) (*storage.Object, error) 
 			}
 			if obj, err = m.client.GetObject(bucketName, key, minio.GetObjectOptions{}); err != nil {
 				if errors.As(err, errResponse) && errResponse.Code == "NoSuchKey" {
-					return nil, fmt.Errorf("failed to found the key %s", key)
+					return nil, logs.NewErrorw("failed to found the key", "key", key)
 				}
 				return nil, err
 			}
@@ -84,7 +84,7 @@ func (m *Minio) Read(key string, options core.Options) (*storage.Object, error) 
 	if err != nil {
 		errResponse := &minio.ErrorResponse{}
 		if errors.As(err, errResponse) && errResponse.Code == "NoSuchKey" {
-			return nil, fmt.Errorf("failed to found the key %s", key)
+			return nil, logs.NewErrorw("failed to found the key", "key", key)
 		}
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (m *Minio) Read(key string, options core.Options) (*storage.Object, error) 
 
 	object.Content = make([]byte, info.Size)
 	if size, err := obj.Read(object.Content); (err != nil && err != io.EOF) || size != int(info.Size) {
-		return nil, errors.Errorf("failed to read the content from the minio object, error %s", err.Error())
+		return nil, logs.NewErrorw("failed to read the content from the minio object", "error", err)
 	}
 
 	return object, nil
@@ -125,7 +125,7 @@ func (m *Minio) Download(key string, path string, options core.Options) error {
 			}
 		}
 
-		return logs.NewErrorw("minio failed to download object", "key", key, "path", path, "error", err.Error())
+		return logs.NewErrorw("minio failed to download object", "key", key, "path", path, "error", err)
 	}
 
 	return nil
@@ -133,7 +133,7 @@ func (m *Minio) Download(key string, path string, options core.Options) error {
 
 func (m *Minio) Upload(localFile string, key string, options core.Options) error {
 	if _, err := m.client.FPutObject(m.bucketName, key, localFile, minio.PutObjectOptions{}); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("minio failed to upload %s to %s", localFile, key))
+		return logs.NewErrorw(fmt.Sprintf("minio failed to upload %s to %s", localFile, key), "error", err)
 	}
 
 	return nil

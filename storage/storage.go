@@ -41,9 +41,10 @@ func NewStorage(cfg *Config) Storage {
 }
 
 var storage Storage
+var storageOnce sync.Once
 
 func GetStorage() Storage {
-	(&sync.Once{}).Do(func() {
+	storageOnce.Do(func() {
 		conf := &Config{}
 		if err := config.ScanFrom(conf, "storage"); err != nil {
 			logs.Warnw("failed to get the server config", "error", err.Error())
