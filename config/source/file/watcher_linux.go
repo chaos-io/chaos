@@ -6,15 +6,15 @@ package file
 import (
 	"os"
 
-	"github.com/chaos-io/chaos/config/source"
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/chaos-io/chaos/config/source"
 )
 
 type watcher struct {
 	f *file
 
-	fw   *fsnotify.Watcher
-	exit chan bool
+	fw *fsnotify.Watcher
 }
 
 func newWatcher(f *file) (source.Watcher, error) {
@@ -26,24 +26,21 @@ func newWatcher(f *file) (source.Watcher, error) {
 	fw.Add(f.path)
 
 	return &watcher{
-		f:    f,
-		fw:   fw,
-		exit: make(chan bool),
+		f:  f,
+		fw: fw,
 	}, nil
 }
 
 func (w *watcher) Next() (*source.ChangeSet, error) {
-	// is it closed?
-	select {
-	case <-w.exit:
-		return nil, source.ErrWatcherStopped
-	default:
-	}
-
 	// try get the event
 	select {
-	case event := <-w.fw.Events:
-		if event.Op == fsnotify.Rename {
+	case event, ok := <-w.fw.Events:
+		// check if channel was closed (i.e. Watcher.Close() was called).
+		if !ok {
+			return nil, source.ErrWatcherStopped
+		}
+
+		if event.Has(fsnotify.Rename) {
 			// check existence of file, and add watch again
 			_, err := os.Stat(event.Name)
 			if err == nil || os.IsExist(err) {
@@ -60,10 +57,13 @@ func (w *watcher) Next() (*source.ChangeSet, error) {
 		w.fw.Add(w.f.path)
 
 		return c, nil
-	case err := <-w.fw.Errors:
+	case err, ok := <-w.fw.Errors:
+		// check if channel was closed (i.e. Watcher.Close() was called).
+		if !ok {
+			return nil, source.ErrWatcherStopped
+		}
+
 		return nil, err
-	case <-w.exit:
-		return nil, source.ErrWatcherStopped
 	}
 }
 

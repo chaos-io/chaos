@@ -9,8 +9,8 @@ func TestNew(t *testing.T) {
 		cfg *Config
 	}
 	tests := []struct {
-		name string
 		args args
+		name string
 	}{
 		{
 			name: MysqlDriver,

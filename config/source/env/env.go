@@ -16,9 +16,9 @@ var (
 )
 
 type env struct {
+	opts             source.Options
 	prefixes         []string
 	strippedPrefixes []string
-	opts             source.Options
 }
 
 func (e *env) Read() (*source.ChangeSet, error) {

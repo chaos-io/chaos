@@ -9,11 +9,15 @@ func TestNew(t *testing.T) {
 		cfg *Config
 	}
 	tests := []struct {
-		name    string
 		args    args
+		name    string
 		wantErr bool
 	}{
-		{"rdb", args{cfg: nil}, true},
+		{
+			name:    "rdb",
+			args:    args{cfg: nil},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

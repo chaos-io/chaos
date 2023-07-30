@@ -10,12 +10,12 @@ import (
 
 // Object ref to minio.ObjectInfo
 type Object struct {
+	LastModified time.Time `json:"lastModified,omitempty"`
 	Etag         string    `json:"etag,omitempty"`
 	Key          string    `json:"key,omitempty"`
-	LastModified time.Time `json:"lastModified,omitempty"`
-	Size         int64     `json:"size,omitempty"`
 	ContentType  string    `json:"contentType,omitempty"`
 	Content      []byte    `json:"content,omitempty"`
+	Size         int64     `json:"size,omitempty"`
 }
 
 func (x *Object) GetHttpHeaders() *http.Header {
