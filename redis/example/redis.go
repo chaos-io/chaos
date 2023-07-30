@@ -19,7 +19,7 @@ func InitRedis() *redis.Redis {
 		}
 
 		if rdb = redis.New(cfg); rdb == nil {
-			panic("create db error, db is nil")
+			panic("created db is nil")
 		}
 	})
 

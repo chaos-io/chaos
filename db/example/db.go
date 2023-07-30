@@ -19,7 +19,7 @@ func InitDB() *db.DB {
 		}
 
 		if d = db.New(cfg); d == nil {
-			panic("create db error, db is nil")
+			panic("created db is nil")
 		}
 	})
 
