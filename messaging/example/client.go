@@ -8,20 +8,20 @@ import (
 	"github.com/chaos-io/chaos/messaging"
 )
 
-var client *messaging.Client
-var clientOnce sync.Once
+var nats *messaging.Nats
+var natsOnce sync.Once
 
-func InitClient() *messaging.Client {
-	clientOnce.Do(func() {
+func InitNats() *messaging.Nats {
+	natsOnce.Do(func() {
 		cfg := &messaging.Config{}
 		if err := config.ScanFrom(cfg, "messaging"); err != nil {
 			panic(fmt.Errorf("failed to get the messaging config, error: %v", err))
 		}
 
-		if c := messaging.New(cfg); c == nil {
-			panic("created messaging client is nil")
+		if nats = messaging.New(cfg); nats == nil {
+			panic("created messaging nats is nil")
 		}
 	})
 
-	return client
+	return nats
 }

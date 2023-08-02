@@ -1,75 +1,115 @@
 package main
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
-	"strconv"
-	"time"
+	"os"
 
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 )
 
 func main() {
-	// In the `jetstream` package, almost all API calls rely on `context.Context` for timeout/cancellation handling
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	nc, _ := nats.Connect(nats.DefaultURL)
-
-	// Create a JetStream management interface
-	js, _ := jetstream.New(nc)
-
-	// Create a stream
-	s, _ := js.CreateStream(ctx, jetstream.StreamConfig{
-		Name:     "ORDERS",
-		Subjects: []string{"ORDERS.*"},
-	})
-
-	// Publish some messages
-	for i := 0; i < 100; i++ {
-		js.Publish(ctx, "ORDERS.new", []byte("hello message "+strconv.Itoa(i)))
-		fmt.Printf("Published hello message %d\n", i)
+	// Use the env variable if running in the container, otherwise use the default.
+	url := os.Getenv("NATS_URL")
+	if url == "" {
+		url = nats.DefaultURL
 	}
 
-	// Create durable consumer
-	c, _ := s.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:   "CONS",
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
+	// Create an unauthenticated connection to NATS.
+	nc, _ := nats.Connect(url)
+	defer nc.Drain()
 
-	// Get 10 messages from the consumer
-	messageCounter := 0
-	msgs, _ := c.Fetch(10)
-	for msg := range msgs.Messages() {
+	// Access `JetStreamContext` to use the JS APIs.
+	js, _ := nc.JetStream()
+
+	// ### Creating the stream
+	// Define the stream configuration, specifying `WorkQueuePolicy` for
+	// retention, and create the stream.
+	cfg := &nats.StreamConfig{
+		Name:      "EVENTS",
+		Retention: nats.WorkQueuePolicy,
+		Subjects:  []string{"events.>"},
+	}
+
+	js.AddStream(cfg)
+	fmt.Println("created the stream")
+
+	// ### Queue messages
+	// Publish a few messages.
+	js.Publish("events.us.page_loaded", nil)
+	js.Publish("events.eu.mouse_clicked", nil)
+	js.Publish("events.us.input_focused", nil)
+	fmt.Println("published 3 messages")
+
+	// Checking the stream info, we see three messages have been queued.
+	fmt.Println("# Stream info without any consumers")
+	printStreamState(js, cfg.Name)
+
+	// ### Adding a consumer
+	// Now let's add a consumer and publish a few more messages. It can be
+	// a [push][push] or [pull][pull] consumer. For this example, we are
+	// defining a pull consumer.
+	// [push]: /examples/jetstream/push-consumer/go
+	// [pull]: /examples/jetstream/pull-consumer/go
+	sub1, _ := js.PullSubscribe("", "processor-1", nats.BindStream(cfg.Name))
+
+	// Fetch and ack the queued messages.
+	msgs, _ := sub1.Fetch(3)
+	for _, msg := range msgs {
+		msg.AckSync()
+	}
+
+	// Checking the stream info again, we will notice no messages
+	// are available.
+	fmt.Println("\n# Stream info with one consumer")
+	printStreamState(js, cfg.Name)
+
+	// ### Exclusive non-filtered consumer
+	// As noted in the description above, work-queue streams can only have
+	// at most one consumer with interest on a subject at any given time.
+	// Since the pull consumer above is not filtered, if we try to create
+	// another one, it will fail.
+	_, err := js.PullSubscribe("", "processor-2", nats.BindStream(cfg.Name))
+	fmt.Println("\n# Create an overlapping consumer")
+	fmt.Println(err)
+
+	// However if we delete the first one, we can then add the new one.
+	sub1.Unsubscribe()
+
+	sub2, err := js.PullSubscribe("", "processor-2", nats.BindStream(cfg.Name))
+	fmt.Printf("created the new consumer? %v\n", err == nil)
+	sub2.Unsubscribe()
+
+	// ### Multiple filtered consumers
+	// To create multiple consumers, a subject filter needs to be applied.
+	// For this example, we could scope each consumer to the geo that the
+	// event was published from, in this case `us` or `eu`.
+	fmt.Println("\n# Create non-overlapping consumers")
+	sub1, _ = js.PullSubscribe("events.us.>", "processor-us", nats.BindStream(cfg.Name))
+	sub2, _ = js.PullSubscribe("events.eu.>", "processor-eu", nats.BindStream(cfg.Name))
+
+	js.Publish("events.eu.mouse_clicked", nil)
+	js.Publish("events.us.page_loaded", nil)
+	js.Publish("events.us.input_focused", nil)
+	js.Publish("events.eu.page_loaded", nil)
+	fmt.Println("published 4 messages")
+
+	msgs, _ = sub1.Fetch(2)
+	for _, msg := range msgs {
+		fmt.Printf("us sub got: %s\n", msg.Subject)
 		msg.Ack()
-		fmt.Printf("Received a JetStream message via fetch: %s\n", string(msg.Data()))
-		messageCounter++
-	}
-	fmt.Printf("received %d messages\n", messageCounter)
-	if msgs.Error() != nil {
-		fmt.Println("Error during Fetch(): ", msgs.Error())
 	}
 
-	// Receive messages continuously in a callback
-	cons, _ := c.Consume(func(msg jetstream.Msg) {
+	msgs, _ = sub2.Fetch(2)
+	for _, msg := range msgs {
+		fmt.Printf("eu sub got: %s\n", msg.Subject)
 		msg.Ack()
-		fmt.Printf("Received a JetStream message via callback: %s\n", string(msg.Data()))
-		messageCounter++
-	})
-	defer cons.Stop()
-
-	// Iterate over messages continuously
-	it, _ := c.Messages()
-	for i := 0; i < 10; i++ {
-		msg, _ := it.Next()
-		msg.Ack()
-		fmt.Printf("Received a JetStream message via iterator: %s\n", string(msg.Data()))
-		messageCounter++
 	}
-	it.Stop()
+}
 
-	// block until all 100 published messages have been processed
-	for messageCounter < 100 {
-		time.Sleep(10 * time.Millisecond)
-	}
+// This is just a helper function to print the stream state info 😉.
+func printStreamState(js nats.JetStreamContext, name string) {
+	info, _ := js.StreamInfo(name)
+	b, _ := json.MarshalIndent(info.State, "", " ")
+	fmt.Println(string(b))
 }
