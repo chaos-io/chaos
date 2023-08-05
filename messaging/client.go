@@ -1,7 +1,6 @@
 package messaging
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -11,9 +10,8 @@ import (
 )
 
 type Nats struct {
-	ctx context.Context
+	conn *nats.Conn
 	nats.JetStreamContext
-	conn       *nats.Conn
 	Config     *Config
 	streamName string
 	subjects   []string
@@ -34,7 +32,6 @@ func New(cfg *Config) *Nats {
 	}
 
 	n := &Nats{
-		ctx:              context.TODO(),
 		JetStreamContext: js,
 		conn:             nc,
 		Config:           cfg,
@@ -46,38 +43,37 @@ func New(cfg *Config) *Nats {
 		n.subjects = []string{n.streamName + ".*"}
 	}
 
-	// ctx, cancel := context.WithTimeout(n.ctx, 30*time.Second)
-	// defer cancel()
-
 	info, err := n.StreamInfo(n.streamName)
 	if err != nil {
 		logs.Warnw("failed to get the stream info", "error", err)
+		return nil
 	}
 
 	if info == nil {
-		n.createStream(n.streamName, n.subjects)
+		err = n.createStream(n.streamName, n.subjects)
 	} else {
-		n.updateStream(n.streamName, info.Config.Subjects, n.subjects)
+		err = n.updateStream(n.streamName, info.Config.Subjects, n.subjects)
+	}
+	if err != nil {
+		return nil
 	}
 
 	return n
 }
 
-func (n *Nats) createStream(name string, subjects []string) {
-	if _, err := n.AddStream(&nats.StreamConfig{
-		Name:     name,
-		Subjects: subjects,
-	}); err != nil {
+func (n *Nats) createStream(name string, subjects []string) error {
+	if _, err := n.AddStream(&nats.StreamConfig{Name: name, Subjects: subjects}); err != nil {
 		logs.Warnw("create stream failed", "error", err)
-	} else {
-		logs.Info("create stream success", "stream name", name, "subjects", subjects)
+		return err
 	}
+	logs.Info("create stream", "name", name, "subjects", subjects)
+	return nil
 }
 
-func (n *Nats) updateStream(name string, infoSubjects, subjects []string) {
-	mergeSubjects := append(infoSubjects, subjects...)
+func (n *Nats) updateStream(name string, originSubjects, subjects []string) error {
+	mergeSubjects := append(originSubjects, subjects...)
 	freqMap := make(map[string]struct{})
-	allSubjects := make([]string, 0, len(infoSubjects)+len(subjects))
+	allSubjects := make([]string, 0, len(originSubjects)+len(subjects))
 	for _, s := range mergeSubjects {
 		if _, ok := freqMap[s]; !ok {
 			freqMap[s] = struct{}{}
@@ -85,14 +81,14 @@ func (n *Nats) updateStream(name string, infoSubjects, subjects []string) {
 		}
 	}
 
-	if _, err := n.UpdateStream(&nats.StreamConfig{
-		Name:     name,
-		Subjects: allSubjects,
-	}); err != nil {
+	if _, err := n.UpdateStream(&nats.StreamConfig{Name: name, Subjects: allSubjects}); err != nil {
 		logs.Warnw("update stream failed", "error", err)
-	} else {
-		logs.Infow("update stream success", "stream name", name, "subjects", allSubjects)
+		return err
 	}
+
+	logs.Infow("update stream", "name", name, "subjects", allSubjects)
+
+	return nil
 }
 
 func (n *Nats) Publish(subject string, messages ...Message) error {
@@ -107,7 +103,7 @@ func (n *Nats) Publish(subject string, messages ...Message) error {
 		}
 	}
 
-	logs.Infow("published message success", "subject", subject)
+	logs.Infow("published message", "subject", subject)
 
 	return nil
 }
