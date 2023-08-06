@@ -1,7 +1,9 @@
 package messaging
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -37,7 +39,7 @@ func New(cfg *Config) *Nats {
 		conn:       nc,
 		Config:     cfg,
 		streamName: cfg.StreamName,
-		subjects:   cfg.Subjects,
+		subjects:   cfg.TopicNames,
 		shutdownCh: make(chan struct{}),
 	}
 	if len(n.subjects) == 0 {
@@ -45,8 +47,8 @@ func New(cfg *Config) *Nats {
 	}
 
 	info, err := n.js.StreamInfo(n.streamName)
-	if err != nil {
-		logs.Warnw("failed to get the stream info", "error", err)
+	if err != nil && !errors.Is(err, nats.ErrStreamNotFound) {
+		logs.Warnw("failed to get the stream info", "streamName", n.streamName, "error", err)
 		return nil
 	}
 
@@ -64,7 +66,7 @@ func New(cfg *Config) *Nats {
 
 func (n *Nats) createStream(name string, subjects []string) error {
 	if _, err := n.js.AddStream(&nats.StreamConfig{Name: name, Subjects: subjects}); err != nil {
-		logs.Warnw("create stream failed", "error", err)
+		logs.Warnw("failed to create stream", "error", err)
 		return err
 	}
 	logs.Info("create stream", "name", name, "subjects", subjects)
@@ -83,7 +85,7 @@ func (n *Nats) updateStream(name string, originSubjects, subjects []string) erro
 	}
 
 	if _, err := n.js.UpdateStream(&nats.StreamConfig{Name: name, Subjects: allSubjects}); err != nil {
-		logs.Warnw("update stream failed", "error", err)
+		logs.Warnw("failed to update stream", "streamName", name, "subjects", allSubjects, "error", err)
 		return err
 	}
 
@@ -92,19 +94,19 @@ func (n *Nats) updateStream(name string, originSubjects, subjects []string) erro
 	return nil
 }
 
-func (n *Nats) Publish(subject string, messages ...Message) error {
+func (n *Nats) Publish(subj string, messages ...Message) error {
 	for _, message := range messages {
 		bytes, err := json.Marshal(message)
 		if err != nil {
 			return logs.NewErrorw("marshal message error", "message", message, "error", err)
 		}
 
-		if err = n.publish(subject, bytes); err != nil {
-			return logs.NewErrorw("publish message error", "subject", subject, "error", err)
+		if err = n.publish(subj, bytes); err != nil {
+			return logs.NewErrorw("publish message error", "subj", subj, "error", err)
 		}
 	}
 
-	logs.Infow("published message", "subject", subject)
+	logs.Infow("published message", "subj", subj)
 
 	return nil
 }
@@ -114,51 +116,74 @@ func (n *Nats) publish(subject string, msg []byte) error {
 	return err
 }
 
-func (n *Nats) Subscribe(s *Subscribe, h nats.Handler) error {
+type Handler func(ctx context.Context, subscription *Subscription, m *SubMessage) error
+
+func (n *Nats) Subscribe(s *Subscription, h Handler) {
+	natsCB := func(m *nats.Msg) {
+		msg := &SubMessage{}
+		if err := json.Unmarshal(m.Data, msg); err != nil {
+			logs.Warnw("failed to unmarshal data form subject", "subject", s.Subject, "error", err)
+			return
+		}
+
+		msg.SetAck(func() { m.Ack() })
+		msg.SetNak(func() { m.Nak() })
+		msg.SetTerm(func() { m.Term() })
+		msg.SetInProgress(func() { m.InProgress() })
+
+		if err := h(context.Background(), s, msg); err != nil {
+			return
+		}
+
+		if s.AutoAck {
+			msg.Ack()
+		}
+	}
+
 	if len(s.Queue) > 0 {
-		_, err := n.queueSubscribe(s, nil)
+		// TODO add nats.SubOpts
+		_, err := n.queueSubscribe(s, natsCB)
 		if err != nil {
 			logs.Warnw("failed to to subscribe with queue", "subject", s.Subject, "queue", s.Queue)
 		}
 	} else {
-		_, err := n.subscribe(s, nil)
+		_, err := n.subscribe(s, natsCB)
 		if err != nil {
 			logs.Warnw("failed to to subscribe with queue", "subject", s.Subject, "queue", s.Queue)
 		}
 	}
-	return nil
 }
 
-func (n *Nats) subscribe(s *Subscribe, msgH nats.MsgHandler) (*nats.Subscription, error) {
-	return n.js.Subscribe(s.Subject, msgH)
+func (n *Nats) subscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
+	return n.js.Subscribe(s.Subject, cb)
 }
 
-func (n *Nats) queueSubscribe(s *Subscribe, msgH nats.MsgHandler) (*nats.Subscription, error) {
+func (n *Nats) queueSubscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
 	if s.Pull {
-		return n.pullSubscribe(s, msgH)
+		return n.pullSubscribe(s, cb)
 	} else {
-		return n.js.QueueSubscribe(s.Subject, s.Queue, msgH)
+		return n.js.QueueSubscribe(s.Subject, s.Queue, cb)
 	}
 }
 
-func (n *Nats) pullSubscribe(s *Subscribe, msgH nats.MsgHandler) (*nats.Subscription, error) {
+func (n *Nats) pullSubscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
 	subOpts := []nats.SubOpt{nats.PullMaxWaiting(PullMaxWait)}
 	if s.AckWait > 0 {
 		subOpts = append(subOpts, nats.SubOpt(nats.AckWait(time.Duration(s.AckWait)*time.Second)))
 	}
 
-	subs, err := n.js.PullSubscribe(s.Subject, s.Durable)
+	subs, err := n.js.PullSubscribe(s.Subject, s.Durable, subOpts...)
 	if err != nil {
-		logs.Warnw("failed to pull subscribe", "subject", s.Subject, "error", err)
+		logs.Warnw("failed to pull subscribe", "subject", s.Subject, "durable", s.Durable, "error", err)
 		return nil, err
 	}
 
-	go n.Fetch(subs, s.Durable, msgH)
+	go n.Fetch(subs, s.Durable, cb)
 
 	return subs, nil
 }
 
-func (n *Nats) Fetch(subs *nats.Subscription, durable string, msgH nats.MsgHandler) {
+func (n *Nats) Fetch(subs *nats.Subscription, durable string, cb nats.MsgHandler) {
 	for {
 		select {
 		case <-n.shutdownCh:
@@ -174,7 +199,7 @@ func (n *Nats) Fetch(subs *nats.Subscription, durable string, msgH nats.MsgHandl
 
 		for _, msg := range msgs {
 			logs.Infow("fetched the message", "durable", durable, "subject", msg.Subject)
-			msgH(msg)
+			cb(msg)
 		}
 	}
 }
