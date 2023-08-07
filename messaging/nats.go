@@ -69,7 +69,7 @@ func (n *Nats) createStream(name string, subjects []string) error {
 		logs.Warnw("failed to create stream", "error", err)
 		return err
 	}
-	logs.Info("create stream", "name", name, "subjects", subjects)
+	logs.Infow("create stream", "name", name, "subjects", subjects)
 	return nil
 }
 
@@ -141,7 +141,6 @@ func (n *Nats) Subscribe(s *Subscription, h Handler) {
 	}
 
 	if len(s.Queue) > 0 {
-		// TODO add nats.SubOpts
 		_, err := n.queueSubscribe(s, natsCB)
 		if err != nil {
 			logs.Warnw("failed to to subscribe with queue", "subject", s.Subject, "queue", s.Queue)
@@ -154,25 +153,25 @@ func (n *Nats) Subscribe(s *Subscription, h Handler) {
 	}
 }
 
-func (n *Nats) subscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
-	return n.js.Subscribe(s.Subject, cb)
+func (n *Nats) subscribe(s *Subscription, cb nats.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, error) {
+	return n.js.Subscribe(s.Subject, cb, opts...)
 }
 
-func (n *Nats) queueSubscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
+func (n *Nats) queueSubscribe(s *Subscription, cb nats.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, error) {
 	if s.Pull {
-		return n.pullSubscribe(s, cb)
+		return n.pullSubscribe(s, cb, opts...)
 	} else {
-		return n.js.QueueSubscribe(s.Subject, s.Queue, cb)
+		return n.js.QueueSubscribe(s.Subject, s.Queue, cb, opts...)
 	}
 }
 
-func (n *Nats) pullSubscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
-	subOpts := []nats.SubOpt{nats.PullMaxWaiting(PullMaxWait)}
+func (n *Nats) pullSubscribe(s *Subscription, cb nats.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, error) {
+	opts = append(opts, nats.PullMaxWaiting(PullMaxWait))
 	if s.AckWait > 0 {
-		subOpts = append(subOpts, nats.SubOpt(nats.AckWait(time.Duration(s.AckWait)*time.Second)))
+		opts = append(opts, nats.SubOpt(nats.AckWait(time.Duration(s.AckWait)*time.Second)))
 	}
 
-	subs, err := n.js.PullSubscribe(s.Subject, s.Durable, subOpts...)
+	subs, err := n.js.PullSubscribe(s.Subject, s.Durable, opts...)
 	if err != nil {
 		logs.Warnw("failed to pull subscribe", "subject", s.Subject, "durable", s.Durable, "error", err)
 		return nil, err
@@ -202,4 +201,12 @@ func (n *Nats) Fetch(subs *nats.Subscription, durable string, cb nats.MsgHandler
 			cb(msg)
 		}
 	}
+}
+
+// Shutdown shuts down all subscribers
+func (n *Nats) Shutdown() {
+	n.conn.Close()
+	close(n.shutdownCh)
+	n.shutdown = true
+	return
 }

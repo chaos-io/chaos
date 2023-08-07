@@ -1,8 +1,12 @@
 messaging:
   url: nats://127.0.0.1:4222
-  streamName: "EVENT1"
+  streamName: "EVENTS"
   subscriptions:
-    - subject: ""
-      durable: ""
-      queue: ""
+    - subject: "EVENTS.test"
+      durable: "test"
+      queue: "test"
+      pull: false
+    - subject: "EVENTS.pull"
+      durable: "pull"
+      queue: "pull"
       pull: true
