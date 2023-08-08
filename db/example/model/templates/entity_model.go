@@ -50,10 +50,7 @@ func (m *{{.Name}}Model) Create({{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}
 
 func (m *{{.Name}}Model) Get(id string) (*{{.GoPackageName}}.{{.Name}}, error) {
 	{{.LowerCamelName}} := &{{.GoPackageName}}.{{.Name}}{}
-	if err := m.DB.First(survey, "id = ?", id).Error; err != nil {
-		return nil, err
-	}
-	return {{.LowerCamelName}}, nil
+	return m.DB.First({{.LowerCamelName}}, "id = ?", id).Error
 }
 
 func (m *{{.Name}}Model) Delete(id string) (int64, error) {
@@ -66,12 +63,13 @@ func (m *{{.Name}}Model) Update({{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}
 	return result.RowsAffected, result.Error
 }
 
-func (m *{{.Name}}Model) List(filter string, fieldMask FieldMask) ([]*{{.GoPackageName}}.{{.Name}}, error) {
+func (m *{{.Name}}Model) List(filter string, condition ...string) ([]*{{.GoPackageName}}.{{.Name}}, error) {
 	var {{Plural .LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}
-	if err := m.DB.Find(&{{Plural .LowerCamelName}}).Error; err != nil {
-		return nil, err
-	}
-	return {{Plural .LowerCamelName}}, nil
+
+	tx := m.DB.WithContext(ctx)
+	// todo add condition	
+
+	return {{Plural .LowerCamelName}}, tx.Find(&{{Plural .LowerCamelName}}).Error
 }
 
 func (m *{{.Name}}Model) BatchCreate({{Plural .LowerCamelName}} ...*{{.GoPackageName}}.{{.Name}}) (int64, error) {
@@ -81,10 +79,7 @@ func (m *{{.Name}}Model) BatchCreate({{Plural .LowerCamelName}} ...*{{.GoPackage
 
 func (m *{{.Name}}Model) BatchGet(ids ...string) (*{{.GoPackageName}}.{{.Name}}, error) {
 	var {{Plural .LowerCamelName}} []{{.GoPackageName}}.{{.Name}}
-	if err := m.DB.Find(&{{Plural .LowerCamelName}}, "id = ?", ids).Error; err != nil {
-		return nil, err
-	}
-	return {{Plural .LowerCamelName}}, nil
+	return {{Plural .LowerCamelName}}, m.DB.Find(&{{Plural .LowerCamelName}}, "id = ?", ids).Error
 }
 
 func (m *{{.Name}}Model) BatchDelete(ids ...string) (int64, error) {
