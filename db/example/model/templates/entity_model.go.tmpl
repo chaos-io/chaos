@@ -1,6 +1,3 @@
-package templates
-
-const EntityModel = `
 package model
 
 import (
@@ -64,22 +61,22 @@ func (m *{{.Name}}Model) Update({{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}
 }
 
 func (m *{{.Name}}Model) List(filter string, condition ...string) ([]*{{.GoPackageName}}.{{.Name}}, error) {
-	var {{Plural .LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}
+	var {{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}
 
 	tx := m.DB.WithContext(ctx)
 	// todo add condition	
 
-	return {{Plural .LowerCamelName}}, tx.Find(&{{Plural .LowerCamelName}}).Error
+	return {{.LowerCamelName}}, tx.Find(&{{.LowerCamelName}}).Error
 }
 
-func (m *{{.Name}}Model) BatchCreate({{Plural .LowerCamelName}} ...*{{.GoPackageName}}.{{.Name}}) (int64, error) {
-	result := m.DB.CreateInBatches({{Plural .LowerCamelName}}, len({{Plural .LowerCamelName}}))
+func (m *{{.Name}}Model) BatchCreate({{.LowerCamelName}} ...*{{.GoPackageName}}.{{.Name}}) (int64, error) {
+	result := m.DB.CreateInBatches({{.LowerCamelName}}, len({{.LowerCamelName}}))
 	return result.RowsAffected, result.Error
 }
 
 func (m *{{.Name}}Model) BatchGet(ids ...string) (*{{.GoPackageName}}.{{.Name}}, error) {
-	var {{Plural .LowerCamelName}} []{{.GoPackageName}}.{{.Name}}
-	return {{Plural .LowerCamelName}}, m.DB.Find(&{{Plural .LowerCamelName}}, "id = ?", ids).Error
+	var {{.LowerCamelName}} []{{.GoPackageName}}.{{.Name}}
+	return {{.LowerCamelName}}, m.DB.Find(&{{.LowerCamelName}}, "id = ?", ids).Error
 }
 
 func (m *{{.Name}}Model) BatchDelete(ids ...string) (int64, error) {
@@ -87,8 +84,7 @@ func (m *{{.Name}}Model) BatchDelete(ids ...string) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
-func (m *{{.Name}}Model) BatchUpdate({{Plural .LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}) (int64, error) {
-	result := m.DB.Updates({{Plural .LowerCamelName}}...)
+func (m *{{.Name}}Model) BatchUpdate({{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}) (int64, error) {
+	result := m.DB.Updates({{.LowerCamelName}}...)
 	return result.RowsAffected, result.Error
 }
-`
