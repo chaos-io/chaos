@@ -35,10 +35,10 @@ func CreateUserModel() *UserModel {
 }
 
 func NewUserModel() *UserModel {
-	u := &UserModel{DB: InitDB()}
+	u := &UserModel{DB: initDB()}
 	if !u.DB.Config.DisableAutoMigrate || !d.Migrator().HasTable(&User{}) {
 		if err := d.AutoMigrate(&User{}); err != nil {
-			logs.Error("Init UserModel model err: ", err)
+			logs.Error("init UserModel model err: ", err)
 			panic(err)
 		}
 	}

@@ -1,15 +1,10 @@
 package model
 
 import (
-	"context"
-	"strconv"
 	"sync"
-	"time"
-
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	"github.com/chaos-io/chaos/db"
+	"github.com/chaos-io/chaos/db/example/model/{{.GoPackageName}}"
 	"github.com/chaos-io/chaos/logs"
 )
 
@@ -17,19 +12,19 @@ var {{.LowerCamelName}}Model *{{.Name}}Model
 var {{.LowerCamelName}}ModelOnce sync.Once
 
 type {{.Name}}Model struct {
-	DB *gorm.DB
+	DB *db.DB
 }
 
 func Get{{.Name}}Model() *{{.Name}}Model {
 	{{.LowerCamelName}}ModelOnce.Do(func() {
-		{{.Name}}Model = New{{.Name}}Model()
+		{{.LowerCamelName}}Model = New{{.Name}}Model()
 	})
 
-	return surveyModel
+	return {{.LowerCamelName}}Model
 }
 
 func New{{.Name}}Model() *{{.Name}}Model {
-	m := &{{.Name}}Model{DB: InitDB()}
+	m := &{{.Name}}Model{DB: initDB()}
 	if !m.DB.Config.DisableAutoMigrate || !d.Migrator().HasTable(&{{.GoPackageName}}.{{.Name}}{}) {
 		if err := d.AutoMigrate(&{{.GoPackageName}}.{{.Name}}{}); err != nil {
 			logs.Error("Init {{.Name}}Model model err: ", err)
@@ -47,11 +42,11 @@ func (m *{{.Name}}Model) Create({{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}
 
 func (m *{{.Name}}Model) Get(id string) (*{{.GoPackageName}}.{{.Name}}, error) {
 	{{.LowerCamelName}} := &{{.GoPackageName}}.{{.Name}}{}
-	return m.DB.First({{.LowerCamelName}}, "id = ?", id).Error
+	return {{.LowerCamelName}}, m.DB.First({{.LowerCamelName}}, "id = ?", id).Error
 }
 
 func (m *{{.Name}}Model) Delete(id string) (int64, error) {
-	result := m.DB.Where("id = ?", uid).Delete(&{{.GoPackageName}}.{{.Name}}{})
+	result := m.DB.Where("id = ?", id).Delete(&{{.GoPackageName}}.{{.Name}}{})
 	return result.RowsAffected, result.Error
 }
 
@@ -63,8 +58,10 @@ func (m *{{.Name}}Model) Update({{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}
 func (m *{{.Name}}Model) List(filter string, condition ...string) ([]*{{.GoPackageName}}.{{.Name}}, error) {
 	var {{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}
 
-	tx := m.DB.WithContext(ctx)
-	// todo add condition	
+    // todo add context
+	//tx := m.DB.WithContext(ctx)
+	tx := m.DB
+	// todo add condition
 
 	return {{.LowerCamelName}}, tx.Find(&{{.LowerCamelName}}).Error
 }
@@ -74,8 +71,8 @@ func (m *{{.Name}}Model) BatchCreate({{.LowerCamelName}} ...*{{.GoPackageName}}.
 	return result.RowsAffected, result.Error
 }
 
-func (m *{{.Name}}Model) BatchGet(ids ...string) (*{{.GoPackageName}}.{{.Name}}, error) {
-	var {{.LowerCamelName}} []{{.GoPackageName}}.{{.Name}}
+func (m *{{.Name}}Model) BatchGet(ids ...string) ([]*{{.GoPackageName}}.{{.Name}}, error) {
+	var {{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}
 	return {{.LowerCamelName}}, m.DB.Find(&{{.LowerCamelName}}, "id = ?", ids).Error
 }
 
@@ -85,6 +82,6 @@ func (m *{{.Name}}Model) BatchDelete(ids ...string) (int64, error) {
 }
 
 func (m *{{.Name}}Model) BatchUpdate({{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}) (int64, error) {
-	result := m.DB.Updates({{.LowerCamelName}}...)
+	result := m.DB.Updates({{.LowerCamelName}})
 	return result.RowsAffected, result.Error
 }

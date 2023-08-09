@@ -1,4 +1,4 @@
-package example
+package model
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ func initDB() *db.DB {
 	dOnce.Do(func() {
 		cfg := &db.Config{}
 		if err := config.ScanFrom(cfg, "db"); err != nil {
-			panic(fmt.Errorf("failed to get the db config, error: %w", err))
+			panic(fmt.Errorf("failed to get the db config, error: %v", err))
 		}
 
 		if d = db.New(cfg); d == nil {
