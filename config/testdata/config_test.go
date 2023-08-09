@@ -2,6 +2,7 @@ package testdata
 
 import (
 	"testing"
+	"time"
 
 	"github.com/chaos-io/chaos/config"
 )
@@ -22,4 +23,17 @@ func TestScanFrom(t *testing.T) {
 	}
 	s.Config = cfg
 	t.Logf("got level %v", s.Config.Level)
+}
+
+func TestHotLoad(t *testing.T) {
+	ticker := time.NewTicker(time.Second)
+
+	for {
+		select {
+		case <-ticker.C:
+			TestScanFrom(t)
+		case <-time.After(30 * time.Second):
+			break
+		}
+	}
 }

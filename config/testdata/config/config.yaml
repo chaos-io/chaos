@@ -1,0 +1,3 @@
+projectLogs:
+#  level: debug
+  level: info
