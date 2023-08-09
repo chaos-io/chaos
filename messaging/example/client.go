@@ -15,7 +15,7 @@ func InitNats() *messaging.Nats {
 	natsOnce.Do(func() {
 		cfg := &messaging.Config{}
 		if err := config.ScanFrom(cfg, "messaging"); err != nil {
-			panic(fmt.Errorf("failed to get the messaging config, error: %v", err))
+			panic(fmt.Errorf("failed to get the messaging config, error: %w", err))
 		}
 
 		if nats = messaging.New(cfg); nats == nil {
