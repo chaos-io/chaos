@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"sync"
 
 	"github.com/chaos-io/chaos/db"
@@ -35,53 +36,51 @@ func New{{.Name}}Model() *{{.Name}}Model {
 	return m
 }
 
-func (m *{{.Name}}Model) Create({{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}}) (int64, error) {
-	result := m.DB.Create({{.LowerCamelName}})
+func (m *{{.Name}}Model) Create(ctx context.Context, {{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}}) (int64, error) {
+	result := m.DB.WithContext(ctx).Create({{.LowerCamelName}})
 	return result.RowsAffected, result.Error
 }
 
-func (m *{{.Name}}Model) Get(id string) (*{{.GoPackageName}}.{{.Name}}, error) {
+func (m *{{.Name}}Model) Get(ctx context.Context, id string) (*{{.GoPackageName}}.{{.Name}}, error) {
 	{{.LowerCamelName}} := &{{.GoPackageName}}.{{.Name}}{}
-	return {{.LowerCamelName}}, m.DB.First({{.LowerCamelName}}, "id = ?", id).Error
+	return {{.LowerCamelName}}, m.DB.WithContext(ctx).First({{.LowerCamelName}}, "id = ?", id).Error
 }
 
-func (m *{{.Name}}Model) Delete(id string) (int64, error) {
-	result := m.DB.Where("id = ?", id).Delete(&{{.GoPackageName}}.{{.Name}}{})
+func (m *{{.Name}}Model) Delete(ctx context.Context, id string) (int64, error) {
+	result := m.DB.WithContext(ctx).Where("id = ?", id).Delete(&{{.GoPackageName}}.{{.Name}}{})
 	return result.RowsAffected, result.Error
 }
 
-func (m *{{.Name}}Model) Update({{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}}) (int64, error) {
-	result := m.DB.Updates({{.LowerCamelName}})
+func (m *{{.Name}}Model) Update(ctx context.Context, {{.LowerCamelName}} *{{.GoPackageName}}.{{.Name}}) (int64, error) {
+	result := m.DB.WithContext(ctx).Updates({{.LowerCamelName}})
 	return result.RowsAffected, result.Error
 }
 
-func (m *{{.Name}}Model) List(filter string, condition ...string) ([]*{{.GoPackageName}}.{{.Name}}, error) {
+func (m *{{.Name}}Model) List(ctx context.Context, filter string, condition ...string) ([]*{{.GoPackageName}}.{{.Name}}, error) {
 	var {{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}
 
-    // todo add context
-	//tx := m.DB.WithContext(ctx)
-	tx := m.DB
+	tx := m.DB.WithContext(ctx)
 	// todo add condition
 
 	return {{.LowerCamelName}}, tx.Find(&{{.LowerCamelName}}).Error
 }
 
-func (m *{{.Name}}Model) BatchCreate({{.LowerCamelName}} ...*{{.GoPackageName}}.{{.Name}}) (int64, error) {
-	result := m.DB.CreateInBatches({{.LowerCamelName}}, len({{.LowerCamelName}}))
+func (m *{{.Name}}Model) BatchCreate(ctx context.Context, {{.LowerCamelName}} ...*{{.GoPackageName}}.{{.Name}}) (int64, error) {
+	result := m.DB.WithContext(ctx).CreateInBatches({{.LowerCamelName}}, len({{.LowerCamelName}}))
 	return result.RowsAffected, result.Error
 }
 
-func (m *{{.Name}}Model) BatchGet(ids ...string) ([]*{{.GoPackageName}}.{{.Name}}, error) {
+func (m *{{.Name}}Model) BatchGet(ctx context.Context, ids ...string) ([]*{{.GoPackageName}}.{{.Name}}, error) {
 	var {{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}
-	return {{.LowerCamelName}}, m.DB.Find(&{{.LowerCamelName}}, "id = ?", ids).Error
+	return {{.LowerCamelName}}, m.DB.WithContext(ctx).Find(&{{.LowerCamelName}}, "id = ?", ids).Error
 }
 
-func (m *{{.Name}}Model) BatchDelete(ids ...string) (int64, error) {
-	result := m.DB.Where("id = ?", ids).Delete(&{{.GoPackageName}}.{{.Name}}{})
+func (m *{{.Name}}Model) BatchDelete(ctx context.Context, ids ...string) (int64, error) {
+	result := m.DB.WithContext(ctx).Where("id = ?", ids).Delete(&{{.GoPackageName}}.{{.Name}}{})
 	return result.RowsAffected, result.Error
 }
 
-func (m *{{.Name}}Model) BatchUpdate({{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}) (int64, error) {
-	result := m.DB.Updates({{.LowerCamelName}})
+func (m *{{.Name}}Model) BatchUpdate(ctx context.Context, {{.LowerCamelName}} []*{{.GoPackageName}}.{{.Name}}) (int64, error) {
+	result := m.DB.WithContext(ctx).Updates({{.LowerCamelName}})
 	return result.RowsAffected, result.Error
 }
