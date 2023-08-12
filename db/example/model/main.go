@@ -19,6 +19,10 @@ var templateStructFile string
 var templateModelFile string
 
 func main() {
+	Generator()
+}
+
+func Generator() {
 	m := InitModel()
 	fmt.Printf("get the model: %+v\n", m)
 
@@ -35,10 +39,6 @@ func main() {
 		return
 	}
 	fmt.Printf("generate model file into %s", generateModelFile)
-}
-
-type Generator interface {
-	Generate(templateFile, generateFile string) error
 }
 
 func InitModel() *Model {
