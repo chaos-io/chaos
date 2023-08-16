@@ -1,25 +1,27 @@
 package parser
 
-//
-// import (
-// 	"testing"
-//
-// 	. "github.com/smartystreets/goconvey/convey"
-// )
-//
-// func TestFileParser_Parse(t *testing.T) {
-// 	fp := NewFileParser()
-// 	_, err := fp.Parse([]byte(
-// 		`package main
-//
-// 		func main() {
-// 			print("Hello")
-// 		}
-// 		`))
-// 	Convey("Test if parser parses file without errors", t, func() {
-// 		So(err, ShouldBeNil)
-// 	})
-// }
+import (
+	"testing"
+
+	"github.com/chaos-io/chaos/logs"
+)
+
+func TestFileParser_Parse(t *testing.T) {
+	fp := NewFileParser()
+	f, err := fp.Parse([]byte(
+		`package main
+	
+		func main() {
+			print("Hello")
+		}
+		`))
+	if err != nil {
+		t.Error(err)
+	}
+
+	logs.Debugw("f", "", f)
+}
+
 // func TestFileParser_ParseServiceInterface(t *testing.T) {
 // 	fp := NewFileParser()
 // 	f, err := fp.Parse([]byte(

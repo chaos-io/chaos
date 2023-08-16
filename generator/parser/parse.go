@@ -19,25 +19,31 @@ type FileParser struct{}
 // Parse will parse the go source.
 func (fp *FileParser) Parse(src []byte) (*File, error) {
 	f := NewFile()
+
 	// Create the AST by parsing src.
 	fset := token.NewFileSet() // positions are relative to fset
 	pf, err := parser.ParseFile(fset, "src.go", src, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
+
 	f.Package = pf.Name.Name
+
 	for _, v := range pf.Decls {
 		if dec, ok := v.(*ast.FuncDecl); ok {
 			var st []NamedTypeValue
 			var pr []NamedTypeValue
 			var rs []NamedTypeValue
+
 			if dec.Recv != nil {
 				st = fp.parseFieldListAsNamedTypes(dec.Recv)
 			}
+
 			if dec.Type != nil {
 				pr = fp.parseFieldListAsNamedTypes(dec.Type.Params)
 				rs = fp.parseFieldListAsNamedTypes(dec.Type.Results)
 			}
+
 			bd := ""
 			if dec.Body != nil {
 				fst := token.NewFileSet()
@@ -48,6 +54,7 @@ func (fp *FileParser) Parse(src []byte) (*File, error) {
 					logs.Fatal(err)
 				}
 			}
+
 			str := NamedTypeValue{}
 			if len(st) > 0 {
 				str = st[0]
@@ -55,6 +62,7 @@ func (fp *FileParser) Parse(src []byte) (*File, error) {
 			fc := NewMethod(dec.Name.String(), str, bd, pr, rs)
 			f.Methods = append(f.Methods, fc)
 		}
+
 		if dec, ok := v.(*ast.GenDecl); ok {
 			switch dec.Tok {
 			case token.IMPORT:
@@ -70,7 +78,7 @@ func (fp *FileParser) Parse(src []byte) (*File, error) {
 			}
 		}
 	}
-	// fmt.Println(f.String())
+
 	return &f, nil
 }
 func (fp *FileParser) parseType(ds []ast.Spec, f *File) {
