@@ -52,12 +52,6 @@ func init() {
 	// 		log.Printf("file chande, %s", string(v.Bytes()))
 	// 	}
 	// }()
-
-	WatchFunc(getConfig)
-}
-
-func getConfig(val reader.Value) {
-	DefaultConfig.Sync()
 }
 
 func defaultSources() []source.Source {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/chaos-io/chaos/config"
+	"github.com/chaos-io/chaos/config/reader"
 )
 
 type ProjectLog struct {
@@ -38,6 +39,15 @@ func TestHotLoad(t *testing.T) {
 	for {
 		select {
 		case <-ticker.C:
+			_, err := config.WatchFunc(func(v reader.Value) {
+				if err := v.Scan(&cfg); err != nil {
+					t.Logf("scan error: %v", err)
+				}
+			})
+			if err != nil {
+				t.Logf("watch error: %v", err)
+			}
+
 			t.Logf("got level %v", cfg.Level)
 		case <-timer.C:
 			return
