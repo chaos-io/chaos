@@ -1,10 +1,12 @@
 package db
 
 import (
+	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
 	"testing"
+	"time"
 )
 
 func TestNew(t *testing.T) {
@@ -123,4 +125,26 @@ func TestMaps(t *testing.T) {
 		return s == "a"
 	})
 	slog.Info("map deleted", "", m)
+}
+
+func Test_Select(t *testing.T) {
+	var x, y chan int
+
+	worker := func() {
+		for {
+			select {
+			case v := <-x:
+				fmt.Println(v)
+			case v := <-y:
+				fmt.Println(v)
+			}
+		}
+	}
+
+	x = make(chan int)
+	y = make(chan int)
+	go worker()
+	x <- 1
+	y <- 2
+	<-time.After(1 * time.Second)
 }

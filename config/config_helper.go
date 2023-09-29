@@ -11,6 +11,7 @@ import (
 
 	"github.com/chaos-io/chaos/config/reader"
 	"github.com/chaos-io/chaos/config/source"
+	"github.com/chaos-io/chaos/config/source/env"
 	"github.com/chaos-io/chaos/config/source/file"
 )
 
@@ -24,34 +25,6 @@ var supportedFileSuffixes = map[string]bool{
 
 func init() {
 	_ = Load(defaultSources()...)
-	// var err error
-	// enc := yaml.NewEncoder()
-	// cfg, err = NewConfig(WithReader(json.NewReader(reader.WithEncoder(enc))))
-	// if err != nil {
-	// 	log.Fatalf("new config error, %s", err)
-	// }
-	// cfg = DefaultConfig
-
-	// err = Load(file.NewSource(file.WithPath("./config/config.yaml")))
-	// if err != nil {
-	// 	log.Fatalf("load config file error, %s", err)
-	// }
-
-	// watcher, err := Watch()
-	// // watcher, err := cfg.Watch()
-	// if err != nil {
-	// 	log.Fatalf("failed to start watchind files error, %s", err)
-	// }
-	//
-	// go func() {
-	// 	for {
-	// 		v, err := watcher.Next()
-	// 		if err != nil {
-	// 			log.Fatalf("watch files error, %s", err)
-	// 		}
-	// 		log.Printf("file chande, %s", string(v.Bytes()))
-	// 	}
-	// }()
 }
 
 func defaultSources() []source.Source {
@@ -66,7 +39,6 @@ func defaultSources() []source.Source {
 		dirs = append([]string{configPath}, dirs...)
 	}
 
-	// debug mode in the cmd folder
 	if strings.Contains(workDir, "/cmd/") || strings.HasSuffix(workDir, "/cmd") {
 		dirs = append(dirs, []string{"../configs", "../../configs"}...)
 	}
@@ -77,7 +49,8 @@ func defaultSources() []source.Source {
 			break
 		}
 	}
-	// sources = append(sources, env.NewSource())
+
+	sources = append(sources, env.NewSource())
 	return sources
 }
 
@@ -134,16 +107,17 @@ func (w watchCloser) Close() error {
 }
 
 func WatchFunc(handle func(reader.Value), paths ...string) (io.Closer, error) {
-	path := make([]string, 0, len(paths))
+	_path := make([]string, 0, len(paths))
 	for _, v := range paths {
-		path = append(path, strings.Split(v, ".")...)
+		_path = append(_path, strings.Split(v, ".")...)
 	}
 
 	exit := make(chan struct{})
-	w, err := Watch(path...)
+	w, err := Watch(_path...)
 	if err != nil {
 		return nil, err
 	}
+
 	go func() {
 		for {
 			v, err := w.Next()
@@ -153,7 +127,7 @@ func WatchFunc(handle func(reader.Value), paths ...string) (io.Closer, error) {
 			if err != nil {
 				continue
 			}
-			log.Printf("file chande, %s", string(v.Bytes()))
+			log.Printf("file changed, %s", string(v.Bytes()))
 
 			// if v.Empty() {
 			//	continue
