@@ -11,7 +11,6 @@ import (
 
 	"github.com/chaos-io/chaos/config/reader"
 	"github.com/chaos-io/chaos/config/source"
-	"github.com/chaos-io/chaos/config/source/env"
 	"github.com/chaos-io/chaos/config/source/file"
 )
 
@@ -50,7 +49,7 @@ func defaultSources() []source.Source {
 		}
 	}
 
-	sources = append(sources, env.NewSource())
+	// sources = append(sources, env.NewSource())
 	return sources
 }
 
