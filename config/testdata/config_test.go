@@ -28,23 +28,17 @@ func TestHotLoad(t *testing.T) {
 
 	t.Logf("got first level %v", cfg.Level)
 
-	ticker := time.NewTicker(time.Second)
-	timer := time.NewTimer(10 * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			_, err := config.WatchFunc(func(v reader.Value) {
-				if err := v.Scan(&cfg); err != nil {
-					t.Logf("scan error: %v", err)
-				}
-			}, "projectLogs")
-			if err != nil {
-				t.Logf("watch error: %v", err)
-			}
-
-			t.Logf("got level %v", cfg.Level)
-		case <-timer.C:
-			return
+	watcherObj, err := config.WatchFunc(func(v reader.Value) {
+		if err := v.Scan(&cfg); err != nil {
+			t.Logf("scan error: %v", err)
 		}
+	}, "projectLogs")
+	if err != nil {
+		t.Logf("watch error: %v", err)
+	} else {
+		defer func() { watcherObj.Close() }()
 	}
+
+	time.Sleep(5 * time.Second)
+	t.Logf("got level %v", cfg.Level)
 }

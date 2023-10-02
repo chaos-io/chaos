@@ -14,7 +14,6 @@ import (
 	"github.com/chaos-io/chaos/config/source/file"
 )
 
-var cfg Config
 var supportedFileSuffixes = map[string]bool{
 	"json": true,
 	// "toml": true,
@@ -126,6 +125,7 @@ func WatchFunc(handle func(reader.Value), paths ...string) (io.Closer, error) {
 			if err != nil {
 				continue
 			}
+
 			log.Printf("file changed, %s", string(v.Bytes()))
 
 			// if v.Empty() {
