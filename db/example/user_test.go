@@ -46,7 +46,7 @@ func TestUserModel_Insert(t *testing.T) {
 	}{
 		{
 			name:   "insert",
-			fields: fields{InitDB()},
+			fields: fields{initDB()},
 			args: args{
 				ctx:   context.Background(),
 				users: []*User{{Name: "aaa"}},
@@ -89,7 +89,7 @@ func TestUserModel_Get(t *testing.T) {
 	}{
 		{
 			name:   "get",
-			fields: fields{InitDB()},
+			fields: fields{initDB()},
 			args: args{
 				ctx: context.Background(),
 				uid: "772090000",
@@ -132,7 +132,7 @@ func TestUserModel_GetIds(t *testing.T) {
 	}{
 		{
 			name:   "getIds",
-			fields: fields{InitDB()},
+			fields: fields{initDB()},
 			args: args{
 				ctx: context.Background(),
 			},
@@ -174,7 +174,7 @@ func TestUserModel_BatchGet(t *testing.T) {
 	}{
 		{
 			name:   "batchGet",
-			fields: fields{InitDB()},
+			fields: fields{initDB()},
 			args: args{
 				ctx: context.Background(),
 				ids: []string{"772090000", "929473000"},
@@ -217,7 +217,7 @@ func TestUserModel_Query(t *testing.T) {
 	}{
 		{
 			name:   "query",
-			fields: fields{InitDB()},
+			fields: fields{initDB()},
 			args: args{
 				ctx:  context.Background(),
 				name: "aaa",
@@ -260,7 +260,7 @@ func TestUserModel_Update(t *testing.T) {
 	}{
 		{
 			name:   "update",
-			fields: fields{InitDB()},
+			fields: fields{initDB()},
 			args: args{
 				ctx:  context.Background(),
 				user: &User{Id: "772090000", Name: "bbb"},
@@ -303,7 +303,7 @@ func TestUserModel_Delete(t *testing.T) {
 	}{
 		{
 			name:   "delete",
-			fields: fields{InitDB()},
+			fields: fields{initDB()},
 			args: args{
 				ctx: context.Background(),
 				uid: "458973000",
@@ -346,7 +346,7 @@ func TestUserModel_BatchDelete(t *testing.T) {
 	}{
 		{
 			name:   "batchDelete",
-			fields: fields{InitDB()},
+			fields: fields{initDB()},
 			args: args{
 				ctx: context.Background(),
 				ids: []string{"772090000", "929473000"},
