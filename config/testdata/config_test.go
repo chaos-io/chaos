@@ -42,3 +42,13 @@ func TestHotLoad(t *testing.T) {
 	time.Sleep(5 * time.Second)
 	t.Logf("got level %v", cfg.Level)
 }
+
+type Host struct {
+	IP string
+}
+
+func Test1(t *testing.T) {
+	var host Host
+	err := config.ScanFrom(&host, "host")
+	t.Logf("host ip: %v, err: %v", host.IP, err)
+}
