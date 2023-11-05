@@ -1,6 +1,3 @@
 projectLogs:
   level: debug
 #  level: info
-
-host:
-  ip: 192.168.5.223
