@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	_ "unsafe"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -25,7 +24,7 @@ type Level = zapcore.Level
 
 func init() {
 	logCfg := &Config{}
-	config.Get("logs").Scan(logCfg)
+	_ = config.ScanFrom(logCfg, "logs")
 	defaultLog = New(logCfg)
 }
 
