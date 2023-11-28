@@ -8,6 +8,7 @@ import (
 	"github.com/chaos-io/chaos/config/reader"
 	"github.com/chaos-io/chaos/config/source"
 	"github.com/chaos-io/chaos/config/source/file"
+	"github.com/chaos-io/chaos/config/source/flag"
 )
 
 // Config is an interface abstraction for dynamic configuration.
@@ -110,4 +111,9 @@ func LoadFile(path string) error {
 	return Load(file.NewSource(
 		file.WithPath(path),
 	))
+}
+
+// LoadFlag load command-line parameters
+func LoadFlag() error {
+	return Load(flag.NewSource())
 }
