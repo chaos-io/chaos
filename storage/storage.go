@@ -9,10 +9,10 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-type initializer func(cfg *Config) Storage
-
 var initializers map[string]initializer
 var initializersOnce sync.Once
+
+type initializer func(cfg *Config) Storage
 
 func Register(name string, init initializer) {
 	initializersOnce.Do(func() {
@@ -47,7 +47,7 @@ func GetStorage() Storage {
 	storageOnce.Do(func() {
 		conf := &Config{}
 		if err := config.ScanFrom(conf, "storage"); err != nil {
-			logs.Warnw("failed to get the server config", "error", err.Error())
+			logs.Warnw("failed to get the storage config", "error", err.Error())
 			storage = NewDummyStorage()
 		} else {
 			if storage = NewStorage(conf); storage == nil {
@@ -78,10 +78,10 @@ type DummyStorage struct {
 	err error
 }
 
-func NewDummyStorage() Storage                                                 { return &DummyStorage{err: errors.New("DummyStorage: not implement")} }
-func (s *DummyStorage) BucketName() string                                     { return "dummy" }
-func (s *DummyStorage) SetBucket(string) error                                 { return s.err }
-func (s *DummyStorage) Read(key string, options core.Options) (*Object, error) { return nil, s.err }
-func (s *DummyStorage) Write(*Object, core.Options) error                      { return s.err }
-func (s *DummyStorage) Download(string, string, core.Options) error            { return s.err }
-func (s *DummyStorage) Upload(string, string, core.Options) error              { return s.err }
+func NewDummyStorage() Storage                                      { return &DummyStorage{err: errors.New("DummyStorage: not implement")} }
+func (s *DummyStorage) BucketName() string                          { return "dummy" }
+func (s *DummyStorage) SetBucket(string) error                      { return s.err }
+func (s *DummyStorage) Read(string, core.Options) (*Object, error)  { return nil, s.err }
+func (s *DummyStorage) Write(*Object, core.Options) error           { return s.err }
+func (s *DummyStorage) Download(string, string, core.Options) error { return s.err }
+func (s *DummyStorage) Upload(string, string, core.Options) error   { return s.err }
