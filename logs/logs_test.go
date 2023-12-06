@@ -26,3 +26,22 @@ func TestNewErrorw(t *testing.T) {
 	err := NewErrorw("the newErrorw", "err", "this is a error")
 	Debugw("the debugw", "debugw error", err)
 }
+
+// priority: debug < info < warn < error < DPanic < panic < fatal
+func TestLevelLogs(t *testing.T) {
+	print := func(level string) {
+		t.Logf("%s-------------------------------------------------\n", level)
+		SetLevel(level)
+		Debug("debug")
+		Info("info")
+		Warn("warn")
+		Error("error")
+		// Fatal("fatal")
+		t.Log("-------------------------------------------------")
+	}
+	print("debug")
+	print("info")
+	print("warn")
+	print("error")
+	// print("fatal")
+}
