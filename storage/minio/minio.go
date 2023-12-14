@@ -62,6 +62,7 @@ func (m *Minio) SetBucket(name string) error {
 
 func (m *Minio) Read(key string, options core.Options) (*storage.Object, error) {
 	obj, err := m.client.GetObject(m.bucketName, key, minio.GetObjectOptions{})
+	defer obj.Close()
 	if err != nil {
 		errResponse := &minio.ErrorResponse{}
 		if errors.As(err, errResponse) && errResponse.Code == "NoSuchKey" && strings.HasPrefix(key, "/") {
