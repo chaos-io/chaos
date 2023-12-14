@@ -70,9 +70,8 @@ func newZap(cfg *Config) *ZapLogger {
 	output := strings.ToLower(cfg.Output)
 	if strings.Contains(output, "console") {
 		cores = append(cores, initWithConsole(cfg.Encode))
-	}
-	if strings.Contains(output, "file") {
-		cores = append(cores, initWithFile(cfg.File.Encode, cfg.File.Path, cfg.File.MaxSize, cfg.File.MaxBackups, cfg.File.MaxAge))
+	} else if strings.Contains(output, "file") {
+		cores = append(cores, initWithFile(cfg.File))
 	}
 
 	core := zapcore.NewTee(cores...)
@@ -112,21 +111,20 @@ func SetLevel(level string) {
 
 func initWithConsole(encode string) zapcore.Core {
 	formatEncoder := standardEncode(encode)
-
 	consoleDebugging := zapcore.Lock(os.Stdout)
 	return zapcore.NewCore(formatEncoder, consoleDebugging, defaultLevel)
 }
 
-func initWithFile(encode, filename string, maxSize, maxBackups, maxAge int) zapcore.Core {
-	formatEncoder := standardEncode(encode)
+func initWithFile(fileCfg FileConfig) zapcore.Core {
+	formatEncoder := standardEncode(fileCfg.Encode)
 
-	f := handleFileName(filename)
+	f := handleFileName(fileCfg.Path)
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   f,
-		MaxSize:    maxSize, // megabytes
-		MaxAge:     maxAge,  // days
-		MaxBackups: maxBackups,
-		Compress:   true,
+		MaxSize:    fileCfg.MaxSize, // megabytes
+		MaxAge:     fileCfg.MaxAge,  // days
+		MaxBackups: fileCfg.MaxBackups,
+		Compress:   fileCfg.Compress,
 	})
 
 	return zapcore.NewCore(formatEncoder, w, defaultLevel)
@@ -175,6 +173,7 @@ func handleFileName(filename string) string {
 	} else {
 		ret = path.Join(parts...)
 	}
+
 	return ret
 }
 
