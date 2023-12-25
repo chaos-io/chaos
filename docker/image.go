@@ -3,6 +3,8 @@ package docker
 import (
 	"bytes"
 	"context"
+	"os"
+	"regexp"
 	"strings"
 
 	transformer "github.com/apenella/go-common-utils/transformer/string"
@@ -43,4 +45,22 @@ func BuildImage(imagePath string, imageName string, imageTag string) error {
 	}
 
 	return nil
+}
+
+var loadImageRegexp = regexp.MustCompile(`(?m:^##load-image:.*$)`)
+
+// ExtractLoadImage
+//
+// ##load-image:alpine
+func ExtractLoadImage(buildFile string) string {
+	content, err := os.ReadFile(buildFile)
+	if err != nil {
+		return ""
+	}
+
+	image := loadImageRegexp.Find(content)
+	if len(image) > 0 {
+		return strings.TrimSpace(strings.TrimPrefix(string(image), "##load-image:"))
+	}
+	return ""
 }

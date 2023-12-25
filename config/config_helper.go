@@ -84,16 +84,6 @@ func newFileSources(dir string, env string) []source.Source {
 	return sources
 }
 
-// GetValue a value from the config
-func GetValue(path ...string) reader.Value {
-	if len(path) == 1 {
-		segments := strings.Split(path[0], ".")
-		return Get(segments...)
-	}
-
-	return Get(path...)
-}
-
 type watchCloser struct {
 	exit chan struct{}
 }

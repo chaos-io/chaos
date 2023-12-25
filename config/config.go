@@ -3,6 +3,7 @@ package config
 
 import (
 	"context"
+	"strings"
 
 	"github.com/chaos-io/chaos/config/loader"
 	"github.com/chaos-io/chaos/config/reader"
@@ -93,7 +94,7 @@ func Sync() error {
 
 // Get a value from the config.
 func Get(path ...string) reader.Value {
-	return DefaultConfig.Get(path...)
+	return DefaultConfig.Get(normalizePath(path...)...)
 }
 
 // Load config sources.
@@ -103,7 +104,7 @@ func Load(source ...source.Source) error {
 
 // Watch a value for changes.
 func Watch(path ...string) (Watcher, error) {
-	return DefaultConfig.Watch(path...)
+	return DefaultConfig.Watch(normalizePath(path...)...)
 }
 
 // LoadFile is short hand for creating a file source and loading it.
@@ -113,7 +114,24 @@ func LoadFile(path string) error {
 	))
 }
 
+func LoadPath(path string) error {
+	return Load(newFileSources(path, "")...)
+}
+
+func LoadPathWithSuffix(path string, suffix string) error {
+	return Load(newFileSources(path, suffix)...)
+}
+
 // LoadFlag load command-line parameters
 func LoadFlag() error {
 	return Load(flag.NewSource())
+}
+
+func normalizePath(path ...string) []string {
+	var segments []string
+	for _, p := range path {
+		s := strings.Split(p, ".")
+		segments = append(segments, s...)
+	}
+	return segments
 }
