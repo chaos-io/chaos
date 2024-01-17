@@ -19,11 +19,9 @@ func main() {
 
 	// functionality where context wraps the entire operation: "do request + read body"
 	shouldNotFlake()
-
 }
 
 func sometimesFlakes() {
-
 	req, err := http.NewRequest("GET", "https://swapi.co/api/people/1", nil)
 	if err != nil {
 		log.Fatal(err)
@@ -37,7 +35,6 @@ func sometimesFlakes() {
 }
 
 func shouldNotFlake() {
-
 	req, err := http.NewRequest("GET", "https://swapi.co/api/people/1", nil)
 	if err != nil {
 		log.Fatal(err)
