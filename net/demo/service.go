@@ -9,7 +9,9 @@ import (
 var addr = "8092"
 
 func hello(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
 	fmt.Printf("addr: %v hello handle started\n", addr)
+	w.WriteHeader(http.StatusAccepted)
 	fmt.Fprintf(w, fmt.Sprintf("hello %v\n", addr))
 }
 

@@ -1,36 +1,69 @@
 package main
 
 import (
-	"fmt"
-	"sync"
-	"sync/atomic"
+	"errors"
+	"log"
+	"net"
+	"os"
+	"syscall"
+	"time"
 )
 
+func server() {
+	listener, err := net.Listen("tcp", ":8081")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer listener.Close()
+
+	conn, err := listener.Accept()
+	if err != nil {
+		log.Fatal("server", err)
+		os.Exit(1)
+	}
+
+	data := make([]byte, 1)
+	if _, err := conn.Read(data); err != nil {
+		log.Fatal("server", err)
+	}
+
+	conn.Close()
+}
+
+func client() {
+	conn, err := net.Dial("tcp", "localhost:8081")
+	if err != nil {
+		log.Fatal("client", err)
+	}
+
+	// write to make the connection closed on the server side
+	if _, err := conn.Write([]byte("a")); err != nil {
+		log.Printf("client: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	// write to generate an RST packet
+	if _, err := conn.Write([]byte("b")); err != nil {
+		log.Printf("client: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	// write to generate the broken pipe error
+	if _, err := conn.Write([]byte("c")); err != nil {
+		log.Printf("client: %v", err)
+		if errors.Is(err, syscall.EPIPE) {
+			log.Print("This is broken pipe error")
+		}
+	}
+}
+
 func main() {
-	var counter int32
-	var wg sync.WaitGroup
-	wg.Add(2)
+	go server()
 
-	go func() {
-		defer wg.Done()
-		atomic.AddInt32(&counter, 1)
-	}()
+	time.Sleep(3 * time.Second) // wait for server to run
 
-	go func() {
-		defer wg.Done()
-		atomic.AddInt32(&counter, 2)
-	}()
-
-	wg.Wait()
-
-	fmt.Println("counter:", atomic.LoadInt32(&counter)) // counter: 3
-
-	old := atomic.SwapInt32(&counter, 4)
-	fmt.Printf("old: %v, new: %v\n", old, counter) // old: 3, new: 4
-
-	comp := atomic.CompareAndSwapInt32(&counter, 4, 5)
-	fmt.Printf("comp: %v, counter: %v\n", comp, counter) // comp: true, counter: 5
-
-	atomic.StoreInt32(&counter, 6)
-	fmt.Printf("counter: %v\n", counter) // counter: 6
+	client()
 }
