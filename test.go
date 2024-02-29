@@ -2,36 +2,105 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"net"
+	"strconv"
 	"strings"
 )
 
+func main1() {
+	// tests := []struct {
+	// 	s    string
+	// 	t    string
+	// 	want bool
+	// }{
+	// 	// {s: "acb", t: "ahbgdc", want: false},
+	// 	{s: "acb", t: "ahbgdcb", want: true},
+	// }
+	//
+	// for _, test := range tests {
+	// 	has := isSubsequence(test.s, test.t)
+	// 	fmt.Printf("got=%v, want=%v\n", has, test.want)
+	// }
+
+	// value := "NaN"
+	// v, err := strconv.ParseFloat(value, 32)
+	// if err == nil && v > 0 {
+	// 	if v == math.Inf(1) || v == math.Inf(-1) {
+	// 		fmt.Printf("---1%T/%v", v, v)
+	// 	}
+	// 	fmt.Printf("---2%T/%v", v, v)
+	// }
+	// fmt.Printf("---3%T/%v\n", v, v)
+	// fmt.Printf("---err=%v\n", err)
+	// fmt.Printf("---math.IsNaN(v)=%v\n", math.IsNaN(v))
+
+}
+
+func GetFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
 func main() {
-	s := []struct {
-		roman   string
-		integer int
-	}{
-		// {roman: "III", integer: 3},
-		// {roman: "LVIII ", integer: 5},
-		// {roman: "MCMXCIV ", integer: 7},
-		// {roman: "Hello World", integer: 5},
-		{roman: " a", integer: 1},
+	port, err := GetFreePort()
+	if err != nil {
+		fmt.Println("错误:", err)
+		return
 	}
 
-	for _, _s := range s {
-		toInt := lengthOfLastWord2(_s.roman)
-		if toInt != _s.integer {
-			fmt.Printf("err, _s.roman=%s, toInt=%d, _s.integer=%d\n", _s.roman, toInt, _s.integer)
+	fmt.Printf("找到未使用的端口：%d\n", port)
+}
+
+func main2() {
+	// 假设文件中有一个包含非法浮点数的字段
+	fileContent := "1.23\n4.56\ninvalid\n7.89"
+
+	// 将文件内容按行拆分
+	lines := strings.Split(fileContent, "\n")
+
+	// 遍历每一行并解析为浮点数
+	for _, line := range lines {
+		value, err := strconv.ParseFloat(line, 64)
+		if err != nil {
+			fmt.Printf("Error parsing float: %v %v\n", value, err)
+			continue
 		}
-		fmt.Println("------------")
+
+		// 打印解析后的值
+		fmt.Printf("Parsed value: %v\n", value)
+
+		// 检查是否为NaN
+		if math.IsNaN(value) {
+			fmt.Println("Encountered NaN!")
+		}
 	}
-	// wordLen := lengthOfLastWord("Today is a nice day")
-	// fmt.Println(wordLen)
+}
 
-	// var my mystruct
-	// my.CoveragesSnapshot = []string{"1"}
-	// my.ma["a"] = "a"
-	// fmt.Printf("my=%v", my)
-
+func isSubsequence(s string, t string) bool {
+	for i, j := 0, 0; i < len(s); i++ {
+		has := false
+		for ; j < len(t); j++ {
+			if s[i] == t[j] {
+				has = true
+				j++
+				break
+			}
+		}
+		if !has {
+			return false
+		}
+	}
+	return true
 }
 
 type mystruct struct {
