@@ -2,200 +2,155 @@ package main
 
 import (
 	"fmt"
-	"math"
-	"net"
-	"strconv"
+	"reflect"
 	"strings"
 )
 
-func main1() {
-	// tests := []struct {
-	// 	s    string
-	// 	t    string
-	// 	want bool
-	// }{
-	// 	// {s: "acb", t: "ahbgdc", want: false},
-	// 	{s: "acb", t: "ahbgdcb", want: true},
-	// }
-	//
-	// for _, test := range tests {
-	// 	has := isSubsequence(test.s, test.t)
-	// 	fmt.Printf("got=%v, want=%v\n", has, test.want)
-	// }
-
-	// value := "NaN"
-	// v, err := strconv.ParseFloat(value, 32)
-	// if err == nil && v > 0 {
-	// 	if v == math.Inf(1) || v == math.Inf(-1) {
-	// 		fmt.Printf("---1%T/%v", v, v)
-	// 	}
-	// 	fmt.Printf("---2%T/%v", v, v)
-	// }
-	// fmt.Printf("---3%T/%v\n", v, v)
-	// fmt.Printf("---err=%v\n", err)
-	// fmt.Printf("---math.IsNaN(v)=%v\n", math.IsNaN(v))
-
-}
-
-func GetFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
 func main() {
-	port, err := GetFreePort()
-	if err != nil {
-		fmt.Println("错误:", err)
-		return
+	tests := []struct {
+		nums []int
+		k    int
+		want bool
+	}{
+		{[]int{1, 2, 3, 1}, 3, true},
+		{[]int{1, 0, 1, 1}, 1, true},
+		{[]int{1, 2, 3, 1, 2, 3}, 2, false},
 	}
 
-	fmt.Printf("找到未使用的端口：%d\n", port)
-}
-
-func main2() {
-	// 假设文件中有一个包含非法浮点数的字段
-	fileContent := "1.23\n4.56\ninvalid\n7.89"
-
-	// 将文件内容按行拆分
-	lines := strings.Split(fileContent, "\n")
-
-	// 遍历每一行并解析为浮点数
-	for _, line := range lines {
-		value, err := strconv.ParseFloat(line, 64)
-		if err != nil {
-			fmt.Printf("Error parsing float: %v %v\n", value, err)
-			continue
-		}
-
-		// 打印解析后的值
-		fmt.Printf("Parsed value: %v\n", value)
-
-		// 检查是否为NaN
-		if math.IsNaN(value) {
-			fmt.Println("Encountered NaN!")
+	for _, tt := range tests {
+		got := containsNearbyDuplicate(tt.nums, tt.k)
+		if got != tt.want {
+			fmt.Printf("something wrong, nums=%v, k=%v, want=%v, got=%v\n", tt.nums, tt.k, tt.want, got)
 		}
 	}
+	fmt.Println("all done!")
 }
 
-func isSubsequence(s string, t string) bool {
-	for i, j := 0, 0; i < len(s); i++ {
-		has := false
-		for ; j < len(t); j++ {
-			if s[i] == t[j] {
-				has = true
-				j++
-				break
-			}
-		}
-		if !has {
+func isIsomorphic(s string, t string) bool {
+	if len(s) != len(t) {
+		return false
+	}
+
+	s2t := make(map[byte]byte)
+	t2s := make(map[byte]byte)
+
+	for i := range s {
+		_s, _t := s[i], t[i]
+		if s2t[_s] > 0 && s2t[_s] != _t || t2s[_t] > 0 && t2s[_t] != _s {
 			return false
 		}
+		s2t[_s] = _t
+		t2s[_t] = _s
 	}
+
 	return true
 }
 
-type mystruct struct {
-	CoveragesSnapshot []string
-	ma                map[string]string
-}
-
-func lengthOfLastWord(s string) int {
-	s = strings.TrimSpace(s)
-	split := strings.Split(s, " ")
-	return len(split[len(split)-1])
-}
-
-func lengthOfLastWord2(s string) int {
-	end := len(s) - 1
-	for ; s[end] == ' '; end-- {
+func wordPattern(pattern string, s string) bool {
+	ss := strings.Split(s, " ")
+	if len(pattern) != len(ss) {
+		return false
 	}
-	start := len(s[:end])
-	for ; s[start] != ' '; start-- {
-		if start >= 1 && s[start-1] == ' ' {
-			break
+
+	p2s := make(map[string]string)
+	s2p := make(map[string]string)
+	for i := range pattern {
+		_p, _s := string(pattern[i]), ss[i]
+		if p2s[_p] != "" && p2s[_p] != _s || s2p[_s] != "" && s2p[_s] != _p {
+			return false
 		}
 
-		if start == 0 {
-			break
-		}
+		p2s[_p] = _s
+		s2p[_s] = _p
 	}
-	return end - start + 1
+
+	return true
 }
 
-func romanToInt(s string) int {
-	total := 0
-	for i := 0; i <= len(s)-1; i++ {
-		var next byte
-		if i < len(s)-1 {
-			next = s[i+1]
-		} else if i == len(s)-1 {
-			next = 0
-		}
+func isAnagram(s string, t string) bool {
+	if len(s) != len(t) {
+		return false
+	}
 
-		if n := seekNext(s[i], next); n > 0 {
-			fmt.Println("---n1=", n)
-			total += n
-			fmt.Printf("c(%s%s)/i(%d), total=%d\n", string(s[i]), string(next), i, total)
-			i++
+	sMap := make(map[byte]int, len(s))
+	tMap := make(map[byte]int, len(t))
+	for i := range s {
+		sMap[s[i]]++
+	}
+	for i := range t {
+		tMap[t[i]]++
+	}
+
+	return reflect.DeepEqual(sMap, tMap)
+}
+
+func twoSum(nums []int, target int) []int {
+	found := make(map[int]int, len(nums))
+	for i, num := range nums {
+		if idx, ok := found[target-num]; ok {
+			return []int{idx, i}
+		}
+		found[num] = i
+	}
+	return nil
+}
+
+func isHappy(n int) bool {
+	if n == 1 {
+		return true
+	}
+
+	exist := make(map[int]bool)
+	exist[n] = true
+	return findHappy(n, exist)
+}
+
+func findHappy(n int, exist map[int]bool) bool {
+	var nums []int
+	for n > 0 {
+		remainder := n % 10
+		n /= 10
+		nums = append(nums, remainder)
+	}
+
+	for _, num := range nums {
+		n += num * num
+	}
+
+	if n == 1 {
+		return true
+	}
+
+	if exist[n] {
+		return false
+	}
+
+	exist[n] = true
+
+	return findHappy(n, exist)
+}
+
+func containsNearbyDuplicate(nums []int, k int) bool {
+	dup := make(map[int][]int, len(nums))
+
+	for i, num := range nums {
+		if _nums, ok := dup[num]; !ok {
+			dup[num] = []int{i}
 		} else {
-			n = seek(s[i])
-			fmt.Println("---n2=", n)
-			total += n
-			fmt.Printf("c(%s)/i(%d), total=%d\n", string(s[i]), i, total)
+			_nums = append(_nums, i)
+			dup[num] = _nums
 		}
 	}
-	return total
-}
 
-func seek(c byte) int {
-	switch c {
-	case 'I':
-		return 1
-	case 'V':
-		return 5
-	case 'X':
-		return 10
-	case 'L':
-		return 50
-	case 'C':
-		return 100
-	case 'D':
-		return 500
-	case 'M':
-		return 1000
+	for _, _nums := range dup {
+		if len(_nums) > 1 {
+			for i := len(_nums) - 1; i >= 1; i-- {
+				if _nums[i]-_nums[i-1] <= k {
+					return true
+				}
+			}
+		}
 	}
-	return 0
-}
 
-func seekNext(c, next byte) int {
-	switch c {
-	case 'I':
-		if next == 'V' {
-			return 4
-		} else if next == 'X' {
-			return 9
-		}
-	case 'X':
-		if next == 'L' {
-			return 40
-		} else if next == 'C' {
-			return 90
-		}
-	case 'C':
-		if next == 'D' {
-			return 400
-		} else if next == 'M' {
-			return 900
-		}
-	}
-	return 0
+	return false
 }
