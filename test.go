@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func main() {
+func main1() {
 	tests := []struct {
 		nums []int
 		k    int
