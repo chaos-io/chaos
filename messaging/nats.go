@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -25,7 +26,7 @@ type Nats struct {
 func New(cfg *Config) *Nats {
 	nc, err := nats.Connect(cfg.Url)
 	if err != nil {
-		panic(fmt.Errorf("failed to connect nats, error: %v", err))
+		log.Panicf("failed to connect nats, error: %v", err)
 	}
 
 	// Create a JetStream management interface
@@ -208,5 +209,4 @@ func (n *Nats) Shutdown() {
 	n.conn.Close()
 	close(n.shutdownCh)
 	n.shutdown = true
-	return
 }

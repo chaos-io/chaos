@@ -1,6 +1,6 @@
 module github.com/chaos-io/chaos
 
-go 1.21
+go 1.19
 
 require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible

@@ -1,6 +1,6 @@
 module github.com/chaos-io/chaos/gokit
 
-go 1.21.6
+go 1.19
 
 require (
 	github.com/chaos-io/chaos v0.0.0-20240401074349-c9796608572e
