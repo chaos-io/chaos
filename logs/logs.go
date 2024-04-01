@@ -40,7 +40,6 @@ func LevelEnabled(level Level) bool {
 	return defaultLevel.Enabled(level)
 }
 
-// TODO test logs.with().WithOptions(zap.AddCallerSkip(-1))
 func With(args ...interface{}) *ZapLogger {
 	return defaultLog.With(args...)
 }
