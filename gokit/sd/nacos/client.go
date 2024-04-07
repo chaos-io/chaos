@@ -7,11 +7,11 @@ import (
 
 	"github.com/go-kit/kit/log"
 	kitsd "github.com/go-kit/kit/sd"
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	"github.com/chaos-io/chaos/logs"
 )
@@ -122,7 +122,7 @@ func (c *Client) WatchService(service, groupName string, clusters []string, ch c
 		ServiceName: service,
 		GroupName:   groupName, // 默认值DEFAULT_GROUP
 		Clusters:    clusters,  // 默认值DEFAULT
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
+		SubscribeCallback: func(services []model.Instance, err error) {
 			if err != nil {
 				return
 			}
