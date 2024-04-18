@@ -1,14 +1,15 @@
 package tracing
 
 import (
+	"io"
+	"time"
+
 	"github.com/chaos-io/chaos/logs"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"github.com/uber/jaeger-client-go/rpcmetrics"
 	"github.com/uber/jaeger-lib/metrics"
-	"io"
-	"time"
 )
 
 // Init creates a new instance of Jaeger tracer.

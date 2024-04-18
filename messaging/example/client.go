@@ -8,8 +8,10 @@ import (
 	"github.com/chaos-io/chaos/messaging"
 )
 
-var nats *messaging.Nats
-var natsOnce sync.Once
+var (
+	nats     *messaging.Nats
+	natsOnce sync.Once
+)
 
 func InitNats() *messaging.Nats {
 	natsOnce.Do(func() {

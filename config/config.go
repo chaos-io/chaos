@@ -49,10 +49,8 @@ type Options struct {
 
 type Option func(o *Options)
 
-var (
-	// Default Config Manager.
-	DefaultConfig, _ = NewConfig()
-)
+// Default Config Manager.
+var DefaultConfig, _ = NewConfig()
 
 // NewConfig returns new config.
 func NewConfig(opts ...Option) (Config, error) {

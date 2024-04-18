@@ -1,9 +1,10 @@
 package tracing
 
 import (
+	"io"
+
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-lib/metrics"
-	"io"
 
 	"github.com/chaos-io/chaos/logs"
 )

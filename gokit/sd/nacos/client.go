@@ -42,7 +42,6 @@ func NewClient(urls []string, cfg *Config, logger log.Logger) *Client {
 			ServerConfigs: sc,
 		},
 	)
-
 	if err != nil {
 		panic(err)
 	}

@@ -11,9 +11,7 @@ import (
 	"github.com/chaos-io/chaos/config/source"
 )
 
-var (
-	DefaultPrefixes = []string{}
-)
+var DefaultPrefixes = []string{}
 
 type env struct {
 	opts             source.Options

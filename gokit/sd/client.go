@@ -1,12 +1,13 @@
 package sd
 
 import (
+	"strings"
+
 	"github.com/chaos-io/chaos/gokit/sd/direct"
 	"github.com/chaos-io/chaos/gokit/sd/etcdv3"
 	"github.com/chaos-io/chaos/gokit/sd/nacos"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/sd"
-	"strings"
 )
 
 type Client interface {

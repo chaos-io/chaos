@@ -8,8 +8,10 @@ import (
 	"github.com/chaos-io/chaos/db"
 )
 
-var d *db.DB
-var dOnce sync.Once
+var (
+	d     *db.DB
+	dOnce sync.Once
+)
 
 func initDB() *db.DB {
 	dOnce.Do(func() {

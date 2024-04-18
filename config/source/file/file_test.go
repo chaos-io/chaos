@@ -73,7 +73,7 @@ func TestWithFS(t *testing.T) {
 	fsMock := fstest.MapFS{
 		path: &fstest.MapFile{
 			Data: data,
-			Mode: 0666,
+			Mode: 0o666,
 		},
 	}
 

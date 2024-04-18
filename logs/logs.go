@@ -16,11 +16,15 @@ import (
 	"github.com/chaos-io/chaos/config"
 )
 
-var defaultLog *ZapLogger
-var defaultLevel zap.AtomicLevel
+var (
+	defaultLog   *ZapLogger
+	defaultLevel zap.AtomicLevel
+)
 
-type ZapLogger = zap.SugaredLogger
-type Level = zapcore.Level
+type (
+	ZapLogger = zap.SugaredLogger
+	Level     = zapcore.Level
+)
 
 func init() {
 	logCfg := &Config{}

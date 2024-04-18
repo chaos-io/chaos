@@ -15,9 +15,7 @@ type file struct {
 	opts source.Options
 }
 
-var (
-	DefaultPath = "config.json"
-)
+var DefaultPath = "config.json"
 
 func (f *file) Read() (*source.ChangeSet, error) {
 	var fh fs.File

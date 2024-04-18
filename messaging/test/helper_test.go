@@ -127,7 +127,7 @@ func createConfFile(t *testing.T, content []byte) string {
 	if err := conf.Close(); err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	if err := os.WriteFile(fName, content, 0666); err != nil {
+	if err := os.WriteFile(fName, content, 0o666); err != nil {
 		if err := os.Remove(fName); err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}

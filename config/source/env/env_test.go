@@ -50,7 +50,7 @@ func TestEnvvar_Prefixes(t *testing.T) {
 	os.Setenv("VAULT_ADDR", "vault:1337")
 	os.Setenv("MICRO_REGISTRY", "mdns")
 
-	var prefixtests = []struct {
+	prefixtests := []struct {
 		prefixOpts   []source.Option
 		expectedKeys []string
 	}{

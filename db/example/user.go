@@ -19,8 +19,10 @@ type User struct {
 	CreatedAt time.Time
 }
 
-var userModel *UserModel
-var userModelOnce sync.Once
+var (
+	userModel     *UserModel
+	userModelOnce sync.Once
+)
 
 type UserModel struct {
 	DB *db.DB

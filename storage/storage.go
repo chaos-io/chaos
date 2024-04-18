@@ -9,8 +9,10 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-var initializers map[string]initializer
-var initializersOnce sync.Once
+var (
+	initializers     map[string]initializer
+	initializersOnce sync.Once
+)
 
 type initializer func(cfg *Config) Storage
 
@@ -40,8 +42,10 @@ func NewStorage(cfg *Config) Storage {
 	return nil
 }
 
-var storage Storage
-var storageOnce sync.Once
+var (
+	storage     Storage
+	storageOnce sync.Once
+)
 
 func GetStorage() Storage {
 	storageOnce.Do(func() {

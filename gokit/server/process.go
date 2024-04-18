@@ -83,11 +83,9 @@ func (p *Process) Start() (*Process, error) {
 		return nil, err
 	}
 
-	var (
-		// prStdout, prStderr *os.File
-		pwStdout, pwStderr *os.File
-		// e                   error
-	)
+	// prStdout, prStderr *os.File
+	var pwStdout, pwStderr *os.File
+	// e                   error
 	// log only if are available loggers
 	// if p.Logger.IsLogging() && p.LoggerStderr.IsLogging() {
 	//	// create the pipes for Stdout

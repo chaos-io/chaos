@@ -207,5 +207,4 @@ func TestJetStreamErrors(t *testing.T) {
 			t.Fatal("Expected ErrStreamNameRequired not to map to APIError")
 		}
 	})
-
 }

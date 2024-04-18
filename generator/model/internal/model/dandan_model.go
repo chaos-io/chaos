@@ -9,8 +9,10 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-var dandanModel *DandanModel
-var dandanModelOnce sync.Once
+var (
+	dandanModel     *DandanModel
+	dandanModelOnce sync.Once
+)
 
 type DandanModel struct {
 	DB *db.DB

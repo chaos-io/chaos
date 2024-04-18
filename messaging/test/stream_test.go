@@ -535,7 +535,8 @@ func TestGetMsg(t *testing.T) {
 
 	// same stream, but with allow direct
 	s2, err := js.CreateStream(context.Background(),
-		jetstream.StreamConfig{Name: "bar",
+		jetstream.StreamConfig{
+			Name:        "bar",
 			Subjects:    []string{"BAR.*"},
 			Description: "desc",
 			AllowDirect: true,
@@ -683,7 +684,8 @@ func TestGetLastMsgForSubject(t *testing.T) {
 
 	// same stream, but with allow direct
 	s2, err := js.CreateStream(context.Background(),
-		jetstream.StreamConfig{Name: "bar",
+		jetstream.StreamConfig{
+			Name:        "bar",
 			Subjects:    []string{"BAR.*"},
 			Description: "desc",
 			AllowDirect: true,

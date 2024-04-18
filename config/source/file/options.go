@@ -7,8 +7,10 @@ import (
 	"github.com/chaos-io/chaos/config/source"
 )
 
-type filePathKey struct{}
-type fsKey struct{}
+type (
+	filePathKey struct{}
+	fsKey       struct{}
+)
 
 // WithPath sets the path to file.
 func WithPath(p string) source.Option {

@@ -7,8 +7,10 @@ import (
 	"github.com/chaos-io/chaos/config/source"
 )
 
-type strippedPrefixKey struct{}
-type prefixKey struct{}
+type (
+	strippedPrefixKey struct{}
+	prefixKey         struct{}
+)
 
 // WithStrippedPrefix sets the environment variable prefixes to scope to.
 // These prefixes will be removed from the actual config entries.

@@ -178,5 +178,4 @@ func TestConsumerCachedInfo(t *testing.T) {
 	if info.Config.Description != "test consumer" {
 		t.Fatalf("Invalid consumer description; expected: 'updated consumer'; got: %s", info.Config.Description)
 	}
-
 }

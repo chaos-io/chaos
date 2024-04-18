@@ -12,8 +12,7 @@ func init() {
 	core.RegisterJSONTypeEncoder("http.EnvelopedResponse", &EnvelopedResponseCodec{})
 }
 
-type EnvelopedResponseCodec struct {
-}
+type EnvelopedResponseCodec struct{}
 
 type BareEnvelopedResponse EnvelopedResponse
 

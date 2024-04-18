@@ -31,7 +31,6 @@ func sometimesFlakes() {
 		log.Fatal(err)
 	}
 	log.Print(readBody(resp))
-
 }
 
 func shouldNotFlake() {
@@ -48,7 +47,6 @@ func shouldNotFlake() {
 		log.Fatal(err)
 	}
 	log.Print(readBody(resp))
-
 }
 
 func fetch(req *http.Request) (*http.Response, error) {

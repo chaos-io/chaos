@@ -12,9 +12,7 @@ import (
 	pb "github.com/chaos-io/chaos/generator/grpc/helloworld" // 替换为你的实际包路径
 )
 
-var (
-	port = flag.Int("port", 50051, "The server port")
-)
+var port = flag.Int("port", 50051, "The server port")
 
 // server is used to implement helloworld.GreeterServer.
 type server struct {

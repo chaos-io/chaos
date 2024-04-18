@@ -4,8 +4,9 @@ import (
 	"strings"
 
 	"github.com/chaos-io/chaos/config"
-	"github.com/chaos-io/chaos/gokit/sd"
 	"github.com/chaos-io/chaos/logs"
+
+	"github.com/chaos-io/chaos/gokit/sd"
 )
 
 type Config struct {

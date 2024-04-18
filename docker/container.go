@@ -239,7 +239,7 @@ func Start(ctx context.Context, imageName, containerName string, autoRemove bool
 		WorkingDir: workingDir,
 	}
 
-	var addHost = []string{"host.docker.internal:host-gateway"}
+	addHost := []string{"host.docker.internal:host-gateway"}
 	if addHostOption, ok := options[OptionAddHost].(string); ok && len(addHostOption) > 0 {
 		hs := strings.Split(addHostOption, ",")
 		for _, h := range hs {
@@ -316,7 +316,8 @@ func Start(ctx context.Context, imageName, containerName string, autoRemove bool
 			"duration", duration.String(),
 			"imageName", imageName,
 			"containerName", containerName,
-			"cmd", cmdBuilder.String()}
+			"cmd", cmdBuilder.String(),
+		}
 
 		if exitCode != 0 {
 			buffer, err := Logs(resp.ID, 10)

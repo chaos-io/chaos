@@ -8,8 +8,10 @@ import (
 	"github.com/chaos-io/chaos/redis"
 )
 
-var rdb *redis.Redis
-var rdbOnce sync.Once
+var (
+	rdb     *redis.Redis
+	rdbOnce sync.Once
+)
 
 func InitRedis() *redis.Redis {
 	rdbOnce.Do(func() {

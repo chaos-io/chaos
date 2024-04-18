@@ -3,11 +3,13 @@ package middleware
 import (
 	"context"
 	"fmt"
-	"github.com/chaos-io/chaos/gokit/counter"
+	"time"
+
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/metrics"
 	"github.com/mojo-lang/core/go/pkg/mojo/core"
-	"time"
+
+	"github.com/chaos-io/chaos/gokit/counter"
 )
 
 // Instrumenting returns an endpoint middleware that records

@@ -5,8 +5,10 @@ import (
 	"regexp"
 )
 
-var cmdRegex = regexp.MustCompile(`(?m:^(CMD|cmd).+$)`)
-var entryPointRegex = regexp.MustCompile(`(?m:^(ENTRYPOINT|entrypoint).+$)`)
+var (
+	cmdRegex        = regexp.MustCompile(`(?m:^(CMD|cmd).+$)`)
+	entryPointRegex = regexp.MustCompile(`(?m:^(ENTRYPOINT|entrypoint).+$)`)
+)
 
 func HasRunCommand(file string) bool {
 	content, err := os.ReadFile(file)

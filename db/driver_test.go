@@ -81,7 +81,7 @@ func TestClear(t *testing.T) {
 	clear(m)
 	slog.Info("map cleared", "m", m)
 
-	var params = []struct {
+	params := []struct {
 		Id   string
 		Name string
 	}{{Id: "1", Name: "a"}}
