@@ -1,13 +1,26 @@
 package messaging
 
-const PullMaxWait = 128
+import (
+	"net/url"
+	"time"
+)
 
 type Subscription struct {
-	Subject string
-	Durable string
-	Queue   string
+	Name  string
+	Topic string
+	Group string
 
-	Pull    bool
-	AckWait int
-	AutoAck bool
+	Pull              bool
+	AutoAck           bool
+	AckTimeout        time.Duration
+	PullMaxWaiting    int64
+	PendingMsgLimit   int64
+	PendingBytesLimit int64
+	Endpoint          *PushEndpoint
+}
+
+type PushEndpoint struct {
+	Service string
+	Method  string
+	Url     *url.URL
 }
