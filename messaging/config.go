@@ -13,3 +13,10 @@ type Nats struct {
 	MaxMsgs    int64
 	MaxAge     int64
 }
+
+func (cfg *Config) GetSubscriptions() []*Subscription {
+	if cfg != nil {
+		return cfg.Subscriptions
+	}
+	return nil
+}
