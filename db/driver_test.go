@@ -1,9 +1,7 @@
 package db
 
 import (
-	"fmt"
 	"testing"
-	"time"
 )
 
 func TestNew(t *testing.T) {
@@ -59,89 +57,4 @@ func TestNew(t *testing.T) {
 			}
 		})
 	}
-}
-
-// func TestMin(t *testing.T) {
-// 	slog.Info("min", "min", min("a", "b"))
-// 	slog.Info("min", "min", min(1, 2))
-// 	slog.Info("min", "min", min('a', 'b'))
-// }
-//
-// func TestClear(t *testing.T) {
-// 	sli := []string{"a", "b"}
-// 	slog.Info("string slice", "sli", sli)
-// 	clear(sli)
-// 	slog.Info("string slice cleared", "sli", sli)
-//
-// 	m := map[string]int{"a": 1, "b": 2}
-// 	slog.Info("map", "m", m)
-// 	clear(m)
-// 	slog.Info("map cleared", "m", m)
-//
-// 	params := []struct {
-// 		Id   string
-// 		Name string
-// 	}{{Id: "1", Name: "a"}}
-// 	slog.Info("params", "params", params)
-// 	clear(params)
-// 	slog.Info("params", "params", params)
-// }
-//
-// func TestSlices(t *testing.T) {
-// 	sli := []string{"a", "b", "c"}
-// 	slog.Info("slice first index", "", slices.Index(sli, "a"))
-// 	slog.Info("slice contains", "", slices.Contains(sli, "a"))
-// 	slog.Info("slice contains", "", slices.Clip(sli))
-// 	slices.Reverse(sli)
-// 	slog.Info("slice contains", "", sli)
-// 	slog.Info("slice delete", "", slices.Delete(sli, 1, 2)) // 左闭右开
-// }
-
-// func TestMaps(t *testing.T) {
-// 	m := map[string]interface{}{
-// 		"a": 1,
-// 		"b": "c",
-// 	}
-// 	slog.Info("map", "", m)
-//
-// 	clone := maps.Clone(m)
-// 	slog.Info("map clone", "", clone)
-//
-// 	m2 := map[string]interface{}{}
-// 	maps.Copy(m2, m)
-// 	slog.Info("map copy", "", m2)
-//
-// 	slog.Info("map equal1", "", maps.Equal(m, clone))
-// 	slog.Info("map equal2", "", maps.Equal(m, m2))
-//
-// 	slog.Info("map equalFunc", "", maps.EqualFunc(m, m2, func(i interface{}, i2 interface{}) bool {
-// 		return m["a"] == m2["a"]
-// 	}))
-//
-// 	maps.DeleteFunc(m, func(s string, i interface{}) bool {
-// 		return s == "a"
-// 	})
-// 	slog.Info("map deleted", "", m)
-// }
-
-func Test_Select(t *testing.T) {
-	var x, y chan int
-
-	worker := func() {
-		for {
-			select {
-			case v := <-x:
-				fmt.Println(v)
-			case v := <-y:
-				fmt.Println(v)
-			}
-		}
-	}
-
-	x = make(chan int)
-	y = make(chan int)
-	go worker()
-	x <- 1
-	y <- 2
-	<-time.After(1 * time.Second)
 }

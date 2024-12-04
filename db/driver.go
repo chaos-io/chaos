@@ -44,7 +44,7 @@ func New(cfg *Config) *DB {
 	default:
 		err = fmt.Errorf("database %q is not support", cfg.Driver)
 	}
-	if err != nil {
+	if d == nil || err != nil {
 		panic(fmt.Errorf("failed to connect database, error: %v", err))
 	}
 
