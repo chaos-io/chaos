@@ -1,43 +1,33 @@
 package redis
 
 import (
-	"context"
-	"fmt"
 	"sync"
+	"time"
+
+	redis2 "github.com/redis/go-redis/v9"
 
 	"github.com/chaos-io/chaos/config"
 	"github.com/chaos-io/chaos/logs"
 )
 
-const ImplementorGoRedis = "go-redis"
-
 var (
-	plugins     map[string]func(*Config) Redis
-	pluginsOnce sync.Once
+	redisClient     redis2.UniversalClient
+	redisClientOnce sync.Once
 )
 
-type Redis interface {
-	Do(ctx context.Context, cmd string, args ...any) (any, error)
-	Close() error
+type Redis struct {
+	Client redis2.UniversalClient
 }
 
-func RegisterRedis(name string, plugin func(config *Config) Redis) {
-	pluginsOnce.Do(func() {
-		plugins = make(map[string]func(config *Config) Redis)
+func GetRedis() redis2.UniversalClient {
+	redisClientOnce.Do(func() {
+		cfg := NewConfig()
+		redisClient = New(cfg).Client
 	})
-
-	plugins[name] = plugin
+	return redisClient
 }
 
-func GetRedis(name string) func(cfg *Config) Redis {
-	if p, ok := plugins[name]; ok {
-		return p
-	}
-
-	return nil
-}
-
-func New(cfg *Config) Redis {
+func New(cfg *Config) *Redis {
 	if cfg == nil {
 		cfg = &Config{}
 		if err := config.ScanFrom(cfg, "redis"); err != nil {
@@ -50,12 +40,51 @@ func New(cfg *Config) Redis {
 		cfg.Connections = []string{":6379"}
 	}
 
-	if len(cfg.Implementor) == 0 {
-		cfg.Implementor = ImplementorGoRedis
+	if cfg.MinIdleConns == 0 {
+		if cfg.MaxIdleConns > 0 {
+			cfg.MinIdleConns = cfg.MaxIdleConns
+		} else {
+			cfg.MinIdleConns = 100
+		}
 	}
 
-	if p, ok := plugins[cfg.Implementor]; ok {
-		return p(cfg)
+	if cfg.PoolSize == 0 {
+		cfg.PoolSize = 300
 	}
-	panic(fmt.Sprintf("the redis client implementor (%s) not found", cfg.Implementor))
+
+	if cfg.ReadTimeout == 0 {
+		cfg.ReadTimeout = time.Second
+	}
+	if cfg.WriteTimeout == 0 {
+		cfg.WriteTimeout = cfg.ReadTimeout
+	}
+
+	if len(cfg.Connections) == 1 {
+		option := &redis2.Options{
+			Addr:            cfg.Connections[0],
+			Password:        cfg.Password,
+			DB:              cfg.DB,
+			MinIdleConns:    cfg.MinIdleConns,
+			PoolSize:        cfg.PoolSize,
+			ReadTimeout:     cfg.ReadTimeout,
+			WriteTimeout:    cfg.WriteTimeout,
+			MaxRetries:      cfg.MaxRetries,
+			MaxRetryBackoff: cfg.MaxRetryBackoff,
+			MinRetryBackoff: cfg.MinRetryBackoff,
+		}
+		return &Redis{Client: redis2.NewClient(option)}
+	} else {
+		option := &redis2.ClusterOptions{
+			Addrs:           cfg.Connections,
+			Password:        cfg.Password,
+			MinIdleConns:    cfg.MinIdleConns,
+			PoolSize:        cfg.PoolSize,
+			ReadTimeout:     cfg.ReadTimeout,
+			WriteTimeout:    cfg.WriteTimeout,
+			MaxRetries:      cfg.MaxRetries,
+			MaxRetryBackoff: cfg.MaxRetryBackoff,
+			MinRetryBackoff: cfg.MinRetryBackoff,
+		}
+		return &Redis{Client: redis2.NewClusterClient(option)}
+	}
 }

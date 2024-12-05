@@ -3,11 +3,12 @@ package redis
 import (
 	"crypto/tls"
 	"time"
+
+	"github.com/chaos-io/chaos/config"
+	"github.com/chaos-io/chaos/logs"
 )
 
 type Config struct {
-	Implementor string
-
 	// host:port address.
 	Connections []string
 
@@ -103,4 +104,14 @@ type Config struct {
 
 	// Enables read only queries on slave/follower nodes.
 	readOnly bool
+}
+
+func NewConfig() *Config {
+	cfg := &Config{}
+	if err := config.ScanFrom(cfg, "redis"); err != nil {
+		logs.Warnw("failed to parse config from yaml", "error", err)
+		cfg.Connections = []string{":6379"}
+	}
+
+	return cfg
 }
