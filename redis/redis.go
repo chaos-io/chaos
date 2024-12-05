@@ -21,12 +21,20 @@ type Redis interface {
 	Close() error
 }
 
-func RegisterPlugin(name string, plugin func(config *Config) Redis) {
+func RegisterRedis(name string, plugin func(config *Config) Redis) {
 	pluginsOnce.Do(func() {
 		plugins = make(map[string]func(config *Config) Redis)
 	})
 
 	plugins[name] = plugin
+}
+
+func GetRedis(name string) func(cfg *Config) Redis {
+	if p, ok := plugins[name]; ok {
+		return p
+	}
+
+	return nil
 }
 
 func New(cfg *Config) Redis {
