@@ -276,10 +276,17 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 	if maxWaiting == 0 {
 		maxWaiting = defaultPullMaxWaiting
 	}
+
 	subOpts := []nats.SubOpt{nats.PullMaxWaiting(int(maxWaiting))}
-	if s.AckTimeout > 0 {
-		subOpts = append(subOpts, nats.AckWait(s.AckTimeout))
+	if len(s.AckTimeout) > 0 {
+		ackTimeout, err := time.ParseDuration(s.AckTimeout)
+		if err != nil {
+			logs.Warnw("Nats: failed to parse ack timeout", "ackTimeout", s.AckTimeout, "error", err)
+			return nil, err
+		}
+		subOpts = append(subOpts, nats.AckWait(ackTimeout))
 	}
+
 	subs, err := n.js.PullSubscribe(s.Topic, durableName, subOpts...)
 	if err != nil {
 		logs.Warnw("failed to pull subscribe the topic", "topic", s.Topic, "error", err)

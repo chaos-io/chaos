@@ -2,7 +2,6 @@ package messaging
 
 import (
 	"net/url"
-	"time"
 )
 
 type Subscription struct {
@@ -12,7 +11,7 @@ type Subscription struct {
 
 	Pull              bool
 	AutoAck           bool
-	AckTimeout        time.Duration
+	AckTimeout        string
 	PullMaxWaiting    int64
 	PendingMsgLimit   int64
 	PendingBytesLimit int64
