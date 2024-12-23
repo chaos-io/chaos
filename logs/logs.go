@@ -20,13 +20,13 @@ import (
 )
 
 var (
-	defaultLog   *SugaredLogger
+	defaultLog   *ZapLogger
 	defaultLevel zap.AtomicLevel
 )
 
 type (
-	SugaredLogger = zap.SugaredLogger
-	Level         = zapcore.Level
+	ZapLogger = zap.SugaredLogger
+	Level     = zapcore.Level
 )
 
 func init() {
@@ -35,11 +35,11 @@ func init() {
 	defaultLog = New(logCfg)
 }
 
-func Logger() *SugaredLogger {
+func Logger() *ZapLogger {
 	return defaultLog
 }
 
-func New(cfg *Config) *SugaredLogger {
+func New(cfg *Config) *ZapLogger {
 	return newZap(cfg)
 }
 
@@ -47,12 +47,12 @@ func LevelEnabled(level Level) bool {
 	return defaultLevel.Enabled(level)
 }
 
-func With(args ...interface{}) *SugaredLogger {
+func With(args ...interface{}) *ZapLogger {
 	return defaultLog.With(args...)
 }
 
 // level string, encode string, port int, pattern string, initFields map[string]interface{}
-func newZap(cfg *Config) *SugaredLogger {
+func newZap(cfg *Config) *ZapLogger {
 	var opts []zap.Option
 	opts = append(opts, zap.Development())
 	opts = append(opts, zap.AddCaller())
