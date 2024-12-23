@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
+	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -17,13 +20,13 @@ import (
 )
 
 var (
-	defaultLog   *ZapLogger
+	defaultLog   *SugaredLogger
 	defaultLevel zap.AtomicLevel
 )
 
 type (
-	ZapLogger = zap.SugaredLogger
-	Level     = zapcore.Level
+	SugaredLogger = zap.SugaredLogger
+	Level         = zapcore.Level
 )
 
 func init() {
@@ -32,11 +35,11 @@ func init() {
 	defaultLog = New(logCfg)
 }
 
-func Logger() *ZapLogger {
+func Logger() *SugaredLogger {
 	return defaultLog
 }
 
-func New(cfg *Config) *ZapLogger {
+func New(cfg *Config) *SugaredLogger {
 	return newZap(cfg)
 }
 
@@ -44,12 +47,12 @@ func LevelEnabled(level Level) bool {
 	return defaultLevel.Enabled(level)
 }
 
-func With(args ...interface{}) *ZapLogger {
+func With(args ...interface{}) *SugaredLogger {
 	return defaultLog.With(args...)
 }
 
 // level string, encode string, port int, pattern string, initFields map[string]interface{}
-func newZap(cfg *Config) *ZapLogger {
+func newZap(cfg *Config) *SugaredLogger {
 	var opts []zap.Option
 	opts = append(opts, zap.Development())
 	opts = append(opts, zap.AddCaller())
@@ -78,13 +81,19 @@ func newZap(cfg *Config) *ZapLogger {
 	}
 
 	core := zapcore.NewTee(cores...)
-	logger := zap.New(core)
 
+	logger := zap.New(core)
 	initFields := cfg.InitFields
 	if len(initFields) > 0 {
 		initFieldList := make([]zap.Field, 0)
 		for k, v := range initFields {
-			initFieldList = append(initFieldList, zap.Any(k, v))
+			var field zapcore.Field
+			if _, ok := v.(proto.Message); ok {
+				field = zap.Field{Key: k, Type: zapcore.ReflectType, Interface: v}
+			} else {
+				field = zap.Any(k, v)
+			}
+			initFieldList = append(initFieldList, field)
 		}
 		logger = logger.With(initFieldList...)
 	}
@@ -115,6 +124,7 @@ func SetLevel(level string) {
 func initWithConsole(encode string) zapcore.Core {
 	formatEncoder := standardEncode(encode)
 	consoleDebugging := zapcore.Lock(os.Stdout)
+
 	return zapcore.NewCore(formatEncoder, consoleDebugging, defaultLevel)
 }
 
@@ -135,28 +145,35 @@ func initWithFile(fileCfg FileConfig) zapcore.Core {
 
 func standardEncode(encode string) zapcore.Encoder {
 	encodeConfig := zapcore.EncoderConfig{
-		TimeKey:        "time",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "message",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		TimeKey:             "time",
+		LevelKey:            "level",
+		NameKey:             "logger",
+		CallerKey:           "caller",
+		MessageKey:          "message",
+		StacktraceKey:       "stacktrace",
+		LineEnding:          zapcore.DefaultLineEnding,
+		EncodeLevel:         zapcore.LowercaseLevelEncoder,
+		EncodeTime:          zapcore.ISO8601TimeEncoder,
+		EncodeDuration:      zapcore.SecondsDurationEncoder,
+		EncodeCaller:        zapcore.ShortCallerEncoder,
+		NewReflectedEncoder: jsoniterReflectedEncoder,
 	}
 
 	var formatEncoder zapcore.Encoder
-	enc := strings.ToLower(encode)
-	if enc == "json" {
+	if strings.EqualFold(encode, "json") {
 		formatEncoder = zapcore.NewJSONEncoder(encodeConfig)
 	} else {
 		formatEncoder = zapcore.NewConsoleEncoder(encodeConfig)
 	}
 
 	return formatEncoder
+}
+
+func jsoniterReflectedEncoder(w io.Writer) zapcore.ReflectedEncoder {
+	enc := jsoniter.NewEncoder(w)
+	// For consistency with mojo custom JSON encoder.
+	enc.SetEscapeHTML(false)
+	return enc
 }
 
 func handleFileName(filename string) string {
