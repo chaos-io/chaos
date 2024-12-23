@@ -57,7 +57,7 @@ func newZap(cfg *Config) *ZapLogger {
 	opts = append(opts, zap.Development())
 	opts = append(opts, zap.AddCaller())
 	opts = append(opts, zap.AddCallerSkip(1))
-	opts = append(opts, zap.AddStacktrace(zap.ErrorLevel))
+	opts = append(opts, zap.AddStacktrace(zap.FatalLevel))
 
 	defaultLevel = zap.NewAtomicLevel()
 	SetLevel(cfg.Level)
@@ -73,10 +73,9 @@ func newZap(cfg *Config) *ZapLogger {
 	}
 
 	cores := make([]zapcore.Core, 0)
-	output := strings.ToLower(cfg.Output)
-	if strings.Contains(output, "console") {
+	if strings.EqualFold(cfg.Output, "console") {
 		cores = append(cores, initWithConsole(cfg.Encode))
-	} else if strings.Contains(output, "file") {
+	} else if strings.EqualFold(cfg.Output, "file") {
 		cores = append(cores, initWithFile(cfg.File))
 	}
 
@@ -85,7 +84,7 @@ func newZap(cfg *Config) *ZapLogger {
 	logger := zap.New(core)
 	initFields := cfg.InitFields
 	if len(initFields) > 0 {
-		initFieldList := make([]zap.Field, 0)
+		initFieldList := make([]zap.Field, 0, len(initFields))
 		for k, v := range initFields {
 			var field zapcore.Field
 			if _, ok := v.(proto.Message); ok {
@@ -93,8 +92,10 @@ func newZap(cfg *Config) *ZapLogger {
 			} else {
 				field = zap.Any(k, v)
 			}
+
 			initFieldList = append(initFieldList, field)
 		}
+
 		logger = logger.With(initFieldList...)
 	}
 
