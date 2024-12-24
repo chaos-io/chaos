@@ -10,10 +10,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/chaos-io/chaos/config"
