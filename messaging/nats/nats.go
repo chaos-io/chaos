@@ -292,7 +292,8 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 	}
 
 	go func(s *messaging.Subscription, durableName string) {
-		logs.Infow("subscribed ok", "topic", s.Topic, "subscribe", durableName)
+		logs.Infow("nats subscribed", "topic", s.Topic, "subscribe", durableName)
+
 		for {
 			select {
 			case <-n.shutdownCh:
@@ -300,7 +301,9 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 				return
 			default:
 			}
+
 			logs.Debugw("fetching the next message", "subscribe", durableName)
+
 			ms, _ := subs.Fetch(1)
 			for _, msg := range ms {
 				logs.Debugw("fetched the message", "subscribe", durableName, "subject", msg.Subject)
