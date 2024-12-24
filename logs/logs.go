@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	defaultLog   *ZapLogger
+	defaultLog   *SugaredLogger
 	defaultLevel zap.AtomicLevel
 )
 
@@ -35,11 +35,11 @@ func init() {
 	defaultLog = New(logCfg)
 }
 
-func Logger() *ZapLogger {
+func Logger() *SugaredLogger {
 	return defaultLog
 }
 
-func New(cfg *Config) *ZapLogger {
+func New(cfg *Config) *SugaredLogger {
 	return newZap(cfg)
 }
 
@@ -47,18 +47,19 @@ func LevelEnabled(level Level) bool {
 	return defaultLevel.Enabled(level)
 }
 
-func With(args ...interface{}) *ZapLogger {
-	return defaultLog.With(args...)
-}
+// func With(args ...interface{}) *ZapLogger {
+// 	return defaultLog.With(args...)
+// }
 
 // level string, encode string, port int, pattern string, initFields map[string]interface{}
-func newZap(cfg *Config) *ZapLogger {
+func newZap(cfg *Config) *SugaredLogger {
 	var opts []zap.Option
 	opts = append(opts, zap.Development())
 	opts = append(opts, zap.AddCaller())
 	opts = append(opts, zap.AddCallerSkip(1))
 	opts = append(opts, zap.AddStacktrace(zap.FatalLevel))
 
+	sl := &SugaredLogger{}
 	defaultLevel = zap.NewAtomicLevel()
 	SetLevel(cfg.Level)
 
@@ -86,7 +87,7 @@ func newZap(cfg *Config) *ZapLogger {
 	if len(initFields) > 0 {
 		initFieldList := make([]zap.Field, 0, len(initFields))
 		for k, v := range initFields {
-			var field zapcore.Field
+			var field zap.Field
 			if _, ok := v.(proto.Message); ok {
 				field = zap.Field{Key: k, Type: zapcore.ReflectType, Interface: v}
 			} else {
@@ -99,27 +100,8 @@ func newZap(cfg *Config) *ZapLogger {
 		logger = logger.With(initFieldList...)
 	}
 
-	logger = logger.WithOptions(opts...)
-	return logger.Sugar()
-}
-
-func SetLevel(level string) {
-	l := strings.ToLower(level)
-	if l == "info" {
-		defaultLevel.SetLevel(zap.InfoLevel)
-	} else if l == "debug" {
-		defaultLevel.SetLevel(zap.DebugLevel)
-	} else if l == "error" {
-		defaultLevel.SetLevel(zap.ErrorLevel)
-	} else if l == "warn" {
-		defaultLevel.SetLevel(zap.WarnLevel)
-	} else if l == "panic" {
-		defaultLevel.SetLevel(zap.PanicLevel)
-	} else if l == "fatal" {
-		defaultLevel.SetLevel(zap.FatalLevel)
-	} else {
-		defaultLevel.SetLevel(zap.InfoLevel)
-	}
+	sl.base = logger.WithOptions(opts...).Sugar()
+	return sl
 }
 
 func initWithConsole(encode string) zapcore.Core {
@@ -172,7 +154,7 @@ func standardEncode(encode string) zapcore.Encoder {
 
 func jsoniterReflectedEncoder(w io.Writer) zapcore.ReflectedEncoder {
 	enc := jsoniter.NewEncoder(w)
-	// For consistency with mojo custom JSON encoder.
+	// For consistency with custom JSON encoder.
 	enc.SetEscapeHTML(false)
 	return enc
 }

@@ -1,7 +1,13 @@
 package logs
 
 import (
+	"os"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	fuzzstan "github.com/chaos-io/chaos/logs/testdata"
 )
 
 func TestDebugw(t *testing.T) {
@@ -44,4 +50,35 @@ func TestLevelLogs(t *testing.T) {
 	print("warn")
 	print("error")
 	// print("fatal")
+}
+
+func TestLogFileJSON(t *testing.T) {
+	const logFileName = "./test.log"
+	l := New(&Config{
+		Output: "file",
+		File: FileConfig{
+			Path: logFileName,
+		},
+	})
+
+	value := "foo"
+	values := []string{"foo", "bar", "baz"}
+	mapVals := map[string]any{"foo": true, "bar": 100}
+	l.Infow("info", "value", value, "values", values, "map", mapVals)
+
+	content, err := os.ReadFile(logFileName)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, content)
+	assert.True(t, strings.Contains(string(content), "{\"value\": \"foo\", \"values\": [\"foo\",\"bar\",\"baz\"], \"map\": {\"foo\":true,\"bar\":100}}"))
+
+	_ = os.Remove(logFileName)
+}
+
+func TestConsoleJson(t *testing.T) {
+	stat := &fuzzstan.CpuStat{
+		Number: 0,
+		State:  "123",
+	}
+
+	Infow("===", "stat", stat)
 }
