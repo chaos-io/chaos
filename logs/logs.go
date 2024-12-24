@@ -25,7 +25,7 @@ var (
 )
 
 type (
-	ZapLogger = zap.SugaredLogger
+	ZapLogger = SugaredLogger
 	Level     = zapcore.Level
 )
 
@@ -47,7 +47,7 @@ func LevelEnabled(level Level) bool {
 	return defaultLevel.Enabled(level)
 }
 
-// func With(args ...interface{}) *ZapLogger {
+// func With(args ...interface{}) *SugaredLogger {
 // 	return defaultLog.With(args...)
 // }
 

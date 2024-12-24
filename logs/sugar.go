@@ -35,7 +35,7 @@ const (
 //	Infof(string, ...any)  Printf-style logging
 //	Infoln(...any)         Println-style logging
 type SugaredLogger struct {
-	base *ZapLogger
+	base *zap.SugaredLogger
 }
 
 // Desugar unwraps a SugaredLogger, exposing the original Logger. Desugaring
