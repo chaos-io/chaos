@@ -47,9 +47,9 @@ func LevelEnabled(level Level) bool {
 	return defaultLevel.Enabled(level)
 }
 
-// func With(args ...interface{}) *SugaredLogger {
-// 	return defaultLog.With(args...)
-// }
+func With(args ...interface{}) *SugaredLogger {
+	return defaultLog.With(args...)
+}
 
 // level string, encode string, port int, pattern string, initFields map[string]interface{}
 func newZap(cfg *Config) *SugaredLogger {
