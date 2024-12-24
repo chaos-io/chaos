@@ -17,9 +17,9 @@ ya.make
 
 # vendor/
 
-#
+# configs
 .k8s
 *.pb.go
 .idea
-
 db/*.db
+#messaging/nats/configs

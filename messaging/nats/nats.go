@@ -66,7 +66,6 @@ func New(cfg *messaging.Config) (*Nats, error) {
 	}
 
 	return n, nil
-
 }
 
 func (n *Nats) createStream(name string, subjects []string) {
@@ -89,7 +88,7 @@ func (n *Nats) createStream(name string, subjects []string) {
 			if len(oldSubjects) == 0 {
 				nonExists = subjects
 			} else {
-				set := map[string]struct{}{}
+				set := make(map[string]struct{})
 				for _, subject := range oldSubjects {
 					set[subject] = struct{}{}
 				}
@@ -101,11 +100,10 @@ func (n *Nats) createStream(name string, subjects []string) {
 				}
 			}
 
-			if len(nonExists) > 0 {
-				streamCfg := n.NewStreamConfig(name, append(oldSubjects, nonExists...))
-				if _, err := n.js.UpdateStream(streamCfg); err != nil {
-					logs.Warnw("failed to update stream", "name", name, "error", err)
-				}
+			allSubjects := append(nonExists, subjects...)
+			streamConfig := n.NewStreamConfig(name, allSubjects)
+			if _, err := n.js.UpdateStream(streamConfig); err != nil {
+				logs.Warnw("failed to update stream", "name", name, "error", err)
 			}
 		}
 	}
@@ -378,12 +376,14 @@ func (n *Nats) NewStreamConfig(name string, subjects []string) *nats.StreamConfi
 		Name:     name,
 		Subjects: subjects,
 	}
+
 	if n.MaxMsgs() > 0 {
 		streamCfg.MaxMsgs = n.MaxMsgs()
 	}
 	if n.MaxAge() > 0 {
 		streamCfg.MaxAge = time.Duration(n.MaxAge()) * time.Second
 	}
+
 	return streamCfg
 }
 

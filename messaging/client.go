@@ -36,7 +36,7 @@ func NewClientWith(config *Config) (*Client, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("has no proper queue provider for the %s", config.Provider)
+	return nil, fmt.Errorf("has no proper queue provider for the %q", config.Provider)
 }
 
 func (c *Client) GetConfig() *Config {
