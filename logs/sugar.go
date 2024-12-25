@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"unsafe"
 
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/multierr"
@@ -92,7 +93,7 @@ func New(cfg *Config) *SugaredLogger {
 	opts = append(opts, zap.AddCaller())
 	// 0: SugaredLogger.log
 	// 1: SugaredLogger.Info
-	opts = append(opts, zap.AddCallerSkip(2))
+	opts = append(opts, zap.AddCallerSkip(1))
 	opts = append(opts, zap.AddStacktrace(zap.FatalLevel))
 
 	sl.base = logger.WithOptions(opts...).Sugar()
@@ -450,10 +451,10 @@ func (s *SugaredLogger) Sync() error {
 }
 
 func baseLogger(sugar *zap.SugaredLogger) *zap.Logger {
-	// p := unsafe.Pointer(sugar)
-	// offset := uintptr(0)
-	// return *(**zap.Logger)(unsafe.Pointer(uintptr(p) + offset))
-	return sugar.Desugar()
+	p := unsafe.Pointer(sugar)
+	offset := uintptr(0)
+	return *(**zap.Logger)(unsafe.Pointer(uintptr(p) + offset))
+	// return sugar.Desugar()
 }
 
 // log message with Sprint, Sprintf, or neither.

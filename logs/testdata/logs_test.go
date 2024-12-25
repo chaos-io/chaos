@@ -1,4 +1,4 @@
-package logs
+package testdata
 
 import (
 	"os"
@@ -8,41 +8,41 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/chaos-io/chaos/logs/testdata"
+	"github.com/chaos-io/chaos/logs"
 )
 
 func TestDebugw(t *testing.T) {
-	Debugw("debugw", "map", map[string]interface{}{"1": 1, "2": "two"})
-	Debugw("debugw", "slice", []string{"1", "2"})
+	logs.Debugw("debugw", "map", map[string]interface{}{"1": 1, "2": "two"})
+	logs.Debugw("debugw", "slice", []string{"1", "2"})
 	i := new(int)
 	*i = 8
-	Debugw("debugw", "ptr", i)
-	Debugw("debugw", "addr", &i)
+	logs.Debugw("debugw", "ptr", i)
+	logs.Debugw("debugw", "addr", &i)
 }
 
 func TestDebugf(t *testing.T) {
-	Debugf("the debugf, string=%s", "aaa")
+	logs.Debugf("the debugf, string=%s", "aaa")
 }
 
 func TestNewErrorf(t *testing.T) {
-	err := NewErrorf("the newErrorf, string=%s", "aaa")
-	Debugw("the debugw", "debugw error", err)
+	err := logs.NewErrorf("the newErrorf, string=%s", "aaa")
+	logs.Debugw("the debugw", "debugw error", err)
 }
 
 func TestNewErrorw(t *testing.T) {
-	err := NewErrorw("the newErrorw", "err", "this is a error")
-	Debugw("the debugw", "debugw error", err)
+	err := logs.NewErrorw("the newErrorw", "err", "this is a error")
+	logs.Debugw("the debugw", "debugw error", err)
 }
 
 // priority: debug < info < warn < error < DPanic < panic < fatal
 func TestLevelLogs(t *testing.T) {
 	print := func(level string) {
 		t.Logf("%s-------------------------------------------------\n", level)
-		SetLevel(level)
-		Debug("debug")
-		Info("info")
-		Warn("warn")
-		Error("error")
+		logs.SetLevel(level)
+		logs.Debug("debug")
+		logs.Info("info")
+		logs.Warn("warn")
+		logs.Error("error")
 		// Fatal("fatal")
 		t.Log("-------------------------------------------------")
 	}
@@ -55,9 +55,9 @@ func TestLevelLogs(t *testing.T) {
 
 func TestLogFileJSON(t *testing.T) {
 	const logFileName = "./test.log"
-	l := New(&Config{
+	l := logs.New(&logs.Config{
 		Output: "file",
-		File: FileConfig{
+		File: logs.FileConfig{
 			Path: logFileName,
 		},
 	})
@@ -76,15 +76,18 @@ func TestLogFileJSON(t *testing.T) {
 }
 
 func TestConsoleJson(t *testing.T) {
-	stat := &testdata.CpuStat{
+	stat := &CpuStat{
 		Number: 0,
 		State:  "123",
 	}
-	Infow("log infow", "stat", stat)
+	logs.Infow("log infow", "stat", stat)
+	logs.AddCallerSkip(-1).Infow("log infow-1", "stat", stat)
+	logs.AddCallerSkip(0).Infow("log infow0", "stat", stat)
+	logs.AddCallerSkip(1).Infow("log infow1", "stat", stat)
 
-	// already skip 2 layer caller
-	logger := Logger().With()
+	logger := logs.Logger()
 	logger.WithOptions(zap.AddCallerSkip(-2)).Infow("skip -2")
+	logs.AddCallerSkip(-1).Infow("add caller, skip -1")
 	logger.WithOptions(zap.AddCallerSkip(-1)).Infow("skip -1")
 	logger.WithOptions(zap.AddCallerSkip(0)).Infow("skip 0")
 	logger.WithOptions(zap.AddCallerSkip(1)).Infow("skip 1")

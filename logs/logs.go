@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/chaos-io/chaos/config"
 )
 
@@ -22,6 +24,11 @@ func Logger() *SugaredLogger {
 
 func With(args ...interface{}) *SugaredLogger {
 	return defaultLog.With(args...)
+}
+
+func AddCallerSkip(skip int) *SugaredLogger {
+	// add a new caller, and -1
+	return Logger().WithOptions(zap.AddCallerSkip(skip - 1))
 }
 
 // Debug logs a message at DebugLevel. The message includes any fields passed
