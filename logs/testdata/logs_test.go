@@ -81,13 +81,12 @@ func TestConsoleJson(t *testing.T) {
 		State:  "123",
 	}
 	logs.Infow("log infow", "stat", stat)
-	logs.AddCallerSkip(-1).Infow("log infow-1", "stat", stat)
-	logs.AddCallerSkip(0).Infow("log infow0", "stat", stat)
-	logs.AddCallerSkip(1).Infow("log infow1", "stat", stat)
+	logs.Logger().AddCallerSkip(-1).Infow("log infow-1", "stat", stat)
+	logs.Logger().AddCallerSkip(0).Infow("log infow0", "stat", stat)
+	logs.Logger().AddCallerSkip(1).Infow("log infow1", "stat", stat)
 
 	logger := logs.Logger()
 	logger.WithOptions(zap.AddCallerSkip(-2)).Infow("skip -2")
-	logs.AddCallerSkip(-1).Infow("add caller, skip -1")
 	logger.WithOptions(zap.AddCallerSkip(-1)).Infow("skip -1")
 	logger.WithOptions(zap.AddCallerSkip(0)).Infow("skip 0")
 	logger.WithOptions(zap.AddCallerSkip(1)).Infow("skip 1")

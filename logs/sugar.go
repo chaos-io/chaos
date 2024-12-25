@@ -23,11 +23,11 @@ const (
 	_multipleErrMsg     = "Multiple errors without a key."
 )
 
-// A SugaredLogger wraps the base Logger functionality in a slower, but less
-// verbose, API. Any Logger can be converted to a SugaredLogger with its Sugar
+// A SugaredLogger wraps the base logger functionality in a slower, but less
+// verbose, API. Any logger can be converted to a SugaredLogger with its Sugar
 // method.
 //
-// Unlike the Logger, the SugaredLogger doesn't insist on structured logging.
+// Unlike the logger, the SugaredLogger doesn't insist on structured logging.
 // For each log level, it exposes four methods:
 //
 //   - methods named after the log level for log.Print-style logging
@@ -209,7 +209,7 @@ func handleTemplateFileName(template string) string {
 	return ret
 }
 
-// Desugar unwraps a SugaredLogger, exposing the original Logger. Desugaring
+// Desugar unwraps a SugaredLogger, exposing the original logger. Desugaring
 // is quite inexpensive, so it's reasonable for a single application to use
 // both Loggers and SugaredLoggers, converting between them on the boundaries
 // of performance-sensitive code.
@@ -217,7 +217,7 @@ func (s *SugaredLogger) Desugar() *zap.Logger {
 	return s.base.Desugar()
 }
 
-// Named adds a sub-scope to the logger's name. See Logger.Named for details.
+// Named adds a sub-scope to the logger's name. See logger.Named for details.
 func (s *SugaredLogger) Named(name string) *SugaredLogger {
 	return &SugaredLogger{base: s.base.Named(name)}
 }
@@ -226,6 +226,10 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 // and returns the result. It's safe to use concurrently.
 func (s *SugaredLogger) WithOptions(opts ...zap.Option) *SugaredLogger {
 	return &SugaredLogger{base: s.base.WithOptions(opts...)}
+}
+
+func (s *SugaredLogger) AddCallerSkip(skip int) *SugaredLogger {
+	return &SugaredLogger{s.base.WithOptions(zap.AddCallerSkip(skip))}
 }
 
 // With adds a variadic number of fields to the logging context. It accepts a
