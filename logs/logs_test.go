@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
-	fuzzstan "github.com/chaos-io/chaos/logs/testdata"
+	"github.com/chaos-io/chaos/logs/testdata"
 )
 
 func TestDebugw(t *testing.T) {
@@ -75,10 +76,17 @@ func TestLogFileJSON(t *testing.T) {
 }
 
 func TestConsoleJson(t *testing.T) {
-	stat := &fuzzstan.CpuStat{
+	stat := &testdata.CpuStat{
 		Number: 0,
 		State:  "123",
 	}
+	Infow("log infow", "stat", stat)
 
-	Infow("===", "stat", stat)
+	// already skip 2 layer caller
+	logger := Logger().With()
+	logger.WithOptions(zap.AddCallerSkip(-2)).Infow("skip -2")
+	logger.WithOptions(zap.AddCallerSkip(-1)).Infow("skip -1")
+	logger.WithOptions(zap.AddCallerSkip(0)).Infow("skip 0")
+	logger.WithOptions(zap.AddCallerSkip(1)).Infow("skip 1")
+	logger.WithOptions(zap.AddCallerSkip(2)).Infow("skip 2")
 }

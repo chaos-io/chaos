@@ -6,6 +6,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var defaultLevel zap.AtomicLevel
+
 func SetLevel(level string) {
 	l := strings.ToLower(level)
 	if l == "info" {
