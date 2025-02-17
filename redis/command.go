@@ -12,12 +12,12 @@ func Do(ctx context.Context, args ...any) (any, error) {
 	return GetRedis().Do(ctx, args...).Result()
 }
 
-func Del(ctx context.Context, key string) error {
-	return GetRedis().Del(ctx, key).Err()
+func Del(ctx context.Context, keys ...string) error {
+	return GetRedis().Del(ctx, keys...).Err()
 }
 
-func Exists(ctx context.Context, key string) (bool, error) {
-	result, err := GetRedis().Exists(ctx, key).Result()
+func Exists(ctx context.Context, keys ...string) (bool, error) {
+	result, err := GetRedis().Exists(ctx, keys...).Result()
 	if err != nil {
 		return false, err
 	}
