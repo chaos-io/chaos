@@ -21,3 +21,11 @@ func ZCard(ctx context.Context, key string) (int64, error) {
 func ZRem(ctx context.Context, key string, members ...any) (int64, error) {
 	return GetRedis().ZRem(ctx, key, members...).Result()
 }
+
+func ZScore(ctx context.Context, key, member string) (float64, error) {
+	return GetRedis().ZScore(ctx, key, member).Result()
+}
+
+func ZIncrBy(ctx context.Context, key string, increment float64, member string) (float64, error) {
+	return GetRedis().ZIncrBy(ctx, key, increment, member).Result()
+}
