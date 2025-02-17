@@ -32,6 +32,10 @@ func TTL(ctx context.Context, key string) (time.Duration, error) {
 	return GetRedis().TTL(ctx, key).Result()
 }
 
+func Expire(ctx context.Context, key string, duration time.Duration) (bool, error) {
+	return GetRedis().Expire(ctx, key, duration).Result()
+}
+
 func cannotConvert(d reflect.Kind, s any) error {
 	return fmt.Errorf("redis: Scan cannot convert from %s to %s",
 		reflect.TypeOf(s), d)
