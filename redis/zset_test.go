@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_ZSet(t *testing.T) {
+func TestZSet(t *testing.T) {
 	ctx := context.Background()
 	key := "testZSetKey"
 	score := 1.1
