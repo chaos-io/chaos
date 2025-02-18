@@ -21,3 +21,11 @@ func HGetAll(ctx context.Context, key string) (map[string]string, error) {
 func HIncrBy(ctx context.Context, key string, field string, incr int64) (int64, error) {
 	return GetRedis().HIncrBy(ctx, key, field, incr).Result()
 }
+
+func HLen(ctx context.Context, key string) (int64, error) {
+	return GetRedis().HLen(ctx, key).Result()
+}
+
+func HDel(ctx context.Context, key string, fields ...string) (int64, error) {
+	return GetRedis().HDel(ctx, key, fields...).Result()
+}
