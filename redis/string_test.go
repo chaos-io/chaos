@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_String(t *testing.T) {
+func TestString(t *testing.T) {
 	ctx := context.Background()
 
 	key := "testStringKey"
@@ -42,4 +42,57 @@ func Test_String(t *testing.T) {
 
 	err = Del(ctx, key, key2, key3)
 	assert.NoError(t, err)
+}
+
+func TestStrings(t *testing.T) {
+	ctx := context.Background()
+	key := "testStringsKey"
+
+	str1, err := Append(ctx, key, "hello ")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(6), str1)
+	str2, err := Append(ctx, key, "world!")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12), str2)
+	get1, _ := Get(ctx, key)
+	assert.Equal(t, "hello world!", get1)
+
+	getRange, err := GetRange(ctx, key, 3, 7)
+	assert.NoError(t, err)
+	assert.Equal(t, "lo wo", getRange)
+
+	setRange, err := SetRange(ctx, key, 0, "H")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12), setRange)
+	get2, _ := Get(ctx, key)
+	assert.Equal(t, "Hello world!", get2)
+
+	_ = Del(ctx, key)
+}
+
+func TestBit(t *testing.T) {
+	ctx := context.Background()
+	key := "testBitKey"
+
+	bit, err := SetBit(ctx, key, 2, 1) // 0100 0000
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), bit)
+	bit2, err := SetBit(ctx, key, 7, 1) // 0100 0001
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), bit2)
+
+	getBit, err := GetBit(ctx, key, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), getBit)
+	getBit2, _ := GetBit(ctx, key, 2)
+	assert.Equal(t, int64(1), getBit2)
+
+	bitCount, err := BitCount(ctx, key, 0, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), bitCount)
+
+	get, _ := Get(ctx, key)
+	assert.Equal(t, "!", get)
+
+	_ = Del(ctx, key)
 }
