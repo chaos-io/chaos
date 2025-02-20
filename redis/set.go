@@ -34,20 +34,20 @@ func SDiff(ctx context.Context, keys ...string) ([]string, error) {
 	return GetRedis().SDiff(ctx, keys...).Result()
 }
 
-func SInter(ctx context.Context, keys ...string) ([]string, error) {
-	return GetRedis().SInter(ctx, keys...).Result()
-}
-
-func SUnion(ctx context.Context, keys ...string) ([]string, error) {
-	return GetRedis().SUnion(ctx, keys...).Result()
-}
-
 func SDiffStore(ctx context.Context, dst string, keys ...string) (int64, error) {
 	return GetRedis().SDiffStore(ctx, dst, keys...).Result()
 }
 
+func SInter(ctx context.Context, keys ...string) ([]string, error) {
+	return GetRedis().SInter(ctx, keys...).Result()
+}
+
 func SInterStore(ctx context.Context, dst string, keys ...string) (int64, error) {
 	return GetRedis().SInterStore(ctx, dst, keys...).Result()
+}
+
+func SUnion(ctx context.Context, keys ...string) ([]string, error) {
+	return GetRedis().SUnion(ctx, keys...).Result()
 }
 
 func SUnionStore(ctx context.Context, dst string, keys ...string) (int64, error) {

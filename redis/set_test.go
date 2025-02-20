@@ -98,3 +98,97 @@ func Test_SRem(t *testing.T) {
 
 	_ = Del(ctx, key)
 }
+
+func Test_SDiff(t *testing.T) {
+	key := "testSDiffKey"
+	key2 := "testSDiffKey2"
+
+	_, _ = SAdd(ctx, key, member1, member2)
+	_, _ = SAdd(ctx, key2, member1)
+
+	sDiff, err := SDiff(ctx, key, key2)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{strconv.Itoa(member2)}, sDiff)
+
+	_ = Del(ctx, key, key2)
+}
+
+func Test_SDiffStore(t *testing.T) {
+	key := "testSDiffStoreKey"
+	key2 := "testSDiffStoreKey2"
+
+	_, _ = SAdd(ctx, key, member1, member2)
+	_, _ = SAdd(ctx, key2, member1)
+
+	destKey := "testSDiffStoreKey3"
+	sDiffStore, err := SDiffStore(ctx, destKey, key, key2)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), sDiffStore)
+
+	sMembers, _ := SMembers(ctx, destKey)
+	assert.Equal(t, []string{strconv.Itoa(member2)}, sMembers)
+
+	_ = Del(ctx, key)
+}
+
+func Test_SInter(t *testing.T) {
+	key := "testSInterKey"
+	key2 := "testSInterKey2"
+
+	_, _ = SAdd(ctx, key, member1, member2)
+	_, _ = SAdd(ctx, key2, member1)
+
+	sInter, err := SInter(ctx, key, key2)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{member1}, sInter)
+
+	_ = Del(ctx, key)
+}
+
+func Test_SInterStore(t *testing.T) {
+	key := "testSInterStoreKey"
+	key2 := "testSInterStoreKey2"
+
+	_, _ = SAdd(ctx, key, member1, member2)
+	_, _ = SAdd(ctx, key2, member1)
+
+	destKey := "testSInterStoreKey3"
+	sInterStore, err := SInterStore(ctx, destKey, key, key2)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), sInterStore)
+
+	sMembers, _ := SMembers(ctx, destKey)
+	assert.Equal(t, []string{member1}, sMembers)
+
+	_ = Del(ctx, key)
+}
+
+func Test_SUnion(t *testing.T) {
+	key := "testSUnionKey"
+	key2 := "testSUnionKey2"
+
+	_, _ = SAdd(ctx, key, member1, member2)
+	_, _ = SAdd(ctx, key2, member1)
+	sUnion, err := SUnion(ctx, key, key2)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{member1, strconv.Itoa(member2)}, sUnion)
+
+	_ = Del(ctx, key)
+}
+
+func Test_SUnionStore(t *testing.T) {
+	key := "testSUnionStoreKey"
+	key2 := "testSUnionStoreKey2"
+
+	_, _ = SAdd(ctx, key, member1, member2)
+	_, _ = SAdd(ctx, key2, member1)
+	destKey := "testSUnionStoreKey3"
+	sUnionStore, err := SUnionStore(ctx, destKey, key, key2)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), sUnionStore)
+
+	sMembers, _ := SMembers(ctx, destKey)
+	assert.Equal(t, []string{member1, strconv.Itoa(member2)}, sMembers)
+
+	_ = Del(ctx, key)
+}
