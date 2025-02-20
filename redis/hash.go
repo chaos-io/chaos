@@ -1,6 +1,8 @@
 package redis
 
-import "context"
+import (
+	"context"
+)
 
 func HSet(ctx context.Context, key string, values ...any) (int64, error) {
 	return GetRedis().HSet(ctx, key, values).Result()
