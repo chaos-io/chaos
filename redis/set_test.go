@@ -128,7 +128,7 @@ func Test_SDiffStore(t *testing.T) {
 	sMembers, _ := SMembers(ctx, destKey)
 	assert.Equal(t, []string{strconv.Itoa(member2)}, sMembers)
 
-	_ = Del(ctx, key)
+	_ = Del(ctx, key, key2)
 }
 
 func Test_SInter(t *testing.T) {
@@ -142,7 +142,7 @@ func Test_SInter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{member1}, sInter)
 
-	_ = Del(ctx, key)
+	_ = Del(ctx, key, key2)
 }
 
 func Test_SInterStore(t *testing.T) {
@@ -160,7 +160,7 @@ func Test_SInterStore(t *testing.T) {
 	sMembers, _ := SMembers(ctx, destKey)
 	assert.Equal(t, []string{member1}, sMembers)
 
-	_ = Del(ctx, key)
+	_ = Del(ctx, key, key2)
 }
 
 func Test_SUnion(t *testing.T) {
@@ -173,7 +173,7 @@ func Test_SUnion(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{member1, strconv.Itoa(member2)}, sUnion)
 
-	_ = Del(ctx, key)
+	_ = Del(ctx, key, key2)
 }
 
 func Test_SUnionStore(t *testing.T) {
@@ -190,5 +190,5 @@ func Test_SUnionStore(t *testing.T) {
 	sMembers, _ := SMembers(ctx, destKey)
 	assert.Equal(t, []string{member1, strconv.Itoa(member2)}, sMembers)
 
-	_ = Del(ctx, key)
+	_ = Del(ctx, key, key2)
 }
