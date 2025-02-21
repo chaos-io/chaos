@@ -11,9 +11,11 @@ const (
 	hashField1 = "id"
 	hashField2 = "name"
 	hashField3 = "empty_field"
+	hashField4 = "score"
 
 	hashValue1 = 1
 	hashValue2 = "testName"
+	hashValue4 = 1.1
 )
 
 func Test_HSet(t *testing.T) {
@@ -81,6 +83,17 @@ func Test_HIncrBy(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
+func Test_HIncrByFloat(t *testing.T) {
+	key := "testHIncrByFloat"
+
+	_, _ = HSet(ctx, key, hashField4, hashValue4)
+	hIncrByFloat, err := HIncrByFloat(ctx, key, hashField4, 2.0)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(3.1), hIncrByFloat)
+
+	_ = Del(ctx, key)
+}
+
 func Test_HLen(t *testing.T) {
 	key := "testHLenKey"
 
@@ -102,6 +115,39 @@ func Test_HDel(t *testing.T) {
 
 	hLen, _ := HLen(ctx, key)
 	assert.Equal(t, int64(1), hLen)
+
+	_ = Del(ctx, key)
+}
+
+func Test_HExists(t *testing.T) {
+	key := "testHExists"
+
+	_, _ = HSet(ctx, key, hashField1, hashValue1)
+	hExists, err := HExists(ctx, key, hashField1)
+	assert.NoError(t, err)
+	assert.True(t, hExists)
+
+	_ = Del(ctx, key)
+}
+
+func Test_HKeys(t *testing.T) {
+	key := "testHKeys"
+
+	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
+	hKeys, err := HKeys(ctx, key)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{hashField1, hashField2}, hKeys)
+
+	_ = Del(ctx, key)
+}
+
+func Test_HVals(t *testing.T) {
+	key := "testHVals"
+
+	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
+	hVals, err := HVals(ctx, key)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{strconv.Itoa(hashValue1), hashValue2}, hVals)
 
 	_ = Del(ctx, key)
 }
