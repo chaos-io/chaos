@@ -6,8 +6,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func ZAdd(ctx context.Context, key string, score float64, member string) (int64, error) {
-	return GetRedis().ZAdd(ctx, key, redis.Z{Score: score, Member: member}).Result()
+type Z = redis.Z
+
+func ZAdd(ctx context.Context, key string, members ...Z) (int64, error) {
+	return GetRedis().ZAdd(ctx, key, members...).Result()
 }
 
 // ZRange 返回指定区间内的元素，按照分数（score）从低到高的顺序排列

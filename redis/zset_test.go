@@ -19,7 +19,7 @@ const (
 )
 
 func Test_ZSet(t *testing.T) {
-	zAdd, err := ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
+	zAdd, err := ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), zAdd)
 
@@ -27,8 +27,7 @@ func Test_ZSet(t *testing.T) {
 }
 
 func Test_ZRange(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zRange, err := ZRange(ctx, zSetKey1, 0, -1)
 	assert.NoError(t, err)
@@ -38,8 +37,7 @@ func Test_ZRange(t *testing.T) {
 }
 
 func Test_ZRevRange(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zRevRange, err := ZRevRange(ctx, zSetKey1, 0, -1)
 	assert.NoError(t, err)
@@ -49,8 +47,7 @@ func Test_ZRevRange(t *testing.T) {
 }
 
 func Test_ZRangeWithScores(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zRange, err := ZRangeWithScores(ctx, zSetKey1, 0, -1)
 	assert.NoError(t, err)
@@ -60,8 +57,7 @@ func Test_ZRangeWithScores(t *testing.T) {
 }
 
 func Test_ZRevRangeWithScores(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zRevRange, err := ZRevRangeWithScores(ctx, zSetKey1, 0, -1)
 	assert.NoError(t, err)
@@ -71,8 +67,7 @@ func Test_ZRevRangeWithScores(t *testing.T) {
 }
 
 func Test_ZCard(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zCard, err := ZCard(ctx, zSetKey1)
 	assert.NoError(t, err)
@@ -82,8 +77,7 @@ func Test_ZCard(t *testing.T) {
 }
 
 func Test_ZRem(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zRem, err := ZRem(ctx, zSetKey1, zSetMember1)
 	assert.NoError(t, err)
@@ -96,8 +90,7 @@ func Test_ZRem(t *testing.T) {
 }
 
 func Test_ZRank(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zRank, err := ZRank(ctx, zSetKey1, zSetMember1)
 	assert.NoError(t, err)
@@ -110,8 +103,7 @@ func Test_ZRank(t *testing.T) {
 }
 
 func Test_ZRevRank(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zRank, err := ZRevRank(ctx, zSetKey1, zSetMember1)
 	assert.NoError(t, err)
@@ -124,8 +116,7 @@ func Test_ZRevRank(t *testing.T) {
 }
 
 func Test_ZRemRangeByRank(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zRemRangeByRank, err := ZRemRangeByRank(ctx, zSetKey1, 1, 1)
 	assert.NoError(t, err)
@@ -138,8 +129,7 @@ func Test_ZRemRangeByRank(t *testing.T) {
 }
 
 func Test_ZScore(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
 	zScore, err := ZScore(ctx, zSetKey1, zSetMember1)
 	assert.NoError(t, err)
@@ -152,7 +142,7 @@ func Test_ZScore(t *testing.T) {
 }
 
 func Test_ZIncrBy(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1})
 
 	zIncrBy, err := ZIncrBy(ctx, zSetKey1, 2.0, zSetMember1)
 	assert.NoError(t, err)
@@ -162,10 +152,9 @@ func Test_ZIncrBy(t *testing.T) {
 }
 
 func Test_ZInterStore(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
-	_, _ = ZAdd(ctx, zSetKey2, 3.0, zSetMember1)
+	_, _ = ZAdd(ctx, zSetKey2, Z{Score: 3.0, Member: zSetMember1})
 
 	newZSetKey := "newZSetKey"
 	{
@@ -195,10 +184,9 @@ func Test_ZInterStore(t *testing.T) {
 }
 
 func Test_ZUnionStore(t *testing.T) {
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore1, zSetMember1)
-	_, _ = ZAdd(ctx, zSetKey1, zSetScore2, zSetMember2)
+	_, _ = ZAdd(ctx, zSetKey1, Z{Score: zSetScore1, Member: zSetMember1}, Z{Score: zSetScore2, Member: zSetMember2})
 
-	_, _ = ZAdd(ctx, zSetKey2, 3.0, zSetMember1)
+	_, _ = ZAdd(ctx, zSetKey2, Z{Score: 3.0, Member: zSetMember1})
 
 	newZSetKey := "newZSetKey"
 	{
@@ -207,21 +195,21 @@ func Test_ZUnionStore(t *testing.T) {
 		assert.Equal(t, int64(2), zUnionStore)
 
 		zRange, _ := ZRangeWithScores(ctx, newZSetKey, 0, -1)
-		assert.Equal(t, []redis.Z{{zSetScore2, zSetMember2}, {4.1, zSetMember1}}, zRange)
+		assert.Equal(t, []Z{{Score: zSetScore2, Member: zSetMember2}, {Score: 4.1, Member: zSetMember1}}, zRange)
 	}
 
 	newZSetKeyInMax := "newZSetKey2"
 	{
 		_, _ = ZUnionStore(ctx, newZSetKeyInMax, []string{zSetKey1, zSetKey2}, nil, "max")
 		zRange, _ := ZRangeWithScores(ctx, newZSetKeyInMax, 0, -1)
-		assert.Equal(t, []redis.Z{{zSetScore2, zSetMember2}, {3.0, zSetMember1}}, zRange)
+		assert.Equal(t, []Z{{Score: zSetScore2, Member: zSetMember2}, {Score: 3.0, Member: zSetMember1}}, zRange)
 	}
 
 	newZSetKeyInMin := "newZSetKey3"
 	{
 		_, _ = ZUnionStore(ctx, newZSetKeyInMin, []string{zSetKey1, zSetKey2}, nil, "min")
 		zRange, _ := ZRangeWithScores(ctx, newZSetKeyInMin, 0, -1)
-		assert.Equal(t, []redis.Z{{zSetScore1, zSetMember1}, {zSetScore2, zSetMember2}}, zRange)
+		assert.Equal(t, []Z{{Score: zSetScore1, Member: zSetMember1}, {Score: zSetScore2, Member: zSetMember2}}, zRange)
 	}
 
 	_ = Del(ctx, zSetKey1, zSetKey2, newZSetKey, newZSetKeyInMax, newZSetKeyInMin)
