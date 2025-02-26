@@ -15,6 +15,7 @@ func Get(ctx context.Context, key string) (string, error) {
 	return GetRedis().Get(ctx, key).Result()
 }
 
+// SetNX 设置一个键（key）只有在它不存在的情况下才会被设置（SET if Not Exists）
 func SetNX(ctx context.Context, key string, value any, expire time.Duration) (bool, error) {
 	return GetRedis().SetNX(ctx, key, value, expire).Result()
 }
