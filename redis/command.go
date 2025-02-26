@@ -27,12 +27,46 @@ func Type(ctx context.Context, key string) (string, error) {
 	return GetRedis().Type(ctx, key).Result()
 }
 
+// Expire 让键在指定的秒后过期
+//
+// Returns:
+// - 1: 键的过期时间成功设置
+// - 0: 键不存在，或者无法设置过期时间（例如，键已经有过期时间）
+func Expire(ctx context.Context, key string, duration time.Duration) (bool, error) {
+	return GetRedis().Expire(ctx, key, duration).Result()
+}
+
+// ExpireAt 将给定键的过期时间设置为给定的UNIX时间戳
+func ExpireAt(ctx context.Context, key string, time time.Time) (bool, error) {
+	return GetRedis().ExpireAt(ctx, key, time).Result()
+}
+
+// PExpire 让键在指定的毫秒后过期
+func PExpire(ctx context.Context, key string, duration time.Duration) (bool, error) {
+	return GetRedis().PExpire(ctx, key, duration).Result()
+}
+
+func PExpireAt(ctx context.Context, key string, time time.Time) (bool, error) {
+	return GetRedis().PExpireAt(ctx, key, time).Result()
+}
+
+// TTL 查看键的剩余生存时间(Time To Live，单位：秒)
+//
+// Returns:
+// - -1: 表示该键没有过期时间
+// - -2: 表示该键已经不存在
 func TTL(ctx context.Context, key string) (time.Duration, error) {
 	return GetRedis().TTL(ctx, key).Result()
 }
 
-func Expire(ctx context.Context, key string, duration time.Duration) (bool, error) {
-	return GetRedis().Expire(ctx, key, duration).Result()
+// PTTL 查看键的剩余生存时间(Time To Live，单位：毫秒)
+func PTTL(ctx context.Context, key string) (time.Duration, error) {
+	return GetRedis().PTTL(ctx, key).Result()
+}
+
+// Persist 移除键的过期时间
+func Persist(ctx context.Context, key string) (bool, error) {
+	return GetRedis().Persist(ctx, key).Result()
 }
 
 // Sort 对列表、集合、或者有序集合（sorted set）进行排序
