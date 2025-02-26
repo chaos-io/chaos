@@ -59,6 +59,10 @@ func Test_Incr(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), incr)
 
+	incr2, err2 := Incr(ctx, key)
+	assert.NoError(t, err2)
+	assert.Equal(t, int64(2), incr2)
+
 	_ = Del(ctx, key)
 }
 
