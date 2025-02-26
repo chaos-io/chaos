@@ -73,18 +73,19 @@ func New(cfg *Config) *Redis {
 			MinRetryBackoff: cfg.MinRetryBackoff,
 		}
 		return &Redis{Client: redis2.NewClient(option)}
-	} else {
-		option := &redis2.ClusterOptions{
-			Addrs:           cfg.Connections,
-			Password:        cfg.Password,
-			MinIdleConns:    cfg.MinIdleConns,
-			PoolSize:        cfg.PoolSize,
-			ReadTimeout:     cfg.ReadTimeout,
-			WriteTimeout:    cfg.WriteTimeout,
-			MaxRetries:      cfg.MaxRetries,
-			MaxRetryBackoff: cfg.MaxRetryBackoff,
-			MinRetryBackoff: cfg.MinRetryBackoff,
-		}
-		return &Redis{Client: redis2.NewClusterClient(option)}
 	}
+
+	option := &redis2.ClusterOptions{
+		Addrs:           cfg.Connections,
+		Password:        cfg.Password,
+		MinIdleConns:    cfg.MinIdleConns,
+		PoolSize:        cfg.PoolSize,
+		ReadTimeout:     cfg.ReadTimeout,
+		WriteTimeout:    cfg.WriteTimeout,
+		MaxRetries:      cfg.MaxRetries,
+		MaxRetryBackoff: cfg.MaxRetryBackoff,
+		MinRetryBackoff: cfg.MinRetryBackoff,
+	}
+
+	return &Redis{Client: redis2.NewClusterClient(option)}
 }
