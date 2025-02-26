@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -10,63 +9,86 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-func Test_List(t *testing.T) {
-	key := "testList"
-	rPush, err := RPush(ctx, key, "1")
+func Test_RPush(t *testing.T) {
+	key := "rPushKey"
+	rPush, err := RPush(ctx, key, 1, "2")
 	assert.NoError(t, err)
-	assert.Equal(t, int64(1), rPush)
-	fmt.Printf("rPush got %v\n", rPush)
+	assert.Equal(t, int64(2), rPush)
+
+	_ = Del(ctx, key)
+}
+
+func Test_RPop(t *testing.T) {
+	key := "rPopKey"
+	_, _ = RPush(ctx, key, 1)
 
 	rPop, err := RPop(ctx, key)
 	assert.NoError(t, err)
 	assert.Equal(t, "1", rPop)
-	fmt.Printf("rPop got %v\n", rPop)
 
-	lPush, err := LPush(ctx, key, "2")
+	_ = Del(ctx, key)
+}
+
+func Test_LPush(t *testing.T) {
+	key := "lPushKey"
+	lPush, err := LPush(ctx, key, 1, "2")
 	assert.NoError(t, err)
-	assert.Equal(t, int64(1), lPush)
-	fmt.Printf("lPush got %v\n", lPush)
+	assert.Equal(t, int64(2), lPush)
 
-	_, _ = LPush(ctx, key, "3")
+	_ = Del(ctx, key)
+}
 
-	lRange, err := LRange(ctx, key, 0, -1)
+func Test_LPop(t *testing.T) {
+	key := "lPopKey"
+	_, _ = LPush(ctx, key, 1)
+
+	rPop, err := LPop(ctx, key)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(lRange))
-	fmt.Printf("lRange got %v\n", lRange)
+	assert.Equal(t, "1", rPop)
 
-	lPop, err := LPop(ctx, key)
-	assert.NoError(t, err)
-	assert.Equal(t, lPop, "3")
-
-	lLen, err := LLen(ctx, key)
-	assert.NoError(t, err)
-	assert.Equal(t, int64(1), lLen)
-
-	err = Del(ctx, key)
-	assert.NoError(t, err)
+	_ = Del(ctx, key)
 }
 
 func Test_LIndex(t *testing.T) {
-	key := "testLIndex"
-	_, _ = RPush(ctx, key, "1")
-	_, _ = RPush(ctx, key, "2")
+	key := "lIndexKey"
+	_, _ = LPush(ctx, key, 1, "2")
 
-	lIndex1, err := LIndex(ctx, key, 1)
-	assert.NoError(t, err)
+	lIndex1, err1 := LIndex(ctx, key, 0)
+	assert.NoError(t, err1)
 	assert.Equal(t, "2", lIndex1)
 
-	lIndex2, err := LIndex(ctx, key, 0)
-	assert.NoError(t, err)
+	lIndex2, err2 := LIndex(ctx, key, 1)
+	assert.NoError(t, err2)
 	assert.Equal(t, "1", lIndex2)
+
+	_ = Del(ctx, key)
+}
+
+func Test_LRange(t *testing.T) {
+	key := "lRangeKey"
+	_, _ = RPush(ctx, key, 1, "2")
+
+	lRange, err := LRange(ctx, key, 0, -1)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"1", "2"}, lRange)
+
+	_ = Del(ctx, key)
+}
+
+func Test_LLen(t *testing.T) {
+	key := "lLenKey"
+	_, _ = RPush(ctx, key, 1, "2")
+
+	lLen, err := LLen(ctx, key)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), lLen)
 
 	_ = Del(ctx, key)
 }
 
 func Test_LTrim(t *testing.T) {
 	key := "testLTrim"
-	_, _ = RPush(ctx, key, "1")
-	_, _ = RPush(ctx, key, "2")
-	_, _ = RPush(ctx, key, "3")
+	_, _ = RPush(ctx, key, 1, "2", 3)
 
 	lTrim, err := LTrim(ctx, key, 0, 1)
 	assert.NoError(t, err)
@@ -89,11 +111,10 @@ func Test_LTrim(t *testing.T) {
 
 func Test_BRPop(t *testing.T) {
 	key := "testBRPop"
-	_, _ = RPush(ctx, key, "1")
-	_, _ = RPush(ctx, key, "2")
+	_, _ = RPush(ctx, key, 1, "2")
 
 	key2 := "testBRPop2"
-	_, _ = RPush(ctx, key2, "3")
+	_, _ = RPush(ctx, key2, 3)
 
 	brPop, err := BRPop(ctx, 1*time.Second, key, key2)
 	assert.NoError(t, err)
@@ -132,10 +153,9 @@ func Test_BRPop(t *testing.T) {
 
 func Test_RPopLPush(t *testing.T) {
 	key := "testRPopLPush"
+	_, _ = RPush(ctx, key, 1, "2", 3)
 	key2 := "testRPopLPush2"
-	_, _ = RPush(ctx, key, "1")
-	_, _ = RPush(ctx, key, "2")
-	_, _ = RPush(ctx, key, "3")
+	_, _ = RPush(ctx, key2, "a")
 
 	rPopLPush, err := RPopLPush(ctx, key, key2)
 	assert.NoError(t, err)
@@ -143,8 +163,9 @@ func Test_RPopLPush(t *testing.T) {
 
 	lRange, _ := LRange(ctx, key, 0, -1)
 	assert.Equal(t, []string{"1", "2"}, lRange)
+
 	lRange2, _ := LRange(ctx, key2, 0, -1)
-	assert.Equal(t, []string{"3"}, lRange2)
+	assert.Equal(t, []string{"3", "a"}, lRange2)
 
 	_ = Del(ctx, key, key2)
 }

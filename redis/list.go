@@ -5,16 +5,16 @@ import (
 	"time"
 )
 
-func RPush(ctx context.Context, key string, value string) (int64, error) {
-	return GetRedis().RPush(ctx, key, value).Result()
+func RPush(ctx context.Context, key string, values ...any) (int64, error) {
+	return GetRedis().RPush(ctx, key, values).Result()
 }
 
 func RPop(ctx context.Context, key string) (string, error) {
 	return GetRedis().RPop(ctx, key).Result()
 }
 
-func LPush(ctx context.Context, key string, value string) (int64, error) {
-	return GetRedis().LPush(ctx, key, value).Result()
+func LPush(ctx context.Context, key string, values ...any) (int64, error) {
+	return GetRedis().LPush(ctx, key, values).Result()
 }
 
 func LPop(ctx context.Context, key string) (string, error) {
