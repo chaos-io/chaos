@@ -161,3 +161,64 @@ func Test_Sort_ZSet(t *testing.T) {
 
 	_ = Del(ctx, key)
 }
+
+func Test_Eval_Sum(t *testing.T) {
+	// 计算多个 Key 的总和
+	luaScript := `
+	local sum = 0
+	for i, key in ipairs(KEYS) do
+		sum = sum + tonumber(redis.call("get", key) or 0)
+	end
+	return sum
+`
+
+	key1 := "evalKey1"
+	key2 := "evalKey2"
+	key3 := "evalKey3"
+
+	_, _ = Set(ctx, key1, "1", 0)
+	_, _ = Set(ctx, key2, "2", 0)
+	_, _ = Set(ctx, key3, "3", 0)
+
+	eval, err := Eval(ctx, luaScript, []string{key1, key2, key3})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(6), eval.(int64))
+
+	sha1, err := ScriptLoad(ctx, luaScript)
+	assert.NoError(t, err)
+	evalSha, err := EvalSha(ctx, sha1, []string{key1, key2, key3})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(6), evalSha.(int64))
+
+	_ = Del(ctx, key1, key2, key3)
+}
+
+func Test_Eval_Set(t *testing.T) {
+	// 事务处理（检查并设置值）
+	luaScript := `
+	if redis.call("get", KEYS[1]) == ARGV[1] then
+		return redis.call("set", KEYS[1], ARGV[2])
+	else
+		return "value mismatch"
+	end
+`
+	key := "evalSetKey"
+	val1 := "aaa"
+	val2 := "bbb"
+
+	eval, err := Eval(ctx, luaScript, []string{key}, []string{val1, val2})
+	assert.NoError(t, err)
+	assert.Equal(t, "value mismatch", eval.(string))
+
+	_, err = Get(ctx, key)
+	assert.True(t, IsErrNil(err))
+
+	_, _ = Set(ctx, key, val1, 0)
+	_, err = Eval(ctx, luaScript, []string{key}, []string{val1, val2})
+	assert.NoError(t, err)
+
+	get2, _ := Get(ctx, key)
+	assert.Equal(t, val2, get2)
+
+	_ = Del(ctx, key)
+}
