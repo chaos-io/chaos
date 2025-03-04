@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/chaos-io/chaos/logs"
 )
 
 func Do(ctx context.Context, args ...any) (any, error) {
@@ -103,4 +105,58 @@ func ScriptLoad(ctx context.Context, script string) (string, error) {
 // EvalSha 使用 Lua 脚本的 SHA1 哈希值来执行脚本，避免重复解析脚本
 func EvalSha(ctx context.Context, sha1 string, keys []string, args ...interface{}) (interface{}, error) {
 	return GetRedis().EvalSha(ctx, sha1, keys, args...).Result()
+}
+
+// AcquireLock 使用 SET 命令的 NX 选项和 PX 选项实现原子加锁
+func AcquireLock(ctx context.Context, lockKey, requestId string, ttl time.Duration) bool {
+	luaScript := `
+		if redis.call("SET", KEYS[1], ARGV[1], "NX", "PX", ARGV[2]) then
+			return 1
+		else
+			return 0
+		end`
+
+	res, err := Int(Eval(ctx, luaScript, []string{lockKey}, requestId, ttl.Milliseconds()))
+	if err != nil {
+		logs.Warnw("failed to acquire lock", "lockKey", lockKey, "requestId", requestId, "error", err)
+		return false
+	}
+
+	return res == 1
+}
+
+// ReleaseLock 释放锁（确保只释放自己加的锁）
+func ReleaseLock(ctx context.Context, lockKey, requestId string) bool {
+	luaScript := `
+		if redis.call("GET", KEYS[1]) == ARGV[1] then
+			return redis.call("DEL", KEYS[1])
+		else
+			return 0
+		end`
+
+	res, err := Int(Eval(ctx, luaScript, []string{lockKey}, requestId))
+	if err != nil {
+		logs.Warnw("failed to release lock", "lockKey", lockKey, "requestId", requestId, "error", err)
+		return false
+	}
+
+	return res == 1
+}
+
+// RenewLock 续约锁（防止锁过期导致业务未完成）
+func RenewLock(ctx context.Context, lockKey, requestId string, ttl time.Duration) bool {
+	luaScript := `
+		if redis.call("GET", KEYS[1]) == ARGV[1] then
+			return redis.call("PEXPIRE", KEYS[1], ARGV[2])
+		else
+			return 0
+		end`
+
+	res, err := Int(Eval(ctx, luaScript, []string{lockKey}, requestId, ttl.Milliseconds()))
+	if err != nil {
+		logs.Warnw("failed to renew lock", "lockKey", lockKey, "requestId", requestId, "error", err)
+		return false
+	}
+
+	return res == 1
 }

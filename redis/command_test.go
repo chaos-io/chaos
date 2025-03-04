@@ -222,3 +222,54 @@ func Test_Eval_Set(t *testing.T) {
 
 	_ = Del(ctx, key)
 }
+
+func Test_AcquireLock(t *testing.T) {
+	key := "acquireLockKey"
+	requestId := "requestId"
+	ttl := 100 * time.Millisecond
+
+	acquireLock := AcquireLock(ctx, key, requestId, ttl)
+	assert.True(t, acquireLock)
+
+	time.Sleep(ttl)
+	exist, _ := Exists(ctx, key)
+	assert.False(t, exist)
+}
+
+func Test_ReleaseLock(t *testing.T) {
+	key := "releaseLockKey"
+	requestId := "requestId"
+	ttl := 1 * time.Second
+
+	acquireLock := AcquireLock(ctx, key, requestId, ttl)
+	assert.True(t, acquireLock)
+
+	exist, _ := Exists(ctx, key)
+	assert.True(t, exist)
+
+	releaseLock := ReleaseLock(ctx, key, requestId)
+	assert.True(t, releaseLock)
+
+	exist2, _ := Exists(ctx, key)
+	assert.False(t, exist2)
+}
+
+func Test_RenewLock(t *testing.T) {
+	key := "renewLockKey"
+	requestId := "requestId"
+	ttl := 100 * time.Millisecond
+
+	acquireLock := AcquireLock(ctx, key, requestId, ttl)
+	assert.True(t, acquireLock)
+
+	exist, _ := Exists(ctx, key)
+	assert.True(t, exist)
+
+	time.Sleep(90 * time.Millisecond)
+	ttl2 := 1 * time.Second
+	RenewLock(ctx, key, requestId, ttl2)
+
+	time.Sleep(900 * time.Millisecond)
+	exist2, _ := Exists(ctx, key)
+	assert.True(t, exist2)
+}

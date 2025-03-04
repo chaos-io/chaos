@@ -7,6 +7,16 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Set 设置键（key）对应的值（value）
+//
+// Parameters:
+//   - EX seconds：设置键的过期时间（秒）。
+//   - PX milliseconds：设置键的过期时间（毫秒）。
+//   - NX：只有当键不存在时才设置值（适用于分布式锁）。
+//   - XX：只有当键已经存在时才设置值。
+//   - KEEPTTL：保留键的现有 TTL（不修改过期时间）。
+//
+// 示例	SET lock "token" NX PX 5000  # 仅当 lock 不存在时设置，且 5000 毫秒后过期
 func Set(ctx context.Context, key string, value any, expire time.Duration) (string, error) {
 	return GetRedis().Set(ctx, key, value, expire).Result()
 }
