@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 
 	"github.com/chaos-io/chaos/logs"
 )
@@ -82,7 +82,7 @@ func Persist(ctx context.Context, key string) (bool, error) {
 // - count: count为返回的元素数量
 // - alpha: 为true时表示按字母排序，默认为按数字排序
 func Sort(ctx context.Context, key string, by string, get []string, order string, offset, count int64, alpha bool) ([]string, error) {
-	return GetRedis().Sort(ctx, key, &redis.Sort{
+	return GetRedis().Sort(ctx, key, &goredis.Sort{
 		By:     by,
 		Offset: offset,
 		Count:  count,

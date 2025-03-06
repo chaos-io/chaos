@@ -3,13 +3,13 @@ package redis
 import (
 	"context"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 )
 
-type Tx = redis.Tx
-type Pipeliner = redis.Pipeliner
+type Tx = goredis.Tx
+type Pipeliner = goredis.Pipeliner
 
-func Pipeline() redis.Pipeliner {
+func Pipeline() goredis.Pipeliner {
 	return GetRedis().Pipeline()
 }
 
