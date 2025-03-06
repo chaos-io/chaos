@@ -3,7 +3,6 @@ package redis
 import (
 	"testing"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,7 +50,7 @@ func Test_ZRangeWithScores(t *testing.T) {
 
 	zRange, err := ZRangeWithScores(ctx, zSetKey1, 0, -1)
 	assert.NoError(t, err)
-	assert.Equal(t, []redis.Z{{zSetScore1, zSetMember1}, {zSetScore2, zSetMember2}}, zRange)
+	assert.Equal(t, []Z{{zSetScore1, zSetMember1}, {zSetScore2, zSetMember2}}, zRange)
 
 	_ = Del(ctx, zSetKey1)
 }
@@ -61,7 +60,7 @@ func Test_ZRevRangeWithScores(t *testing.T) {
 
 	zRevRange, err := ZRevRangeWithScores(ctx, zSetKey1, 0, -1)
 	assert.NoError(t, err)
-	assert.Equal(t, []redis.Z{{zSetScore2, zSetMember2}, {zSetScore1, zSetMember1}}, zRevRange)
+	assert.Equal(t, []Z{{zSetScore2, zSetMember2}, {zSetScore1, zSetMember1}}, zRevRange)
 
 	_ = Del(ctx, zSetKey1)
 }
@@ -163,21 +162,21 @@ func Test_ZInterStore(t *testing.T) {
 		assert.Equal(t, int64(1), zInterStore)
 
 		zRange, _ := ZRangeWithScores(ctx, newZSetKey, 0, -1)
-		assert.Equal(t, []redis.Z{{4.1, zSetMember1}}, zRange)
+		assert.Equal(t, []Z{{4.1, zSetMember1}}, zRange)
 	}
 
 	newZSetKeyInMax := "newZSetKey2"
 	{
 		_, _ = ZInterStore(ctx, newZSetKeyInMax, []string{zSetKey1, zSetKey2}, nil, "max")
 		zRange, _ := ZRangeWithScores(ctx, newZSetKeyInMax, 0, -1)
-		assert.Equal(t, []redis.Z{{3.0, zSetMember1}}, zRange)
+		assert.Equal(t, []Z{{3.0, zSetMember1}}, zRange)
 	}
 
 	newZSetKeyInMin := "newZSetKey3"
 	{
 		_, _ = ZInterStore(ctx, newZSetKeyInMin, []string{zSetKey1, zSetKey2}, nil, "min")
 		zRange, _ := ZRangeWithScores(ctx, newZSetKeyInMin, 0, -1)
-		assert.Equal(t, []redis.Z{{zSetScore1, zSetMember1}}, zRange)
+		assert.Equal(t, []Z{{zSetScore1, zSetMember1}}, zRange)
 	}
 
 	_ = Del(ctx, zSetKey1, zSetKey2, newZSetKey, newZSetKeyInMax, newZSetKeyInMin)

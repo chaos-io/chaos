@@ -3,10 +3,10 @@ package redis
 import (
 	"context"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 )
 
-type Z = redis.Z
+type Z = goredis.Z
 
 func ZAdd(ctx context.Context, key string, members ...Z) (int64, error) {
 	return GetRedis().ZAdd(ctx, key, members...).Result()
@@ -22,11 +22,11 @@ func ZRevRange(ctx context.Context, key string, start, stop int64) ([]string, er
 	return GetRedis().ZRevRange(ctx, key, start, stop).Result()
 }
 
-func ZRangeWithScores(ctx context.Context, key string, start, stop int64) ([]redis.Z, error) {
+func ZRangeWithScores(ctx context.Context, key string, start, stop int64) ([]goredis.Z, error) {
 	return GetRedis().ZRangeWithScores(ctx, key, start, stop).Result()
 }
 
-func ZRevRangeWithScores(ctx context.Context, key string, start, stop int64) ([]redis.Z, error) {
+func ZRevRangeWithScores(ctx context.Context, key string, start, stop int64) ([]goredis.Z, error) {
 	return GetRedis().ZRevRangeWithScores(ctx, key, start, stop).Result()
 }
 
@@ -73,7 +73,7 @@ func ZIncrBy(ctx context.Context, key string, increment float64, member string) 
 //   - min：取交集元素的最小分数。
 //   - max：取交集元素的最大分数。
 func ZInterStore(ctx context.Context, dest string, keys []string, weights []float64, aggregate string) (int64, error) {
-	return GetRedis().ZInterStore(ctx, dest, &redis.ZStore{
+	return GetRedis().ZInterStore(ctx, dest, &goredis.ZStore{
 		Keys:      keys,
 		Weights:   weights,
 		Aggregate: aggregate,
@@ -81,7 +81,7 @@ func ZInterStore(ctx context.Context, dest string, keys []string, weights []floa
 }
 
 func ZUnionStore(ctx context.Context, dest string, keys []string, weights []float64, aggregate string) (int64, error) {
-	return GetRedis().ZUnionStore(ctx, dest, &redis.ZStore{
+	return GetRedis().ZUnionStore(ctx, dest, &goredis.ZStore{
 		Keys:      keys,
 		Weights:   weights,
 		Aggregate: aggregate,

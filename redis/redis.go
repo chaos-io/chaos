@@ -4,22 +4,22 @@ import (
 	"sync"
 	"time"
 
-	redis2 "github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 
 	"github.com/chaos-io/chaos/config"
 	"github.com/chaos-io/chaos/logs"
 )
 
 var (
-	redisClient     redis2.UniversalClient
+	redisClient     goredis.UniversalClient
 	redisClientOnce sync.Once
 )
 
 type Redis struct {
-	Client redis2.UniversalClient
+	Client goredis.UniversalClient
 }
 
-func GetRedis() redis2.UniversalClient {
+func GetRedis() goredis.UniversalClient {
 	redisClientOnce.Do(func() {
 		cfg := NewConfig()
 		redisClient = New(cfg).Client
@@ -60,7 +60,7 @@ func New(cfg *Config) *Redis {
 	}
 
 	if len(cfg.Connections) == 1 {
-		option := &redis2.Options{
+		option := &goredis.Options{
 			Addr:            cfg.Connections[0],
 			Password:        cfg.Password,
 			DB:              cfg.DB,
@@ -72,10 +72,10 @@ func New(cfg *Config) *Redis {
 			MaxRetryBackoff: cfg.MaxRetryBackoff,
 			MinRetryBackoff: cfg.MinRetryBackoff,
 		}
-		return &Redis{Client: redis2.NewClient(option)}
+		return &Redis{Client: goredis.NewClient(option)}
 	}
 
-	option := &redis2.ClusterOptions{
+	option := &goredis.ClusterOptions{
 		Addrs:           cfg.Connections,
 		Password:        cfg.Password,
 		MinIdleConns:    cfg.MinIdleConns,
@@ -87,5 +87,5 @@ func New(cfg *Config) *Redis {
 		MinRetryBackoff: cfg.MinRetryBackoff,
 	}
 
-	return &Redis{Client: redis2.NewClusterClient(option)}
+	return &Redis{Client: goredis.NewClusterClient(option)}
 }

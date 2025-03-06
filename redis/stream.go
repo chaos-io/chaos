@@ -3,13 +3,13 @@ package redis
 import (
 	"context"
 
-	redis2 "github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 
 	"github.com/chaos-io/chaos/logs"
 )
 
 func XAdd(ctx context.Context, streamName string, kvs ...any) (string, error) {
-	res, err := GetRedis().XAdd(ctx, &redis2.XAddArgs{
+	res, err := GetRedis().XAdd(ctx, &goredis.XAddArgs{
 		Stream: streamName,
 		Values: kvs,
 	}).Result()
@@ -20,8 +20,8 @@ func XAdd(ctx context.Context, streamName string, kvs ...any) (string, error) {
 	return res, nil
 }
 
-func XRead(ctx context.Context, streamName string) ([]redis2.XStream, error) {
-	xStreams, err := GetRedis().XRead(ctx, &redis2.XReadArgs{
+func XRead(ctx context.Context, streamName string) ([]goredis.XStream, error) {
+	xStreams, err := GetRedis().XRead(ctx, &goredis.XReadArgs{
 		Streams: []string{streamName, "0"},
 		Count:   10,
 		Block:   0,
@@ -55,8 +55,8 @@ func XGroupCreate(ctx context.Context, streamName, groupName string) (string, er
 	return res, nil
 }
 
-func XReadGroup(ctx context.Context, streamName, groupName, consumer string) ([]redis2.XStream, error) {
-	xStreams, err := GetRedis().XReadGroup(ctx, &redis2.XReadGroupArgs{
+func XReadGroup(ctx context.Context, streamName, groupName, consumer string) ([]goredis.XStream, error) {
+	xStreams, err := GetRedis().XReadGroup(ctx, &goredis.XReadGroupArgs{
 		Group:    groupName,
 		Consumer: consumer,
 		Streams:  []string{streamName, ">"},
@@ -71,7 +71,7 @@ func XReadGroup(ctx context.Context, streamName, groupName, consumer string) ([]
 	return xStreams, nil
 }
 
-func XPending(ctx context.Context, streamName, groupName string) (*redis2.XPending, error) {
+func XPending(ctx context.Context, streamName, groupName string) (*goredis.XPending, error) {
 	xPending, err := GetRedis().XPending(ctx, streamName, groupName).Result()
 	if err != nil {
 		return nil, err

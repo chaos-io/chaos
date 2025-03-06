@@ -3,9 +3,9 @@ package redis
 import (
 	"errors"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 func IsErrNil(err error) bool {
-	return errors.Is(err, redis.Nil)
+	return errors.Is(err, goredis.Nil)
 }

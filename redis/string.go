@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // Set 设置键（key）对应的值（value）
@@ -97,7 +97,7 @@ func GetBit(ctx context.Context, key string, offset int64) (int64, error) {
 // Returns:
 // - 二进制位为1的数量
 func BitCount(ctx context.Context, key string, start, end int64) (int64, error) {
-	return GetRedis().BitCount(ctx, key, &redis.BitCount{
+	return GetRedis().BitCount(ctx, key, &goredis.BitCount{
 		Start: start,
 		End:   end,
 	}).Result()

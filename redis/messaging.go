@@ -3,11 +3,11 @@ package redis
 import (
 	"context"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // Subscribe 订阅一个或多个频道
-func Subscribe(ctx context.Context, channels ...string) *redis.PubSub {
+func Subscribe(ctx context.Context, channels ...string) *goredis.PubSub {
 	return GetRedis().Subscribe(ctx, channels...)
 }
 
