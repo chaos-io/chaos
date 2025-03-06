@@ -93,7 +93,7 @@ func Sort(ctx context.Context, key string, by string, get []string, order string
 }
 
 // Eval 直接执行 Lua 代码，适用于一次性脚本
-func Eval(ctx context.Context, script string, keys []string, args ...interface{}) (interface{}, error) {
+func Eval(ctx context.Context, script string, keys []string, args ...any) (any, error) {
 	return GetRedis().Eval(ctx, script, keys, args...).Result()
 }
 
@@ -103,7 +103,7 @@ func ScriptLoad(ctx context.Context, script string) (string, error) {
 }
 
 // EvalSha 使用 Lua 脚本的 SHA1 哈希值来执行脚本，避免重复解析脚本
-func EvalSha(ctx context.Context, sha1 string, keys []string, args ...interface{}) (interface{}, error) {
+func EvalSha(ctx context.Context, sha1 string, keys []string, args ...any) (any, error) {
 	return GetRedis().EvalSha(ctx, sha1, keys, args...).Result()
 }
 
