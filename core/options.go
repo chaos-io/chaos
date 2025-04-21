@@ -28,11 +28,9 @@ func (o Options) Merge(options Options) Options {
 
 func (o Options) KeyValues() []interface{} {
 	var kvs []interface{}
-	if o != nil {
-		for k, v := range o {
-			kvs = append(kvs, k)
-			kvs = append(kvs, v)
-		}
+	for k, v := range o {
+		kvs = append(kvs, k)
+		kvs = append(kvs, v)
 	}
 	return kvs
 }
