@@ -10,19 +10,20 @@ var defaultLevel zap.AtomicLevel
 
 func SetLevel(level string) {
 	l := strings.ToLower(level)
-	if l == "info" {
+	switch l {
+	case "info":
 		defaultLevel.SetLevel(zap.InfoLevel)
-	} else if l == "debug" {
+	case "debug":
 		defaultLevel.SetLevel(zap.DebugLevel)
-	} else if l == "error" {
-		defaultLevel.SetLevel(zap.ErrorLevel)
-	} else if l == "warn" {
+	case "warn":
 		defaultLevel.SetLevel(zap.WarnLevel)
-	} else if l == "panic" {
+	case "error":
+		defaultLevel.SetLevel(zap.ErrorLevel)
+	case "panic":
 		defaultLevel.SetLevel(zap.PanicLevel)
-	} else if l == "fatal" {
+	case "fatal":
 		defaultLevel.SetLevel(zap.FatalLevel)
-	} else {
+	default:
 		defaultLevel.SetLevel(zap.InfoLevel)
 	}
 }
