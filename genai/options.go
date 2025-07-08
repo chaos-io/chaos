@@ -30,6 +30,6 @@ func WithModel(model string) Option {
 	}
 }
 
-func Text(o *Options)  { o.Type = "text" }
-func Image(o *Options) { o.Type = "image" }
-func Audio(o *Options) { o.Type = "audio" }
+func Text(o *Options)  { o.Type = TypeText }
+func Image(o *Options) { o.Type = TypeImage }
+func Audio(o *Options) { o.Type = TypeAudio }
