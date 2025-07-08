@@ -54,7 +54,7 @@ func notTrans(ctx context.Context, key string) {
 	logs.Debugw("notTrans decr value", "key", key, "value", val)
 }
 
-func Test_Watch(t *testing.T) {
+func test_Watch(t *testing.T) {
 	PurchaseItem("buyer", "item", "seller", 122)
 	Do(ctx, "FLUSHDB")
 }

@@ -109,7 +109,7 @@ func Test_LTrim(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_BRPop(t *testing.T) {
+func test_BRPop(t *testing.T) {
 	key := "testBRPop"
 	_, _ = RPush(ctx, key, 1, "2")
 

@@ -24,13 +24,26 @@ func TestScanFrom(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	cfg := &ProjectLogs{}
-	err := config.Get("projectLogs").Scan(&cfg)
+	get, err := config.Get("projectLogs")
+	if err != nil {
+		t.Errorf("Get() error = %v", err)
+	}
+	err = get.Scan(&cfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "debug", cfg.Level)
 
-	get := config.Get("projectLogs.level").String("s1")
-	assert.Equal(t, "debug", get)
-	get2 := config.Get("projectLogs.level1").String("s1")
+	level, err := config.Get("projectLogs.level")
+	if err != nil {
+		t.Errorf("Get() error = %v", err)
+	}
+	get1 := level.String("s1")
+	assert.Equal(t, "debug", get1)
+
+	level2, err := config.Get("projectLogs.level1")
+	if err != nil {
+		t.Errorf("Get() error = %v", err)
+	}
+	get2 := level2.String("s1")
 	assert.Equal(t, "s1", get2)
 }
 

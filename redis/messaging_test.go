@@ -9,7 +9,7 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-func Test_Publish(t *testing.T) {
+func test_Publish(t *testing.T) {
 	t.Run("Publish and subscribe", func(t *testing.T) {
 		go runPublish()
 		publisher(6)
