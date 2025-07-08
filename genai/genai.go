@@ -5,10 +5,8 @@ import (
 	"sync"
 )
 
-var (
-	providers     map[string]GenAI
-	providersOnce sync.Once
-)
+var providers map[string]GenAI
+var providersOnce sync.Once
 
 // GenAI is the generic interface for generative for AI providers.
 type GenAI interface {
@@ -31,6 +29,7 @@ type Stream struct {
 	// You can add fields for cancellation, errors, etc. if needed
 }
 
+// Register a GenAI provider by name.
 func Register(name string, gen GenAI) {
 	providersOnce.Do(func() {
 		providers = make(map[string]GenAI)
@@ -38,6 +37,7 @@ func Register(name string, gen GenAI) {
 	providers[name] = gen
 }
 
+// Get a GenAI provider by name.
 func Get(name string) GenAI {
 	if gen, ok := providers[name]; ok {
 		return gen
