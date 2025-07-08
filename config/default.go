@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"sync"
 	"time"
 
@@ -126,7 +127,8 @@ func (c *config) run() {
 			case <-done:
 			case <-c.exit:
 			}
-			w.Stop()
+			err := w.Stop()
+			fmt.Println(err)
 		}()
 
 		// block watch
@@ -159,7 +161,7 @@ func (c *config) Scan(v interface{}) error {
 	return c.vals.Scan(v)
 }
 
-// Sync sync loads all the sources, calls the parser and updates the config.
+// Sync loads all the sources, calls the parser and updates the config.
 func (c *config) Sync() error {
 	if err := c.opts.Loader.Sync(); err != nil {
 		return err
@@ -193,7 +195,7 @@ func (c *config) Close() error {
 	return nil
 }
 
-func (c *config) Get(path ...string) reader.Value {
+func (c *config) Get(path ...string) (reader.Value, error) {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -203,7 +205,7 @@ func (c *config) Get(path ...string) reader.Value {
 	}
 
 	// no value
-	return newValue()
+	return newValue(), nil
 }
 
 func (c *config) Set(val interface{}, path ...string) {
@@ -240,6 +242,8 @@ func (c *config) Bytes() []byte {
 }
 
 func (c *config) Load(sources ...source.Source) error {
+	c.Lock()
+	defer c.Unlock()
 	if err := c.opts.Loader.Load(sources...); err != nil {
 		return err
 	}
@@ -248,9 +252,6 @@ func (c *config) Load(sources ...source.Source) error {
 	if err != nil {
 		return err
 	}
-
-	c.Lock()
-	defer c.Unlock()
 
 	c.snap = snap
 	vals, err := c.opts.Reader.Values(snap.ChangeSet)
@@ -263,7 +264,10 @@ func (c *config) Load(sources ...source.Source) error {
 }
 
 func (c *config) Watch(path ...string) (Watcher, error) {
-	value := c.Get(path...)
+	value, err := c.Get(path...)
+	if err != nil {
+		return nil, err
+	}
 
 	w, err := c.opts.Loader.Watch(path...)
 	if err != nil {
@@ -299,8 +303,7 @@ func (w *watcher) Next() (reader.Value, error) {
 			return nil, err
 		}
 
-		w.value = v.Get()
-		return w.value, nil
+		return v.Get()
 	}
 }
 

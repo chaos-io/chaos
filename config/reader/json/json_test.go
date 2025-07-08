@@ -36,7 +36,11 @@ func TestReader(t *testing.T) {
 	}
 
 	for _, test := range testData {
-		if v := values.Get(test.path...).String(""); v != test.value {
+		cc, err := values.Get(test.path...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if v := cc.String(""); v != test.value {
 			t.Fatalf("Expected %s got %s for path %v", test.value, v, test.path)
 		}
 	}

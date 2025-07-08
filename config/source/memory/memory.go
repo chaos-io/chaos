@@ -5,8 +5,7 @@ import (
 	"sync"
 	"time"
 
-	// "github.com/google/uuid"
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 
 	"github.com/chaos-io/chaos/config/source"
 )
@@ -31,9 +30,8 @@ func (m *memory) Read() (*source.ChangeSet, error) {
 }
 
 func (m *memory) Watch() (source.Watcher, error) {
-	UUID, _ := uuid.NewV4()
 	w := &watcher{
-		Id:      UUID.String(),
+		Id:      uuid.New().String(),
 		Updates: make(chan *source.ChangeSet, 100),
 		Source:  m,
 	}

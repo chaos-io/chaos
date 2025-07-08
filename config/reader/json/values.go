@@ -9,6 +9,7 @@ import (
 
 	"github.com/fatih/structs"
 
+	simple "github.com/bitly/go-simplejson"
 	"github.com/chaos-io/chaos/config/reader"
 	"github.com/chaos-io/chaos/config/source"
 	"github.com/chaos-io/chaos/config/tag"
@@ -16,15 +17,24 @@ import (
 
 type jsonValues struct {
 	ch *source.ChangeSet
-	sj *Json
+	sj *simple.Json
 }
 
 type jsonValue struct {
-	*Json
+	*simple.Json
+}
+
+func NewValues(val []byte) (reader.Values, error) {
+	sj := simple.New()
+	data, _ := reader.ReplaceEnvVars(val)
+	if err := sj.UnmarshalJSON(data); err != nil {
+		sj.SetPath(nil, string(data))
+	}
+	return &jsonValues{sj: sj}, nil
 }
 
 func newValues(ch *source.ChangeSet) (reader.Values, error) {
-	sj := New()
+	sj := simple.New()
 	data, _ := reader.ReplaceEnvVars(ch.Data)
 	if err := sj.UnmarshalJSON(data); err != nil {
 		sj.SetPath(nil, string(ch.Data))
@@ -32,14 +42,14 @@ func newValues(ch *source.ChangeSet) (reader.Values, error) {
 	return &jsonValues{ch, sj}, nil
 }
 
-func (j *jsonValues) Get(path ...string) reader.Value {
-	return &jsonValue{j.sj.GetPath(path...)}
+func (j *jsonValues) Get(path ...string) (reader.Value, error) {
+	return &jsonValue{j.sj.GetPath(path...)}, nil
 }
 
 func (j *jsonValues) Del(path ...string) {
 	// delete the tree?
 	if len(path) == 0 {
-		j.sj = New()
+		j.sj = simple.New()
 		return
 	}
 

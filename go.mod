@@ -4,9 +4,11 @@ go 1.21
 
 require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
+	github.com/bitly/go-simplejson v0.5.1
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gofrs/uuid v4.4.0+incompatible
+	github.com/google/uuid v1.6.0
 	github.com/imdario/mergo v0.3.16
 	github.com/json-iterator/go v1.1.12
 	github.com/minio/minio-go v6.0.14+incompatible

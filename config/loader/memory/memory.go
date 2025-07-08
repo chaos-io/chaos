@@ -40,6 +40,7 @@ type updateValue struct {
 }
 
 type watcher struct {
+	sync.Mutex
 	value   reader.Value
 	reader  reader.Reader
 	version atomic.Value
@@ -163,9 +164,10 @@ func (m *memory) reload() error {
 }
 
 func (m *memory) update() {
+	m.RLock()
+
 	watchers := make([]*watcher, 0, m.watchers.Len())
 
-	m.RLock()
 	for e := m.watchers.Front(); e != nil; e = e.Next() {
 		watchers = append(watchers, e.Value.(*watcher))
 	}
@@ -179,9 +181,11 @@ func (m *memory) update() {
 			continue
 		}
 
+		val, _ := vals.Get(w.path...)
+
 		uv := updateValue{
 			version: m.snap.Version,
-			value:   vals.Get(w.path...),
+			value:   val,
 		}
 
 		select {
@@ -285,7 +289,7 @@ func (m *memory) Get(path ...string) (reader.Value, error) {
 
 	// did sync actually work?
 	if m.vals != nil {
-		return m.vals.Get(path...), nil
+		return m.vals.Get(path...)
 	}
 
 	// assuming vals is nil
@@ -303,7 +307,7 @@ func (m *memory) Get(path ...string) (reader.Value, error) {
 	m.vals = v
 
 	if m.vals != nil {
-		return m.vals.Get(path...), nil
+		return m.vals.Get(path...)
 	}
 
 	// ok we're going hardcore now
@@ -426,6 +430,9 @@ func (w *watcher) Next() (*loader.Snapshot, error) {
 }
 
 func (w *watcher) Stop() error {
+	w.Lock()
+	defer w.Unlock()
+
 	select {
 	case <-w.exit:
 	default:

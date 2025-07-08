@@ -74,14 +74,22 @@ func Scan(v interface{}) error {
 
 // ScanFrom scan from the specifier keys to a go type
 func ScanFrom(v interface{}, key string, alternatives ...string) error {
-	val := Get(key)
+	val, err := Get(key)
+	if err != nil {
+		return err
+	}
+
 	for _, alter := range alternatives {
 		if !val.Null() {
 			break
 		}
 
-		val = Get(alter)
+		val, err = Get(alter)
+		if err != nil {
+			return err
+		}
 	}
+
 	return val.Scan(v)
 }
 
@@ -91,7 +99,7 @@ func Sync() error {
 }
 
 // Get a value from the config.
-func Get(path ...string) reader.Value {
+func Get(path ...string) (reader.Value, error) {
 	return DefaultConfig.Get(normalizePath(path...)...)
 }
 

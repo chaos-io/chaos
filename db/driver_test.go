@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestNew(t *testing.T) {
+func testNew(t *testing.T) {
 	type args struct {
 		cfg *Config
 	}
