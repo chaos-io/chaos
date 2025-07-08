@@ -81,7 +81,7 @@ func (g *gemini) getImageResult(prompt string) (*genai.Result, error) {
 		model = modelGemini25ProVision
 	}
 
-	url := fmt.Sprintf("%s%s:generateContent?key=%s", g.options.Endpoint, model, g.options.APIKey)
+	url := fmt.Sprintf("%s%s:generateContent", g.options.Endpoint, model)
 	body := map[string]interface{}{
 		"contents": []map[string]interface{}{
 			{"parts": []map[string]string{{"text": prompt}}},
@@ -124,7 +124,7 @@ func (g *gemini) getAudioResult(prompt string) (*genai.Result, error) {
 		model = modelGemini25Pro
 	}
 
-	url := fmt.Sprintf("%s%s:generateContent?key=%s", g.options.Endpoint, model, g.options.APIKey)
+	url := fmt.Sprintf("%s%s:generateContent", g.options.Endpoint, model)
 	body := map[string]interface{}{
 		"contents": []map[string]interface{}{
 			{"parts": []map[string]string{{"text": prompt}}},
@@ -169,7 +169,7 @@ func (g *gemini) getResult(prompt string) (*genai.Result, error) {
 		model = modelGemini25Pro
 	}
 
-	url := fmt.Sprintf("%s%s:generateContent?key=%s", g.options.Endpoint, model, g.options.APIKey)
+	url := fmt.Sprintf("%s%s:generateContent", g.options.Endpoint, model)
 	body := map[string]interface{}{
 		"contents": []map[string]interface{}{
 			{"parts": []map[string]string{{"text": prompt}}},
@@ -213,6 +213,7 @@ func (g *gemini) httpDo(url string, body map[string]interface{}) ([]byte, error)
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-goog-api-key", g.options.APIKey)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
