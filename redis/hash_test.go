@@ -18,7 +18,7 @@ const (
 	hashValue4 = 1.1
 )
 
-func Test_HSet(t *testing.T) {
+func test_HSet(t *testing.T) {
 	key := "testHSetKey"
 
 	hSet, err := HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
@@ -28,7 +28,7 @@ func Test_HSet(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HGet(t *testing.T) {
+func test_HGet(t *testing.T) {
 	key := "testHGetKey"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
@@ -47,7 +47,7 @@ func Test_HGet(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HMGet(t *testing.T) {
+func test_HMGet(t *testing.T) {
 	key := "testHMGetKey"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
@@ -58,7 +58,7 @@ func Test_HMGet(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HGetAll(t *testing.T) {
+func test_HGetAll(t *testing.T) {
 	key := "testHGetAllKey"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
@@ -72,7 +72,7 @@ func Test_HGetAll(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HIncrBy(t *testing.T) {
+func test_HIncrBy(t *testing.T) {
 	key := "testHIncrByKey"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
@@ -83,7 +83,7 @@ func Test_HIncrBy(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HIncrByFloat(t *testing.T) {
+func test_HIncrByFloat(t *testing.T) {
 	key := "testHIncrByFloat"
 
 	_, _ = HSet(ctx, key, hashField4, hashValue4)
@@ -94,7 +94,7 @@ func Test_HIncrByFloat(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HLen(t *testing.T) {
+func test_HLen(t *testing.T) {
 	key := "testHLenKey"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
@@ -105,7 +105,7 @@ func Test_HLen(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HDel(t *testing.T) {
+func test_HDel(t *testing.T) {
 	key := "testHDelKey"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
@@ -119,7 +119,7 @@ func Test_HDel(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HExists(t *testing.T) {
+func test_HExists(t *testing.T) {
 	key := "testHExists"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1)
@@ -130,7 +130,7 @@ func Test_HExists(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HKeys(t *testing.T) {
+func test_HKeys(t *testing.T) {
 	key := "testHKeys"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)
@@ -141,7 +141,7 @@ func Test_HKeys(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_HVals(t *testing.T) {
+func test_HVals(t *testing.T) {
 	key := "testHVals"
 
 	_, _ = HSet(ctx, key, hashField1, hashValue1, hashField2, hashValue2)

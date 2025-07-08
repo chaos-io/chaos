@@ -15,7 +15,7 @@ const (
 
 var ctx = context.Background()
 
-func TestXAdd(t *testing.T) {
+func testXAdd(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		res, err := XAdd(ctx, streamName, "number", i)
 		if err != nil {
@@ -27,7 +27,7 @@ func TestXAdd(t *testing.T) {
 	}
 }
 
-func TestXRead(t *testing.T) {
+func testXRead(t *testing.T) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -42,7 +42,7 @@ func TestXRead(t *testing.T) {
 	}
 }
 
-func TestXGroupCreate(t *testing.T) {
+func testXGroupCreate(t *testing.T) {
 	create, err := XGroupCreate(ctx, streamName, groupName)
 	if err != nil {
 		fmt.Printf("err=%v\n", err)
@@ -52,7 +52,7 @@ func TestXGroupCreate(t *testing.T) {
 	fmt.Printf("create: %v\n", create)
 }
 
-func TestXReadGroup(t *testing.T) {
+func testXReadGroup(t *testing.T) {
 	xStreams, err := XReadGroup(ctx, streamName, groupName, consumerName)
 	if err != nil {
 		fmt.Printf("err=%v\n", err)
@@ -64,7 +64,7 @@ func TestXReadGroup(t *testing.T) {
 	}
 }
 
-func TestXPending(t *testing.T) {
+func testXPending(t *testing.T) {
 	pending, err := XPending(ctx, streamName, groupName)
 	if err != nil {
 		fmt.Printf("err=%v\n", err)

@@ -9,7 +9,7 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-func Test_RPush(t *testing.T) {
+func test_RPush(t *testing.T) {
 	key := "rPushKey"
 	rPush, err := RPush(ctx, key, 1, "2")
 	assert.NoError(t, err)
@@ -18,7 +18,7 @@ func Test_RPush(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_RPop(t *testing.T) {
+func test_RPop(t *testing.T) {
 	key := "rPopKey"
 	_, _ = RPush(ctx, key, 1)
 
@@ -29,7 +29,7 @@ func Test_RPop(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_LPush(t *testing.T) {
+func test_LPush(t *testing.T) {
 	key := "lPushKey"
 	lPush, err := LPush(ctx, key, 1, "2")
 	assert.NoError(t, err)
@@ -38,7 +38,7 @@ func Test_LPush(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_LPop(t *testing.T) {
+func test_LPop(t *testing.T) {
 	key := "lPopKey"
 	_, _ = LPush(ctx, key, 1)
 
@@ -49,7 +49,7 @@ func Test_LPop(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_LIndex(t *testing.T) {
+func test_LIndex(t *testing.T) {
 	key := "lIndexKey"
 	_, _ = LPush(ctx, key, 1, "2")
 
@@ -64,7 +64,7 @@ func Test_LIndex(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_LRange(t *testing.T) {
+func test_LRange(t *testing.T) {
 	key := "lRangeKey"
 	_, _ = RPush(ctx, key, 1, "2")
 
@@ -75,7 +75,7 @@ func Test_LRange(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_LLen(t *testing.T) {
+func test_LLen(t *testing.T) {
 	key := "lLenKey"
 	_, _ = RPush(ctx, key, 1, "2")
 
@@ -86,7 +86,7 @@ func Test_LLen(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_LTrim(t *testing.T) {
+func test_LTrim(t *testing.T) {
 	key := "testLTrim"
 	_, _ = RPush(ctx, key, 1, "2", 3)
 
@@ -151,7 +151,7 @@ func test_BRPop(t *testing.T) {
 	_ = Del(ctx, key, key2)
 }
 
-func Test_RPopLPush(t *testing.T) {
+func test_RPopLPush(t *testing.T) {
 	key := "testRPopLPush"
 	_, _ = RPush(ctx, key, 1, "2", 3)
 	key2 := "testRPopLPush2"

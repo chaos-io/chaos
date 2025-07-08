@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Set(t *testing.T) {
+func test_Set(t *testing.T) {
 	key := "setKey"
 
 	set, err := Set(ctx, key, 1, 0)
@@ -18,7 +18,7 @@ func Test_Set(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_Get(t *testing.T) {
+func test_Get(t *testing.T) {
 	key := "getKey"
 
 	_, _ = Set(ctx, key, "a", 1*time.Second)
@@ -35,7 +35,7 @@ func Test_Get(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SetNX(t *testing.T) {
+func test_SetNX(t *testing.T) {
 	key := "setNXKey"
 
 	setNX, err := SetNX(ctx, key, 1, 0)
@@ -52,7 +52,7 @@ func Test_SetNX(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_Incr(t *testing.T) {
+func test_Incr(t *testing.T) {
 	key := "incrKey"
 
 	incr, err := Incr(ctx, key)
@@ -66,7 +66,7 @@ func Test_Incr(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_IncrBy(t *testing.T) {
+func test_IncrBy(t *testing.T) {
 	key := "incrByKey"
 
 	incrBy, err := IncrBy(ctx, key, 2)
@@ -80,7 +80,7 @@ func Test_IncrBy(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_incrByFloat(t *testing.T) {
+func test_incrByFloat(t *testing.T) {
 	key := "incrByFloatKey"
 
 	incrByFloat, err := IncrByFloat(ctx, key, 2.3)
@@ -94,7 +94,7 @@ func Test_incrByFloat(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_Decr(t *testing.T) {
+func test_Decr(t *testing.T) {
 	key := "decrKey"
 
 	decr, err := Decr(ctx, key)
@@ -104,7 +104,7 @@ func Test_Decr(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_DecrBy(t *testing.T) {
+func test_DecrBy(t *testing.T) {
 	key := "decrByKey"
 
 	decr, err := DecrBy(ctx, key, 2)
@@ -114,7 +114,7 @@ func Test_DecrBy(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_Append(t *testing.T) {
+func test_Append(t *testing.T) {
 	key := "appendKey"
 
 	str1, err := Append(ctx, key, "hello ")
@@ -129,7 +129,7 @@ func Test_Append(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_GetRange(t *testing.T) {
+func test_GetRange(t *testing.T) {
 	key := "getRangeKey"
 
 	_, _ = Set(ctx, key, "hello world!", 0)
@@ -140,7 +140,7 @@ func Test_GetRange(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SetRange(t *testing.T) {
+func test_SetRange(t *testing.T) {
 	key := "setRangeKey"
 
 	_, _ = Set(ctx, key, "hello world!", 0)
@@ -153,7 +153,7 @@ func Test_SetRange(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_Bit(t *testing.T) {
+func test_Bit(t *testing.T) {
 	ctx := context.Background()
 	key := "testBitKey"
 

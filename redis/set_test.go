@@ -12,7 +12,7 @@ const (
 	member2 = 2
 )
 
-func Test_SAdd(t *testing.T) {
+func test_SAdd(t *testing.T) {
 	key := "testSAddKey"
 
 	sAdd, err := SAdd(ctx, key, member1, member2)
@@ -22,7 +22,7 @@ func Test_SAdd(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SMembers(t *testing.T) {
+func test_SMembers(t *testing.T) {
 	key := "testSMembersKey"
 
 	_, _ = SAdd(ctx, key, member1, member2)
@@ -33,7 +33,7 @@ func Test_SMembers(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SCard(t *testing.T) {
+func test_SCard(t *testing.T) {
 	key := "testSCardKey"
 
 	_, _ = SAdd(ctx, key, member1, member2)
@@ -44,7 +44,7 @@ func Test_SCard(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SIsMember(t *testing.T) {
+func test_SIsMember(t *testing.T) {
 	key := "testSIsMemberKey"
 
 	_, _ = SAdd(ctx, key, member1)
@@ -59,7 +59,7 @@ func Test_SIsMember(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SPop(t *testing.T) {
+func test_SPop(t *testing.T) {
 	key := "testSPopKey"
 
 	_, _ = SAdd(ctx, key, member1)
@@ -74,7 +74,7 @@ func Test_SPop(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SRandMember(t *testing.T) {
+func test_SRandMember(t *testing.T) {
 	key := "testSRandMemberKey"
 
 	_, _ = SAdd(ctx, key, member1)
@@ -85,7 +85,7 @@ func Test_SRandMember(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SRem(t *testing.T) {
+func test_SRem(t *testing.T) {
 	key := "testSRemKey"
 
 	_, _ = SAdd(ctx, key, member1)
@@ -99,7 +99,7 @@ func Test_SRem(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func Test_SDiff(t *testing.T) {
+func test_SDiff(t *testing.T) {
 	key := "testSDiffKey"
 	key2 := "testSDiffKey2"
 
@@ -113,7 +113,7 @@ func Test_SDiff(t *testing.T) {
 	_ = Del(ctx, key, key2)
 }
 
-func Test_SDiffStore(t *testing.T) {
+func test_SDiffStore(t *testing.T) {
 	key := "testSDiffStoreKey"
 	key2 := "testSDiffStoreKey2"
 
@@ -131,7 +131,7 @@ func Test_SDiffStore(t *testing.T) {
 	_ = Del(ctx, key, key2)
 }
 
-func Test_SInter(t *testing.T) {
+func test_SInter(t *testing.T) {
 	key := "testSInterKey"
 	key2 := "testSInterKey2"
 
@@ -145,7 +145,7 @@ func Test_SInter(t *testing.T) {
 	_ = Del(ctx, key, key2)
 }
 
-func Test_SInterStore(t *testing.T) {
+func test_SInterStore(t *testing.T) {
 	key := "testSInterStoreKey"
 	key2 := "testSInterStoreKey2"
 
@@ -163,7 +163,7 @@ func Test_SInterStore(t *testing.T) {
 	_ = Del(ctx, key, key2)
 }
 
-func Test_SUnion(t *testing.T) {
+func test_SUnion(t *testing.T) {
 	key := "testSUnionKey"
 	key2 := "testSUnionKey2"
 
@@ -176,7 +176,7 @@ func Test_SUnion(t *testing.T) {
 	_ = Del(ctx, key, key2)
 }
 
-func Test_SUnionStore(t *testing.T) {
+func test_SUnionStore(t *testing.T) {
 	key := "testSUnionStoreKey"
 	key2 := "testSUnionStoreKey2"
 

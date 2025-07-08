@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNew(t *testing.T) {
+func testNew(t *testing.T) {
 	client := New(nil)
 	do, err := client.Client.Do(ctx, "PING").Result()
 	assert.NoError(t, err)

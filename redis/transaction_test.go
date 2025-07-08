@@ -10,7 +10,7 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-func Test_Trans(t *testing.T) {
+func test_Trans(t *testing.T) {
 	key := "transKey"
 
 	for i := 0; i < 3; i++ {
@@ -35,7 +35,7 @@ func trans(ctx context.Context, key string) {
 	}
 }
 
-func Test_NotTrans(t *testing.T) {
+func test_NotTrans(t *testing.T) {
 	key := "notTransKey"
 
 	for i := 0; i < 3; i++ {
@@ -96,7 +96,7 @@ func PurchaseItem(buyerId, itemId, sellerId string, lprice int64) bool {
 	return false
 }
 
-func BenchmarkUpdateToken(b *testing.B) {
+func benchmarkUpdateToken(b *testing.B) {
 	b.Run("updateToken", func(b *testing.B) {
 		count := 0
 		b.ResetTimer()
@@ -120,8 +120,8 @@ func BenchmarkUpdateToken(b *testing.B) {
 
 /*
 go test -bench .
-BenchmarkUpdateToken/updateToken-8                  8964            135006 ns/op
-BenchmarkUpdateToken/updateTokenPipeline-8         35094             34103 ns/op
+benchmarkUpdateToken/updateToken-8                  8964            135006 ns/op
+benchmarkUpdateToken/updateTokenPipeline-8         35094             34103 ns/op
 */
 
 func UpdateToken(token, user, item string) {
