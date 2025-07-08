@@ -15,6 +15,7 @@ import (
 const (
 	defaultEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/"
 
+	// See: https://ai.google.dev/gemini-api/docs/models?hl=zh-cn
 	modelGemini25ProVision = "gemini-2.5-pro-vision"
 	modelGemini25Pro       = "gemini-2.5-pro"
 )
