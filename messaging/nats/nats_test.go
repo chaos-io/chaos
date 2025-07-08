@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
@@ -15,23 +15,21 @@ import (
 	"github.com/chaos-io/chaos/messaging"
 )
 
-func Test_PublishStartTask(t *testing.T) {
-	UUID, _ := uuid.NewV4()
-	traceId := UUID.String()
+func test_PublishStartTask(t *testing.T) {
+	traceId := uuid.New().String()
 	logs.Infow("publish start task", "traceId", traceId)
 	err := PublishStartTask(context.Background(), &startTaskRequest{Name: "task-" + traceId, Ids: []string{"1", "2"}})
 	assert.NoError(t, err)
 }
 
-func Test_PublishStopTask(t *testing.T) {
-	UUID, _ := uuid.NewV4()
-	traceId := UUID.String()
+func test_PublishStopTask(t *testing.T) {
+	traceId := uuid.New().String()
 	logs.Infow("publish stop task", "traceId", traceId)
 	err := PublishStopTask(context.Background(), &stopTaskRequest{Name: "task-" + traceId})
 	assert.NoError(t, err)
 }
 
-func Test_Subscription(t *testing.T) {
+func test_Subscription(t *testing.T) {
 	_client, err := messaging.NewClient()
 	if err != nil {
 		logs.Fatalw("failed to create the message client", "error", err)
