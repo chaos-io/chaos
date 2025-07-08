@@ -1,9 +1,22 @@
 package gemini
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 
 	"github.com/chaos-io/chaos/genai"
+	jsoniter "github.com/json-iterator/go"
+)
+
+const (
+	defaultEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/"
+
+	modelGemini25ProVision = "gemini-2.5-pro-vision"
+	modelGemini25Pro       = "gemini-2.5-pro"
 )
 
 func init() {
@@ -12,13 +25,13 @@ func init() {
 
 // gemini implements the GenAI interface using Google Gemini 2.5 API.
 type gemini struct {
-	options genai.Options
+	options *genai.Options
 }
 
 func New(opts ...genai.Option) genai.GenAI {
-	var options genai.Options
+	options := &genai.Options{}
 	for _, o := range opts {
-		o(&options)
+		o(options)
 	}
 
 	if options.APIKey == "" {
@@ -29,9 +42,183 @@ func New(opts ...genai.Option) genai.GenAI {
 }
 
 func (g *gemini) Generate(prompt string, opts ...genai.Option) (*genai.Result, error) {
-	return nil, nil
+	options := g.options
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	if options.Endpoint == "" {
+		options.Endpoint = defaultEndpoint
+	}
+
+	switch options.Type {
+	case genai.TypeImage:
+		return g.getImageResult(prompt)
+	case genai.TypeAudio:
+		return g.getAudioResult(prompt)
+	default:
+		return g.getResult(prompt)
+	}
 }
 
 func (g *gemini) Stream(prompt string, opts ...genai.Option) (*genai.Stream, error) {
-	return nil, nil
+	results := make(chan *genai.Result)
+	go func() {
+		defer close(results)
+		res, err := g.Generate(prompt, opts...)
+		if err != nil {
+			// Send error via Stream.Err, not channel
+			return
+		}
+		results <- res
+	}()
+	return &genai.Stream{Results: results}, nil
+}
+
+func (g *gemini) getImageResult(prompt string) (*genai.Result, error) {
+	model := g.options.Model
+	if model == "" {
+		model = modelGemini25ProVision
+	}
+
+	url := fmt.Sprintf("%s%s:generateContent?key=%s", g.options.Endpoint, model, g.options.APIKey)
+	body := map[string]interface{}{
+		"contents": []map[string]interface{}{
+			{"parts": []map[string]string{{"text": prompt}}},
+		},
+	}
+
+	buf, err := g.httpDo(url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+
+	if err := jsoniter.Unmarshal(buf, &result); err != nil {
+		return nil, err
+	}
+	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("no candidates returned")
+	}
+
+	return &genai.Result{
+		Prompt: prompt,
+		Type:   g.options.Type,
+		Data:   nil,
+		Text:   result.Candidates[0].Content.Parts[0].Text,
+	}, nil
+}
+
+func (g *gemini) getAudioResult(prompt string) (*genai.Result, error) {
+	model := g.options.Model
+	if model == "" {
+		model = modelGemini25Pro
+	}
+
+	url := fmt.Sprintf("%s%s:generateContent?key=%s", g.options.Endpoint, model, g.options.APIKey)
+	body := map[string]interface{}{
+		"contents": []map[string]interface{}{
+			{"parts": []map[string]string{{"text": prompt}}},
+		},
+		"response_mime_type": "audio/wav",
+	}
+
+	buf, err := g.httpDo(url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					InlineData struct {
+						Data []byte `json:"data"`
+					} `json:"inline_data"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+
+	if err := jsoniter.Unmarshal(buf, &result); err != nil {
+		return nil, err
+	}
+	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("no audio returned")
+	}
+
+	return &genai.Result{
+		Prompt: prompt,
+		Type:   g.options.Type,
+		Data:   result.Candidates[0].Content.Parts[0].InlineData.Data,
+	}, nil
+}
+
+func (g *gemini) getResult(prompt string) (*genai.Result, error) {
+	model := g.options.Model
+	if model == "" {
+		model = modelGemini25Pro
+	}
+
+	url := fmt.Sprintf("%s%s:generateContent?key=%s", g.options.Endpoint, model, g.options.APIKey)
+	body := map[string]interface{}{
+		"contents": []map[string]interface{}{
+			{"parts": []map[string]string{{"text": prompt}}},
+		},
+	}
+
+	buf, err := g.httpDo(url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+
+	if err := jsoniter.Unmarshal(buf, &result); err != nil {
+		return nil, err
+	}
+	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("no candidates returned")
+	}
+
+	return &genai.Result{
+		Prompt: prompt,
+		Type:   g.options.Type,
+		Data:   nil,
+		Text:   result.Candidates[0].Content.Parts[0].Text,
+	}, nil
+}
+
+func (g *gemini) httpDo(url string, body map[string]interface{}) ([]byte, error) {
+	b, _ := jsoniter.Marshal(body)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }
