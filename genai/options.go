@@ -1,5 +1,11 @@
 package genai
 
+const (
+	TypeText  = "text"
+	TypeImage = "image"
+	TypeAudio = "audio"
+)
+
 // Option is functional option for configuring providers.
 type Option func(*Options)
 

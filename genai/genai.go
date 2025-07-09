@@ -5,12 +5,6 @@ import (
 	"sync"
 )
 
-const (
-	TypeText  = "text"
-	TypeImage = "image"
-	TypeAudio = "audio"
-)
-
 var providers map[string]func(...Option) GenAI
 var providersOnce sync.Once
 
