@@ -33,7 +33,7 @@ func TestGemini_GenerateImage(t *testing.T) {
 	}
 
 	client := New(genai.WithAPIKey(apiKey))
-	prompt := "A apple in the hand."
+	prompt := "Hi, can you create a 3d rendered image of a pig with wings and a top hat flying over a happy futuristic scifi city with lots of greenery?"
 	res, err := client.Generate(prompt, genai.Image)
 	if err != nil {
 		t.Fatalf("failed to generate image: %v", err)

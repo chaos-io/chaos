@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/chaos-io/chaos/genai"
+	"github.com/chaos-io/chaos/logs"
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -18,6 +19,11 @@ const (
 	// See: https://ai.google.dev/gemini-api/docs/models?hl=zh-cn
 	modelGemini25ProVision = "gemini-2.5-pro-vision"
 	modelGemini25Pro       = "gemini-2.5-pro"
+
+	modelGemini20FlashLite    = "gemini-2.0-flash-lite"
+	modelGemini20FlashPVImage = "gemini-2.0-flash-preview-image-generation"
+
+	modelImagen40 = "imagen-4.0-generate-preview-06-06"
 )
 
 func init() {
@@ -25,6 +31,7 @@ func init() {
 }
 
 // gemini implements the GenAI interface using Google Gemini 2.5 API.
+// See: https://github.com/googleapis/go-genai
 type gemini struct {
 	options *genai.Options
 }
@@ -79,7 +86,7 @@ func (g *gemini) Stream(prompt string, opts ...genai.Option) (*genai.Stream, err
 func (g *gemini) getImageResult(prompt string) (*genai.Result, error) {
 	model := g.options.Model
 	if model == "" {
-		model = modelGemini25ProVision
+		model = modelGemini20FlashPVImage
 	}
 
 	url := fmt.Sprintf("%s%s:generateContent", g.options.Endpoint, model)
@@ -87,6 +94,7 @@ func (g *gemini) getImageResult(prompt string) (*genai.Result, error) {
 		"contents": []map[string]interface{}{
 			{"parts": []map[string]string{{"text": prompt}}},
 		},
+		"generationConfig": map[string][]string{"responseModalities": {"TEXT", "IMAGE"}},
 	}
 
 	buf, err := g.httpDo(url, body)
@@ -98,7 +106,10 @@ func (g *gemini) getImageResult(prompt string) (*genai.Result, error) {
 		Candidates []struct {
 			Content struct {
 				Parts []struct {
-					Text string `json:"text"`
+					Text       string `json:"text"`
+					InlineData struct {
+						Data []byte `json:"data"`
+					} `json:"inlineData"`
 				} `json:"parts"`
 			} `json:"content"`
 		} `json:"candidates"`
@@ -108,14 +119,31 @@ func (g *gemini) getImageResult(prompt string) (*genai.Result, error) {
 		return nil, err
 	}
 	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
+		logs.Warnw("failed to get the valid result", "result", string(buf))
 		return nil, fmt.Errorf("no candidates returned")
+	}
+
+	// debug response log
+	//_ = os.WriteFile("my.log", buf, 0644)
+
+	var text string
+	parts := result.Candidates[0].Content.Parts
+	for _, part := range parts {
+		if part.Text != "" {
+			text = part.Text
+		} else if part.InlineData.Data != nil {
+			imageBytes := part.InlineData.Data
+			logs.Debugw("len imageBytes", "len", len(imageBytes))
+			outputFile := "gemini-generated.png"
+			_ = os.WriteFile(outputFile, imageBytes, 0644)
+		}
 	}
 
 	return &genai.Result{
 		Prompt: prompt,
 		Type:   g.options.Type,
 		Data:   nil,
-		Text:   result.Candidates[0].Content.Parts[0].Text,
+		Text:   text,
 	}, nil
 }
 
@@ -130,7 +158,7 @@ func (g *gemini) getAudioResult(prompt string) (*genai.Result, error) {
 		"contents": []map[string]interface{}{
 			{"parts": []map[string]string{{"text": prompt}}},
 		},
-		"response_mime_type": "audio/wav",
+		"responseMimeType": "audio/wav",
 	}
 
 	buf, err := g.httpDo(url, body)
