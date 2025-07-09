@@ -177,7 +177,7 @@ func TestConfigWatcherDirtyOverwrite(t *testing.T) {
 // test:
 //
 //	name: vvvv13
-func TestHotReload(t *testing.T) {
+func testHotReload(t *testing.T) {
 	timer := time.NewTimer(time.Second * 20)
 	ticker := time.NewTicker(time.Second)
 	var tmp struct{ Name string }

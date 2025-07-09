@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package redis
 
 import (
@@ -9,7 +12,7 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-func test_RPush(t *testing.T) {
+func Test_RPush(t *testing.T) {
 	key := "rPushKey"
 	rPush, err := RPush(ctx, key, 1, "2")
 	assert.NoError(t, err)
@@ -18,7 +21,7 @@ func test_RPush(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_RPop(t *testing.T) {
+func Test_RPop(t *testing.T) {
 	key := "rPopKey"
 	_, _ = RPush(ctx, key, 1)
 
@@ -29,7 +32,7 @@ func test_RPop(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_LPush(t *testing.T) {
+func Test_LPush(t *testing.T) {
 	key := "lPushKey"
 	lPush, err := LPush(ctx, key, 1, "2")
 	assert.NoError(t, err)
@@ -38,7 +41,7 @@ func test_LPush(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_LPop(t *testing.T) {
+func Test_LPop(t *testing.T) {
 	key := "lPopKey"
 	_, _ = LPush(ctx, key, 1)
 
@@ -49,7 +52,7 @@ func test_LPop(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_LIndex(t *testing.T) {
+func Test_LIndex(t *testing.T) {
 	key := "lIndexKey"
 	_, _ = LPush(ctx, key, 1, "2")
 
@@ -64,7 +67,7 @@ func test_LIndex(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_LRange(t *testing.T) {
+func Test_LRange(t *testing.T) {
 	key := "lRangeKey"
 	_, _ = RPush(ctx, key, 1, "2")
 
@@ -75,7 +78,7 @@ func test_LRange(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_LLen(t *testing.T) {
+func Test_LLen(t *testing.T) {
 	key := "lLenKey"
 	_, _ = RPush(ctx, key, 1, "2")
 
@@ -86,7 +89,7 @@ func test_LLen(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_LTrim(t *testing.T) {
+func Test_LTrim(t *testing.T) {
 	key := "testLTrim"
 	_, _ = RPush(ctx, key, 1, "2", 3)
 
@@ -109,7 +112,7 @@ func test_LTrim(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_BRPop(t *testing.T) {
+func Test_BRPop(t *testing.T) {
 	key := "testBRPop"
 	_, _ = RPush(ctx, key, 1, "2")
 
@@ -151,7 +154,7 @@ func test_BRPop(t *testing.T) {
 	_ = Del(ctx, key, key2)
 }
 
-func test_RPopLPush(t *testing.T) {
+func Test_RPopLPush(t *testing.T) {
 	key := "testRPopLPush"
 	_, _ = RPush(ctx, key, 1, "2", 3)
 	key2 := "testRPopLPush2"

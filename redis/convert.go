@@ -85,10 +85,8 @@ func String(reply any, err error) (string, error) {
 	}
 
 	switch reply.(type) {
-	case string:
+	case string, []byte:
 		return reply.(string), nil
-	case []byte:
-		return string(reply.([]byte)), nil
 	default:
 		return "", cannotConvert(reflect.String, reply)
 	}

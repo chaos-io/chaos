@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package nats
 
 import (
@@ -15,21 +18,21 @@ import (
 	"github.com/chaos-io/chaos/messaging"
 )
 
-func test_PublishStartTask(t *testing.T) {
+func Test_PublishStartTask(t *testing.T) {
 	traceId := uuid.New().String()
 	logs.Infow("publish start task", "traceId", traceId)
 	err := PublishStartTask(context.Background(), &startTaskRequest{Name: "task-" + traceId, Ids: []string{"1", "2"}})
 	assert.NoError(t, err)
 }
 
-func test_PublishStopTask(t *testing.T) {
+func Test_PublishStopTask(t *testing.T) {
 	traceId := uuid.New().String()
 	logs.Infow("publish stop task", "traceId", traceId)
 	err := PublishStopTask(context.Background(), &stopTaskRequest{Name: "task-" + traceId})
 	assert.NoError(t, err)
 }
 
-func test_Subscription(t *testing.T) {
+func Test_Subscription(t *testing.T) {
 	_client, err := messaging.NewClient()
 	if err != nil {
 		logs.Fatalw("failed to create the message client", "error", err)

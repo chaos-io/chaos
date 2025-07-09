@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package redis
 
 import (
@@ -15,7 +18,7 @@ const (
 
 var ctx = context.Background()
 
-func testXAdd(t *testing.T) {
+func Test_XAdd(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		res, err := XAdd(ctx, streamName, "number", i)
 		if err != nil {
@@ -27,7 +30,7 @@ func testXAdd(t *testing.T) {
 	}
 }
 
-func testXRead(t *testing.T) {
+func Test_XRead(t *testing.T) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -42,7 +45,7 @@ func testXRead(t *testing.T) {
 	}
 }
 
-func testXGroupCreate(t *testing.T) {
+func Test_XGroupCreate(t *testing.T) {
 	create, err := XGroupCreate(ctx, streamName, groupName)
 	if err != nil {
 		fmt.Printf("err=%v\n", err)
@@ -52,7 +55,7 @@ func testXGroupCreate(t *testing.T) {
 	fmt.Printf("create: %v\n", create)
 }
 
-func testXReadGroup(t *testing.T) {
+func Test_XReadGroup(t *testing.T) {
 	xStreams, err := XReadGroup(ctx, streamName, groupName, consumerName)
 	if err != nil {
 		fmt.Printf("err=%v\n", err)
@@ -64,7 +67,7 @@ func testXReadGroup(t *testing.T) {
 	}
 }
 
-func testXPending(t *testing.T) {
+func Test_XPending(t *testing.T) {
 	pending, err := XPending(ctx, streamName, groupName)
 	if err != nil {
 		fmt.Printf("err=%v\n", err)

@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package redis
 
 import (
@@ -6,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testNew(t *testing.T) {
+func Test_New(t *testing.T) {
 	client := New(nil)
 	do, err := client.Client.Do(ctx, "PING").Result()
 	assert.NoError(t, err)

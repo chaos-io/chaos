@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package redis
 
 import (
@@ -7,19 +10,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func test_Do(t *testing.T) {
+func Test_Do(t *testing.T) {
 	do, err := Do(ctx, "PING")
 	assert.NoError(t, err)
 	assert.Equal(t, "PONG", do)
 }
 
-func test_Del(t *testing.T) {
+func Test_Del(t *testing.T) {
 	key := "delKey"
 	err := Del(ctx, key)
 	assert.NoError(t, err)
 }
 
-func test_Exists(t *testing.T) {
+func Test_Exists(t *testing.T) {
 	key := "existsKey"
 	result, err := Exists(ctx, key)
 	assert.NoError(t, err)
@@ -31,7 +34,7 @@ func test_Exists(t *testing.T) {
 	assert.True(t, result2)
 }
 
-func test_Type(t *testing.T) {
+func Test_Type(t *testing.T) {
 	stringKey := "stringKey"
 
 	_, _ = Set(ctx, stringKey, "a", 0)
@@ -66,7 +69,7 @@ func test_Type(t *testing.T) {
 	_ = Del(ctx, stringKey, listKey, setKey, hashKey, zsetKey)
 }
 
-func test_Expire(t *testing.T) {
+func Test_Expire(t *testing.T) {
 	key := "expireKey"
 
 	_, _ = Incr(ctx, key)
@@ -81,7 +84,7 @@ func test_Expire(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_ExpireAt(t *testing.T) {
+func Test_ExpireAt(t *testing.T) {
 	key := "expireAtKey"
 
 	_, _ = Incr(ctx, key)
@@ -104,7 +107,7 @@ func test_ExpireAt(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_Persist(t *testing.T) {
+func Test_Persist(t *testing.T) {
 	key := "persistKey"
 
 	_, _ = Incr(ctx, key)
@@ -123,7 +126,7 @@ func test_Persist(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_Sort_List(t *testing.T) {
+func Test_Sort_List(t *testing.T) {
 	key := "sortListKey"
 	_, _ = RPush(ctx, key, "3")
 	_, _ = RPush(ctx, key, "2")
@@ -135,7 +138,7 @@ func test_Sort_List(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_Sort_Set(t *testing.T) {
+func Test_Sort_Set(t *testing.T) {
 	key := "sortSetKey"
 	_, _ = SAdd(ctx, key, "3", "2", "8")
 
@@ -146,7 +149,7 @@ func test_Sort_Set(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_Sort_ZSet(t *testing.T) {
+func Test_Sort_ZSet(t *testing.T) {
 	key := "sortZSetKey"
 
 	_, _ = ZAdd(ctx, key, Z{Score: 10.0, Member: "zsetMemeber1"}, Z{Score: 2.0, Member: "zsetMemeber2"})
@@ -162,7 +165,7 @@ func test_Sort_ZSet(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_Eval_Sum(t *testing.T) {
+func Test_Eval_Sum(t *testing.T) {
 	// 计算多个 Key 的总和
 	luaScript := `
 	local sum = 0
@@ -193,7 +196,7 @@ func test_Eval_Sum(t *testing.T) {
 	_ = Del(ctx, key1, key2, key3)
 }
 
-func test_Eval_Set(t *testing.T) {
+func Test_Eval_Set(t *testing.T) {
 	// 事务处理（检查并设置值）
 	luaScript := `
 	if redis.call("get", KEYS[1]) == ARGV[1] then
@@ -223,7 +226,7 @@ func test_Eval_Set(t *testing.T) {
 	_ = Del(ctx, key)
 }
 
-func test_AcquireLock(t *testing.T) {
+func Test_AcquireLock(t *testing.T) {
 	key := "acquireLockKey"
 	requestId := "requestId"
 	ttl := 100 * time.Millisecond
@@ -236,7 +239,7 @@ func test_AcquireLock(t *testing.T) {
 	assert.False(t, exist)
 }
 
-func test_ReleaseLock(t *testing.T) {
+func Test_ReleaseLock(t *testing.T) {
 	key := "releaseLockKey"
 	requestId := "requestId"
 	ttl := 1 * time.Second
@@ -254,7 +257,7 @@ func test_ReleaseLock(t *testing.T) {
 	assert.False(t, exist2)
 }
 
-func test_RenewLock(t *testing.T) {
+func Test_RenewLock(t *testing.T) {
 	key := "renewLockKey"
 	requestId := "requestId"
 	ttl := 100 * time.Millisecond

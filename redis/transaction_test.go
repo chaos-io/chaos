@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package redis
 
 import (
@@ -10,7 +13,7 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
-func test_Trans(t *testing.T) {
+func Test_Trans(t *testing.T) {
 	key := "transKey"
 
 	for i := 0; i < 3; i++ {
@@ -35,7 +38,7 @@ func trans(ctx context.Context, key string) {
 	}
 }
 
-func test_NotTrans(t *testing.T) {
+func Test_NotTrans(t *testing.T) {
 	key := "notTransKey"
 
 	for i := 0; i < 3; i++ {
@@ -54,7 +57,7 @@ func notTrans(ctx context.Context, key string) {
 	logs.Debugw("notTrans decr value", "key", key, "value", val)
 }
 
-func test_Watch(t *testing.T) {
+func Test_Watch(t *testing.T) {
 	PurchaseItem("buyer", "item", "seller", 122)
 	Do(ctx, "FLUSHDB")
 }
