@@ -36,7 +36,7 @@ func ParseErrorCode(code string) (*ErrorCode, error) {
 
 func (x *ErrorCode) Parse(code string) error {
 	if x != nil && len(code) > 0 {
-		v, err := strconv.Atoi(code)
+		v, err := strconv.ParseInt(code, 10, 32)
 		if err != nil {
 			return fmt.Errorf("failed to parse error code %w", err)
 		}
