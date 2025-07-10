@@ -20,8 +20,8 @@ func TestConfig(t *testing.T) {
 		t.Error(err)
 	}
 	defer func() {
-		fh.Close()
-		os.Remove(path)
+		_ = fh.Close()
+		_ = os.Remove(path)
 	}()
 	_, err = fh.Write(data)
 	if err != nil {
@@ -32,7 +32,7 @@ func TestConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	conf.Load(file.NewSource(file.WithPath(path)))
+	_ = conf.Load(file.NewSource(file.WithPath(path)))
 	// simulate multiple close
 	go conf.Close()
 	go conf.Close()

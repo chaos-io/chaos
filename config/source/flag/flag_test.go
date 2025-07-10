@@ -13,12 +13,12 @@ var (
 )
 
 func initTestFlags() {
-	flag.Set("database-host", "localhost")
-	flag.Set("database-password", "some-password")
+	_ = flag.Set("database-host", "localhost")
+	_ = flag.Set("database-password", "some-password")
 	flag.Parse()
 }
 
-func TestFlagsrc_Read(t *testing.T) {
+func TestFlag_SourceRead(t *testing.T) {
 	initTestFlags()
 	source := NewSource()
 	c, err := source.Read()
@@ -46,7 +46,7 @@ func TestFlagsrc_Read(t *testing.T) {
 	}
 }
 
-func TestFlagsrc_ReadAll(t *testing.T) {
+func TestFlag_SourceReadAll(t *testing.T) {
 	initTestFlags()
 	source := NewSource(IncludeUnset(true))
 	c, err := source.Read()

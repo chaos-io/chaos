@@ -40,10 +40,7 @@ func IsBadRequestError(err error) bool {
 
 func (*BadRequestError) Is(err error) bool {
 	var badRequestError *BadRequestError
-	if errors.As(err, &badRequestError) {
-		return true
-	}
-	return false
+	return errors.As(err, &badRequestError)
 }
 
 type InvalidArgumentError struct {
@@ -60,10 +57,7 @@ func IsInvalidArgumentError(err error) bool {
 
 func (*InvalidArgumentError) Is(err error) bool {
 	var badRequestError *InvalidArgumentError
-	if errors.As(err, &badRequestError) {
-		return true
-	}
-	return false
+	return errors.As(err, &badRequestError)
 }
 
 type MalformedRequestError struct {
@@ -80,10 +74,7 @@ func IsMalformedRequestError(err error) bool {
 
 func (*MalformedRequestError) Is(err error) bool {
 	var malformedRequestError *MalformedRequestError
-	if errors.As(err, &malformedRequestError) {
-		return true
-	}
-	return false
+	return errors.As(err, &malformedRequestError)
 }
 
 type FailedPreconditionError struct {
@@ -100,10 +91,7 @@ func IsFailedPreconditionError(err error) bool {
 
 func (*FailedPreconditionError) Is(err error) bool {
 	var failedPreconditionError *FailedPreconditionError
-	if errors.As(err, &failedPreconditionError) {
-		return true
-	}
-	return false
+	return errors.As(err, &failedPreconditionError)
 }
 
 type OutOfRangeError struct {
@@ -120,10 +108,7 @@ func IsOutOfRangeError(err error) bool {
 
 func (*OutOfRangeError) Is(err error) bool {
 	var outOfRangeError *OutOfRangeError
-	if errors.As(err, &outOfRangeError) {
-		return true
-	}
-	return false
+	return errors.As(err, &outOfRangeError)
 }
 
 type UnauthenticatedError struct {
@@ -140,10 +125,7 @@ func IsUnauthenticatedError(err error) bool {
 
 func (*UnauthenticatedError) Is(err error) bool {
 	var unauthenticatedError *UnauthenticatedError
-	if errors.As(err, &unauthenticatedError) {
-		return true
-	}
-	return false
+	return errors.As(err, &unauthenticatedError)
 }
 
 type PermissionDeniedError struct {
@@ -160,10 +142,7 @@ func IsPermissionDeniedError(err error) bool {
 
 func (*PermissionDeniedError) Is(err error) bool {
 	var permissionDeniedError *PermissionDeniedError
-	if errors.As(err, &permissionDeniedError) {
-		return true
-	}
-	return false
+	return errors.As(err, &permissionDeniedError)
 }
 
 type NotFoundError struct {
@@ -180,10 +159,8 @@ func IsNotFoundError(err error) bool {
 
 func (*NotFoundError) Is(err error) bool {
 	var notFoundError *NotFoundError
-	if errors.As(err, &notFoundError) {
-		return true
-	}
-	return false
+	return errors.As(err, &notFoundError)
+
 }
 
 type AlreadyExistsError struct {
@@ -200,10 +177,7 @@ func IsAlreadyExistsError(err error) bool {
 
 func (*AlreadyExistsError) Is(err error) bool {
 	var alreadyExistsError *AlreadyExistsError
-	if errors.As(err, &alreadyExistsError) {
-		return true
-	}
-	return false
+	return errors.As(err, &alreadyExistsError)
 }
 
 type AbortedError struct {
@@ -220,10 +194,7 @@ func IsAbortedError(err error) bool {
 
 func (*AbortedError) Is(err error) bool {
 	var abortedError *AbortedError
-	if errors.As(err, &abortedError) {
-		return true
-	}
-	return false
+	return errors.As(err, &abortedError)
 }
 
 type ResourceExhaustedError struct {
@@ -240,10 +211,7 @@ func IsResourceExhaustedError(err error) bool {
 
 func (*ResourceExhaustedError) Is(err error) bool {
 	var resourceExhaustedError *ResourceExhaustedError
-	if errors.As(err, &resourceExhaustedError) {
-		return true
-	}
-	return false
+	return errors.As(err, &resourceExhaustedError)
 }
 
 type CancelledError struct {
@@ -260,10 +228,7 @@ func IsCancelledError(err error) bool {
 
 func (*CancelledError) Is(err error) bool {
 	var cancelledError *CancelledError
-	if errors.As(err, &cancelledError) {
-		return true
-	}
-	return false
+	return errors.As(err, &cancelledError)
 }
 
 type UnknownErrorError struct {
@@ -280,10 +245,7 @@ func IsUnknownErrorError(err error) bool {
 
 func (*UnknownErrorError) Is(err error) bool {
 	var unknownErrorError *UnknownErrorError
-	if errors.As(err, &unknownErrorError) {
-		return true
-	}
-	return false
+	return errors.As(err, &unknownErrorError)
 }
 
 type InternalErrorError struct {
@@ -300,10 +262,7 @@ func IsInternalError(err error) bool {
 
 func (*InternalErrorError) Is(err error) bool {
 	var internalErrorErrorError *InternalErrorError
-	if errors.As(err, &internalErrorErrorError) {
-		return true
-	}
-	return false
+	return errors.As(err, &internalErrorErrorError)
 }
 
 type DataLossError struct {
@@ -320,10 +279,7 @@ func IsDataLossError(err error) bool {
 
 func (*DataLossError) Is(err error) bool {
 	var dataLossError *DataLossError
-	if errors.As(err, &dataLossError) {
-		return true
-	}
-	return false
+	return errors.As(err, &dataLossError)
 }
 
 type UnimplementedError struct {
@@ -340,10 +296,7 @@ func IsUnimplementedError(err error) bool {
 
 func (*UnimplementedError) Is(err error) bool {
 	var unimplementedError *UnimplementedError
-	if errors.As(err, &unimplementedError) {
-		return true
-	}
-	return false
+	return errors.As(err, &unimplementedError)
 }
 
 type UnavailableError struct {
@@ -360,10 +313,7 @@ func IsUnavailableError(err error) bool {
 
 func (*UnavailableError) Is(err error) bool {
 	var unavailableErrorError *UnavailableError
-	if errors.As(err, &unavailableErrorError) {
-		return true
-	}
-	return false
+	return errors.As(err, &unavailableErrorError)
 }
 
 type DeadlineExceededError struct {
@@ -380,8 +330,5 @@ func IsDeadlineExceededError(err error) bool {
 
 func (*DeadlineExceededError) Is(err error) bool {
 	var deadlineExceededError *DeadlineExceededError
-	if errors.As(err, &deadlineExceededError) {
-		return true
-	}
-	return false
+	return errors.As(err, &deadlineExceededError)
 }

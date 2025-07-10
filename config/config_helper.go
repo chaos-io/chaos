@@ -129,10 +129,8 @@ func WatchFunc(handle func(reader.Value), paths ...string) (io.Closer, error) {
 	}()
 
 	go func() {
-		select {
-		case <-exit:
-			_ = w.Stop()
-		}
+		<-exit
+		_ = w.Stop()
 	}()
 
 	return watchCloser{exit: exit}, nil

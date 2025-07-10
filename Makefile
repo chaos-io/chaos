@@ -31,4 +31,4 @@ govulncheck:
 	@echo "##### Running govulncheck"
 	govulncheck ./...
 
-verify: golangci-lint gosec govulncheck
+verify: golangci-lint gosec

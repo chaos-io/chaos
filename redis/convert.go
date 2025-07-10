@@ -107,11 +107,11 @@ func Bytes(reply any, err error) ([]byte, error) {
 		return nil, err
 	}
 
-	switch reply.(type) {
+	switch v := reply.(type) {
 	case string:
-		return []byte(reply.(string)), nil
+		return []byte(v), nil
 	case []byte:
-		return reply.([]byte), nil
+		return v, nil
 	default:
 		return nil, cannotConvert(reflect.Slice, reply)
 	}
@@ -202,11 +202,11 @@ func Strings(reply any, err error) ([]string, error) {
 
 	strs := make([]string, 0, len(values))
 	for _, value := range values {
-		switch value.(type) {
+		switch v := value.(type) {
 		case string:
-			strs = append(strs, value.(string))
+			strs = append(strs, v)
 		case []byte:
-			strs = append(strs, string(value.([]byte)))
+			strs = append(strs, string(v))
 		default:
 			strs = append(strs, "")
 		}

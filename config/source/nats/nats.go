@@ -80,10 +80,10 @@ func NewSource(opts ...source.Option) source.Source {
 			addr, port, err := net.SplitHostPort(u)
 			var ae *net.AddrError
 			if errors.As(err, &ae) && ae.Err == "missing port in address" {
-				port = "4222"
 				addr = u
-				endpoints = append(endpoints, fmt.Sprintf("%s:%s", addr, port))
+				port = "4222"
 			}
+			endpoints = append(endpoints, fmt.Sprintf("%s:%s", addr, port))
 		}
 	}
 	if len(endpoints) == 0 {

@@ -116,5 +116,5 @@ func TestWatcherStop(t *testing.T) {
 	}()
 
 	// stop the watcher
-	w.Stop()
+	_ = w.Stop()
 }
