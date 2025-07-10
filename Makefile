@@ -14,12 +14,12 @@ default: test
 env:
 	@go version
 test: env
-	go test -race -cover -coverprofile=coverage.coverprofile -covermode=atomic ./...
+	go test -race -cover -coverprofile=coverage -covermode=atomic ./...
 
 golangci-lint:
 	$(if $(GO_LINT), ,go install $(GO_LINT_URI))
 	@echo "##### Running golangci-lint"
-	golangci-lint run -D deadcode -D staticcheck -D structcheck -D varcheck -D unused --timeout=2m
+	golangci-lint run -D staticcheck -D unused --timeout=2m
 
 gosec:
 	$(if $(GO_SEC), ,go install $(GO_SEC_URI))
