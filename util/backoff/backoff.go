@@ -1,8 +1,9 @@
 package backoff
 
 import (
+	"crypto/rand"
 	"math"
-	"math/rand"
+	"math/big"
 	"time"
 )
 
@@ -30,7 +31,14 @@ func Do(attempts int) time.Duration {
 // DoWithJitter returns an exponential backoff duration with full jitter.
 // Max backoff time is capped at 2 minutes.
 func DoWithJitter(attempts int) time.Duration {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	f := r.Float64() * float64(Do(attempts))
-	return time.Duration(f)
+	dur := Do(attempts)
+	if dur <= 0 {
+		return 0
+	}
+
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(dur)))
+	if err != nil {
+		return dur
+	}
+	return time.Duration(n.Int64())
 }
