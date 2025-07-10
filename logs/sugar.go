@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 	"unsafe"
 
 	jsoniter "github.com/json-iterator/go"
@@ -55,7 +56,14 @@ func New(cfg *Config) *SugaredLogger {
 		http.HandleFunc(cfg.LevelPattern, defaultLevel.ServeHTTP)
 		go func() {
 			fmt.Printf("level serve on port:%d\nusage: [GET] curl http://localhost:%d%s\nusage: [PUT] curl -XPUT --data '{\"level\":\"debug\"}' http://localhost:%d%s\n", cfg.LevelPort, cfg.LevelPort, cfg.LevelPattern, cfg.LevelPort, cfg.LevelPattern)
-			if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.LevelPort), nil); err != nil {
+			svc := http.Server{
+				Addr:         fmt.Sprintf(":%d", cfg.LevelPort),
+				Handler:      nil,
+				ReadTimeout:  5 * time.Second,
+				WriteTimeout: 10 * time.Second,
+				IdleTimeout:  120 * time.Second,
+			}
+			if err := svc.ListenAndServe(); err != nil {
 				panic(err)
 			}
 		}()

@@ -124,7 +124,7 @@ func (g *gemini) getImageResult(prompt string) (*genai.Result, error) {
 	}
 
 	// debug response log
-	//_ = os.WriteFile("my.log", buf, 0644)
+	//_ = os.WriteFile("my.log", buf, 0600)
 
 	var text string
 	parts := result.Candidates[0].Content.Parts
@@ -135,7 +135,7 @@ func (g *gemini) getImageResult(prompt string) (*genai.Result, error) {
 			imageBytes := part.InlineData.Data
 			logs.Debugw("len imageBytes", "len", len(imageBytes))
 			outputFile := "gemini-generated.png"
-			_ = os.WriteFile(outputFile, imageBytes, 0644)
+			_ = os.WriteFile(outputFile, imageBytes, 0600)
 		}
 	}
 
