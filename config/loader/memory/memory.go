@@ -104,7 +104,10 @@ func (m *memory) watch(idx int, s source.Source) {
 			case <-done:
 			case <-m.exit:
 			}
-			w.Stop()
+			err = w.Stop()
+			if err != nil {
+				fmt.Printf("watch stop error: %s\n", err)
+			}
 		}()
 
 		// block watch

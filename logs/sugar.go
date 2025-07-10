@@ -463,9 +463,9 @@ func (s *SugaredLogger) Sync() error {
 }
 
 func baseLogger(sugar *zap.SugaredLogger) *zap.Logger {
-	p := unsafe.Pointer(sugar)
+	p := unsafe.Pointer(sugar) // #nosec G103
 	offset := uintptr(0)
-	return *(**zap.Logger)(unsafe.Pointer(uintptr(p) + offset))
+	return *(**zap.Logger)(unsafe.Pointer(uintptr(p) + offset)) // #nosec G103
 	// return sugar.Desugar()
 }
 
