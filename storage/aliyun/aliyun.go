@@ -5,9 +5,9 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 
-	"github.com/chaos-io/chaos/core"
 	"github.com/chaos-io/chaos/logs"
 	"github.com/chaos-io/chaos/storage"
+	"github.com/chaos-io/core/go/chaos/core"
 )
 
 func init() {

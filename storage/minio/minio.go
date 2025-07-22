@@ -9,9 +9,9 @@ import (
 	"github.com/minio/minio-go"
 	"github.com/pkg/errors"
 
-	"github.com/chaos-io/chaos/core"
 	"github.com/chaos-io/chaos/logs"
 	"github.com/chaos-io/chaos/storage"
+	"github.com/chaos-io/core/go/chaos/core"
 )
 
 func init() {

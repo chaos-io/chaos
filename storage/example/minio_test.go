@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package example
 
 import (
@@ -5,9 +8,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chaos-io/chaos/core"
 	"github.com/chaos-io/chaos/storage"
 	_ "github.com/chaos-io/chaos/storage/minio"
+	"github.com/chaos-io/core/go/chaos/core"
 )
 
 func TestWrite(t *testing.T) {
