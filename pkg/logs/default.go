@@ -10,7 +10,7 @@ type defaultLogger struct {
 	log *zap.SugaredLogger
 }
 
-func NewDefaultLogger() Logger {
+func newDefaultLogger() Logger {
 	cfg := &Config{}
 	_ = config.ScanFrom(cfg, "logs")
 

@@ -22,7 +22,7 @@ func TestDebugf(t *testing.T) {
 	logs.Debugf("the debugf, string=%s", "aaa")
 }
 
-/*
+/* caller
 zap@v1.27.0/logger.go:222 -3
 zap@v1.27.0/sugar.go:354  -2
 zap@v1.27.0/sugar.go:198  -1
@@ -90,7 +90,10 @@ type MyStruct struct {
 }
 
 func TestLogger(t *testing.T) {
+	logs.Debugw("begin", "1", "2")
 	my := &MyStruct{}
 	my.l = logs.DefaultLogger()
-	my.l.Debug("123")
+	// TODO: caller has an extra layer
+	my.l.Debugw("my.debug", "1", "2")
+	logs.Debugw("end", "1", "2")
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-var logger Logger = NewDefaultLogger()
+var logger Logger = newDefaultLogger()
 
 func DefaultLogger() Logger {
 	return logger
