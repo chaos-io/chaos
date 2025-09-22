@@ -7,16 +7,18 @@ import (
 )
 
 type defaultLogger struct {
-	log *SugaredLogger
+	log *zap.SugaredLogger
 }
 
-func newDefaultLogger() Logger {
+func NewDefaultLogger() Logger {
 	cfg := &Config{}
 	_ = config.ScanFrom(cfg, "logs")
 
-	log := New(cfg).WithOptions(zap.AddCallerSkip(1))
+	log := NewSugaredLogger(cfg).WithOptions(zap.AddCallerSkip(2))
+
 	l := &defaultLogger{log: log}
 	l.SetLevel(LevelConv(cfg.Level))
+
 	return l
 }
 

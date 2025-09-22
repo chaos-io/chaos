@@ -14,11 +14,11 @@ type Logger interface {
 	Error(args ...interface{})
 	Fatal(args ...interface{})
 
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fatalf(format string, args ...interface{})
+	Debugf(template string, args ...interface{})
+	Infof(template string, args ...interface{})
+	Warnf(template string, args ...interface{})
+	Errorf(template string, args ...interface{})
+	Fatalf(template string, args ...interface{})
 
 	Debugw(msg string, kv ...interface{})
 	Infow(msg string, kv ...interface{})
@@ -27,10 +27,10 @@ type Logger interface {
 	Fatalw(msg string, kv ...interface{})
 }
 
-type LogLevel int
+type LogLevel int8
 
 const (
-	DebugLevel LogLevel = iota
+	DebugLevel LogLevel = iota - 1
 	InfoLevel
 	WarnLevel
 	ErrorLevel

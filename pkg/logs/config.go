@@ -12,7 +12,7 @@ type Config struct {
 
 type FileConfig struct {
 	Path       string `json:"path" default:"./logs/app.log"`
-	Encode     string `json:"encode"  default:"json"`
+	Encode     string `json:"encode" default:"json"`
 	MaxSize    int    `json:"maxSize" default:"100"`
 	MaxBackups int    `json:"maxBackups" default:"10"`
 	MaxAge     int    `json:"maxAge" default:"30"`
