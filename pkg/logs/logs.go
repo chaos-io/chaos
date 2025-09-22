@@ -4,115 +4,109 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-
-	"go.uber.org/zap"
-
-	"github.com/chaos-io/chaos/pkg/config"
 )
 
-var defaultLog *SugaredLogger
+var logger Logger = newDefaultLogger()
 
-func init() {
-	logCfg := &Config{}
-	_ = config.ScanFrom(logCfg, "logs")
-	defaultLog = New(logCfg)
+func DefaultLogger() Logger {
+	return logger
 }
 
-// Logger add a new caller, so -1 default
-func Logger() *SugaredLogger {
-	return defaultLog.WithOptions(zap.AddCallerSkip(-1))
+// SetLogger sets the logger.
+// Note that this method is not concurrent-safe.
+func SetLogger(l Logger) {
+	logger = l
 }
 
-func logger() *SugaredLogger {
-	return defaultLog
-}
-
-func With(args ...interface{}) *SugaredLogger {
-	return defaultLog.With(args...)
+// SetLogLevel sets the level of logs below which logs will not be output.
+// The default log level is LevelInfo.
+// Note that this method is not concurrent-safe.
+func SetLogLevel(level LogLevel) {
+	logger.SetLevel(level)
 }
 
 // Debug logs a message at DebugLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func Debug(args ...interface{}) {
-	logger().Debug(args...)
+	logger.Debug(args...)
 }
 
 // Info logs a message at InfoLevel.
 func Info(args ...interface{}) {
-	logger().Info(args...)
+	logger.Info(args...)
 }
 
 // Warn logs a message at WarnLevel.
 func Warn(args ...interface{}) {
-	logger().Warn(args...)
+	logger.Warn(args...)
 }
 
 // Error logs a message at ErrorLevel.
 func Error(args ...interface{}) {
-	logger().Error(args...)
+	logger.Error(args...)
 }
 
 // Fatal uses fmt.Sprint to construct and log a message, then calls os.Exit.
 func Fatal(args ...interface{}) {
-	logger().Fatal(args...)
+	logger.Fatal(args...)
 }
 
 // Debugf uses fmt.Sprintf to log a templated message.
 func Debugf(template string, args ...interface{}) {
-	logger().Debugf(template, args...)
+	logger.Debugf(template, args...)
 }
 
 // Infof uses fmt.Sprintf to log a templated message.
 func Infof(template string, args ...interface{}) {
-	logger().Infof(template, args...)
+	logger.Infof(template, args...)
 }
 
 // Warnf uses fmt.Sprintf to log a templated message.
 func Warnf(template string, args ...interface{}) {
-	logger().Warnf(template, args...)
+	logger.Warnf(template, args...)
 }
 
 // Errorf uses fmt.Sprintf to log a templated message.
 func Errorf(template string, args ...interface{}) {
-	logger().Errorf(template, args...)
+	logger.Errorf(template, args...)
 }
 
 func Fatalf(template string, args ...interface{}) {
-	logger().Fatalf(template, args...)
+	logger.Fatalf(template, args...)
 }
 
 func Debugw(msg string, keysAndValues ...interface{}) {
-	logger().Debugw(msg, keysAndValues...)
+	logger.Debugw(msg, keysAndValues...)
 }
 
 func Infow(msg string, keysAndValues ...interface{}) {
-	logger().Infow(msg, keysAndValues...)
+	logger.Infow(msg, keysAndValues...)
 }
 
 func Warnw(msg string, keysAndValues ...interface{}) {
-	logger().Warnw(msg, keysAndValues...)
+	logger.Warnw(msg, keysAndValues...)
 }
 
 func Errorw(msg string, keysAndValues ...interface{}) {
-	logger().Errorw(msg, keysAndValues...)
+	logger.Errorw(msg, keysAndValues...)
 }
 
 func Fatalw(msg string, keysAndValues ...interface{}) {
-	logger().Fatalw(msg, keysAndValues...)
+	logger.Fatalw(msg, keysAndValues...)
 }
 
 func NewError(args ...interface{}) error {
-	logger().Error(args...)
+	logger.Error(args...)
 	return errors.New(fmt.Sprint(args...))
 }
 
 func NewErrorf(template string, args ...interface{}) error {
-	logger().Errorf(template, args...)
+	logger.Errorf(template, args...)
 	return fmt.Errorf(template, args...)
 }
 
 func NewErrorw(msg string, keysAndValues ...interface{}) error {
-	logger().Errorw(msg, keysAndValues...)
+	logger.Errorw(msg, keysAndValues...)
 
 	buffer := bytes.NewBufferString(msg)
 	buffer.WriteString(" ")

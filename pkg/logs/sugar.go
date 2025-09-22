@@ -50,7 +50,6 @@ type SugaredLogger struct {
 func New(cfg *Config) *SugaredLogger {
 	sl := &SugaredLogger{}
 	defaultLevel = zap.NewAtomicLevel()
-	SetLevel(cfg.Level)
 
 	if len(cfg.LevelPattern) > 0 && cfg.LevelPort > 0 {
 		http.HandleFunc(cfg.LevelPattern, defaultLevel.ServeHTTP)
@@ -105,6 +104,7 @@ func New(cfg *Config) *SugaredLogger {
 	opts = append(opts, zap.AddStacktrace(zap.FatalLevel))
 
 	sl.base = logger.WithOptions(opts...).Sugar()
+
 	return sl
 }
 

@@ -5,10 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-
 	"github.com/chaos-io/chaos/pkg/logs"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDebugw(t *testing.T) {
@@ -38,7 +36,7 @@ func TestNewErrorw(t *testing.T) {
 func TestLevelLogs(t *testing.T) {
 	print := func(level string) {
 		t.Logf("%s-------------------------------------------------\n", level)
-		logs.SetLevel(level)
+		logs.SetLogLevel(logs.LevelConv(level))
 		logs.Debug("debug")
 		logs.Info("info")
 		logs.Warn("warn")
@@ -81,14 +79,4 @@ func TestConsoleJson(t *testing.T) {
 		State:  "123",
 	}
 	logs.Infow("log infow", "stat", stat)
-	logs.Logger().AddCallerSkip(-1).Infow("log infow-1", "stat", stat)
-	logs.Logger().AddCallerSkip(0).Infow("log infow0", "stat", stat)
-	logs.Logger().AddCallerSkip(1).Infow("log infow1", "stat", stat)
-
-	logger := logs.Logger()
-	logger.WithOptions(zap.AddCallerSkip(-2)).Infow("skip -2")
-	logger.WithOptions(zap.AddCallerSkip(-1)).Infow("skip -1")
-	logger.WithOptions(zap.AddCallerSkip(0)).Infow("skip 0")
-	logger.WithOptions(zap.AddCallerSkip(1)).Infow("skip 1")
-	logger.WithOptions(zap.AddCallerSkip(2)).Infow("skip 2")
 }

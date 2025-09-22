@@ -2,7 +2,7 @@ package logs
 
 type Config struct {
 	InitFields   map[string]interface{} `json:"initFields"`
-	Level        string                 `json:"level" default:"debug"`    // debug,info,warn,error,panic,fatal
+	Level        string                 `json:"level" default:"debug"`    // debug,info,warn,error,fatal
 	Encode       string                 `json:"encode" default:"console"` // console,json
 	LevelPattern string                 `json:"levelPattern" default:""`
 	LevelPort    int                    `json:"levelPort" default:"0"`
