@@ -10,6 +10,7 @@ require (
 	github.com/coocood/freecache v1.2.4
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/imdario/mergo v0.3.16
 	github.com/json-iterator/go v1.1.12
