@@ -1,44 +1,69 @@
 package backoff
 
 import (
-	"crypto/rand"
-	"math"
-	"math/big"
+	"context"
 	"time"
+
+	"github.com/cenk/backoff"
 )
 
 const (
-	maxDelay = 2 * time.Minute
-	base     = 100 * time.Millisecond
+	one     = time.Second * 1
+	three   = time.Second * 3
+	five    = time.Second * 5
+	ten     = time.Second * 10
+	OneMin  = time.Minute
+	FiveMin = time.Minute * 5
+	OneHour = time.Hour
+
+	defaultRetryInterval = time.Millisecond * 100
 )
 
-// Do is a function x^e multiplied by a factor of 0.1s.
-// Result is limited to 2 minute.
-// attempts	Pow(attempts, e)	结果（退避时间）
-// 1	1^e = 1	100ms
-// 2	2^e ≈ 6.59	≈ 659ms
-// 3	3^e ≈ 17.44	≈ 1.744s
-// 5	5^e ≈ 80.45	≈ 8.045s
-// 10	10^e ≈ 1995.26	≈ 199.5s → capped to 2m
-// 13	13^e ≈ 3701.28	≈ 370s → capped to 2m
-func Do(attempts int) time.Duration {
-	if attempts > 13 {
-		return maxDelay
-	}
-	return time.Duration(math.Pow(float64(attempts), math.E)) * base
+func RetryOneSecond(ctx context.Context, fn func() error) error {
+	return RetryWithElapsedTime(ctx, one, fn)
 }
 
-// DoWithJitter returns an exponential backoff duration with full jitter.
-// Max backoff time is capped at 2 minutes.
-func DoWithJitter(attempts int) time.Duration {
-	dur := Do(attempts)
-	if dur <= 0 {
-		return 0
-	}
+func RetryThreeSeconds(ctx context.Context, fn func() error) error {
+	return RetryWithElapsedTime(ctx, three, fn)
+}
 
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(dur)))
-	if err != nil {
-		return dur
-	}
-	return time.Duration(n.Int64())
+func RetryFiveSeconds(ctx context.Context, fn func() error) error {
+	return RetryWithElapsedTime(ctx, five, fn)
+}
+
+func RetryTenSeconds(ctx context.Context, fn func() error) error {
+	return RetryWithElapsedTime(ctx, ten, fn)
+}
+
+func RetryOneMin(ctx context.Context, fn func() error) error {
+	return RetryWithElapsedTime(ctx, OneMin, fn)
+}
+
+func RetryFiveMin(ctx context.Context, fn func() error) error {
+	return RetryWithElapsedTime(ctx, FiveMin, fn)
+}
+
+func RetryOneHour(ctx context.Context, fn func() error) error {
+	return RetryWithElapsedTime(ctx, OneHour, fn)
+}
+
+func RetryWithElapsedTime(ctx context.Context, maxElapsedTime time.Duration, fn func() error) error {
+	policy := backoff.NewExponentialBackOff()
+	policy.InitialInterval = defaultRetryInterval
+	policy.MaxElapsedTime = maxElapsedTime
+
+	return backoffFn(ctx, fn, policy)
+}
+
+func backoffFn(ctx context.Context, fn func() error, policy *backoff.ExponentialBackOff) error {
+	ctxWithCancel, cancelFn := context.WithCancel(ctx)
+	defer cancelFn()
+
+	backoffCtx := backoff.WithContext(policy, ctxWithCancel)
+
+	return backoff.Retry(fn, backoffCtx)
+}
+
+func RetryWithMaxTimes(ctx context.Context, max int, fn func() error) error {
+	return backoff.Retry(fn, backoff.WithMaxRetries(&backoff.ZeroBackOff{}, uint64(max)))
 }

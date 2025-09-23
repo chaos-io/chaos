@@ -6,6 +6,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/bitly/go-simplejson v0.5.1
 	github.com/bytedance/sonic v1.14.1
+	github.com/cenk/backoff v2.2.1+incompatible
 	github.com/chaos-io/core/go v0.0.0-20250722061710-7d3320bb64e1
 	github.com/coocood/freecache v1.2.4
 	github.com/fatih/structs v1.1.0
