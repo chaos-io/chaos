@@ -31,8 +31,8 @@ type Storage interface {
 	Read(key string, options core.Options) (*Object, error)
 	Write(object *Object, options core.Options) error
 
-	Download(key string, path string, options core.Options) error
-	Upload(localFile string, key string, options core.Options) error
+	Download(key, path string, options core.Options) error
+	Upload(localFile, key string, options core.Options) error
 }
 
 func NewStorage(cfg *Config) Storage {
