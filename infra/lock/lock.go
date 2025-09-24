@@ -9,6 +9,7 @@ import (
 
 	"github.com/cenk/backoff"
 	"github.com/chaos-io/chaos/infra/redis"
+	"github.com/chaos-io/chaos/pkg/lang/goroutine"
 	"github.com/chaos-io/chaos/pkg/logs"
 	"github.com/google/uuid"
 )
@@ -128,10 +129,10 @@ func (l *redisLocker) LockWithRenew(parent context.Context, key string, ttl, max
 	}
 
 	ctx, cancel = context.WithCancel(parent)
-	go func() {
+	goroutine.Go(parent, func() {
 		defer cancel()
 		l.renewLock(ctx, key, ttl, maxHold)
-	}()
+	})
 
 	return locked, ctx, cancel, nil
 }
@@ -144,10 +145,10 @@ func (l *redisLocker) LockBackoffWithRenew(parent context.Context, key string, t
 	}
 
 	ctx, cancel = context.WithCancel(parent)
-	go func() {
+	goroutine.Go(parent, func() {
 		defer cancel()
 		l.renewLock(ctx, key, ttl, maxWait)
-	}()
+	})
 
 	return locked, ctx, cancel, nil
 }
