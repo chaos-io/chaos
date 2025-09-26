@@ -5,6 +5,8 @@ package db
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_MysqlNew(t *testing.T) {
@@ -14,9 +16,9 @@ func Test_MysqlNew(t *testing.T) {
 		Debug:  true,
 	}
 
-	if db := New(cfg); db == nil {
-		t.Errorf("New() is nil")
-	}
+	db, err := New(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
 }
 
 func Test_SqliteNew(t *testing.T) {
@@ -26,9 +28,9 @@ func Test_SqliteNew(t *testing.T) {
 		Debug:  true,
 	}
 
-	if db := New(cfg); db == nil {
-		t.Errorf("New() is nil")
-	}
+	db, err := New(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
 }
 
 func Test_PgsqlNew(t *testing.T) {
@@ -38,7 +40,7 @@ func Test_PgsqlNew(t *testing.T) {
 		Debug:  true,
 	}
 
-	if db := New(cfg); db == nil {
-		t.Errorf("New() is nil")
-	}
+	db, err := New(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
 }
