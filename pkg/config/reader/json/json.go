@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 
 	"github.com/chaos-io/chaos/pkg/config/encoder"
 	"github.com/chaos-io/chaos/pkg/config/encoder/json"

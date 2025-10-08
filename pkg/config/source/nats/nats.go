@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/chaos-io/chaos/pkg/config/source"
-	"github.com/chaos-io/chaos/pkg/logs"
+	"github.com/chaos-io/core/go/logs"
 	natsgo "github.com/nats-io/nats.go"
 )
 

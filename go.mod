@@ -3,6 +3,7 @@ module github.com/chaos-io/chaos
 go 1.24.1
 
 require (
+	dario.cat/mergo v1.0.1
 	github.com/ClickHouse/clickhouse-go/v2 v2.40.3
 	github.com/alicebob/miniredis/v2 v2.35.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
@@ -16,7 +17,6 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
-	github.com/imdario/mergo v0.3.16
 	github.com/json-iterator/go v1.1.12
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/nats-io/nats.go v1.39.1

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 
 	"github.com/chaos-io/chaos/pkg/config/source"
 )
