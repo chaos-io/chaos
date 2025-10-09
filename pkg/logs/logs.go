@@ -21,7 +21,7 @@ func SetLogger(l Logger) {
 // SetLogLevel sets the level of logs below which logs will not be output.
 // The default log level is LevelInfo.
 // Note that this method is not concurrent-safe.
-func SetLogLevel(level LogLevel) {
+func SetLogLevel(level Level) {
 	logger.SetLevel(level)
 }
 

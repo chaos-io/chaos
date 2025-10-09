@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/chaos-io/chaos/pkg/logs"
+	logs2 "github.com/chaos-io/core/go/logs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,10 +17,14 @@ func TestDebugw(t *testing.T) {
 	*i = 8
 	logs.Debugw("debugw", "ptr", i)
 	logs.Debugw("debugw", "addr", &i)
-}
 
-func TestDebugf(t *testing.T) {
 	logs.Debugf("the debugf, string=%s", "aaa")
+
+	err := logs.NewErrorf("the newErrorf, string=%s", "aaa")
+	logs.Debugw("the debugw", "debugw error", err)
+
+	err = logs.NewErrorw("the newErrorw", "err", "this is a error")
+	logs.Debugw("the debugw", "debugw error", err)
 }
 
 /* caller
@@ -31,34 +36,22 @@ logs/logs.go:56            1 Debugf
 testdata/logs_test.go:22   2 test
 testing/testing.go:1792    3
 */
-
-func TestNewErrorf(t *testing.T) {
-	err := logs.NewErrorf("the newErrorf, string=%s", "aaa")
-	logs.Debugw("the debugw", "debugw error", err)
-}
-
-func TestNewErrorw(t *testing.T) {
-	err := logs.NewErrorw("the newErrorw", "err", "this is a error")
-	logs.Debugw("the debugw", "debugw error", err)
-}
-
 // priority: debug < info < warn < error < DPanic < panic < fatal
 func TestLevelLogs(t *testing.T) {
-	printFunc := func(level string) {
-		t.Logf("%s-------------------------------------------------\n", level)
-		logs.SetLogLevel(logs.LevelConv(level))
+	printFunc := func(level logs.Level) {
+		t.Logf("%v-------------------------------------------------\n", level)
+		logs.SetLogLevel(level)
 		logs.Debug("debug")
 		logs.Info("info")
 		logs.Warn("warn")
 		logs.Error("error")
-		// Fatal("fatal")
 		t.Log("-------------------------------------------------")
 	}
-	printFunc("debug")
-	printFunc("info")
-	printFunc("warn")
-	printFunc("error")
-	// printFunc("fatal")
+	printFunc(logs.DebugLevel)
+	printFunc(logs.InfoLevel)
+	printFunc(logs.WarnLevel)
+	printFunc(logs.ErrorLevel)
+	// printFunc(logs.FatalLevel)
 }
 
 func TestLogFileJSON(t *testing.T) {
@@ -66,9 +59,9 @@ func TestLogFileJSON(t *testing.T) {
 	defer logs.Debug("end")
 
 	filename := "./app.log"
-	l := logs.NewSugaredLogger(&logs.Config{
+	l := logs.NewLoggerWith(&logs2.Config{
 		Output: "file",
-		File: logs.FileConfig{
+		File: logs2.FileConfig{
 			Path: filename,
 		},
 	})

@@ -2,6 +2,7 @@ package logs
 
 import (
 	"github.com/chaos-io/chaos/pkg/config"
+	"github.com/chaos-io/core/go/logs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -11,51 +12,25 @@ type defaultLogger struct {
 }
 
 func newDefaultLogger() Logger {
-	cfg := &Config{}
+	cfg := &logs.Config{}
 	_ = config.ScanFrom(cfg, "logs")
 
-	log := NewSugaredLogger(cfg).WithOptions(zap.AddCallerSkip(2))
-
-	l := &defaultLogger{log: log}
-	l.SetLevel(LevelConv(cfg.Level))
-
-	return l
+	log := logs.NewSugaredLogger(cfg).WithOptions(zap.AddCallerSkip(1))
+	return &defaultLogger{log: log}
 }
 
-var defaultLevel zap.AtomicLevel
-
-func (l *defaultLogger) GetLevel() LogLevel {
-	switch l.log.Level() {
-	case zap.DebugLevel:
-		return DebugLevel
-	case zap.InfoLevel:
-		return InfoLevel
-	case zap.WarnLevel:
-		return WarnLevel
-	case zap.ErrorLevel:
-		return ErrorLevel
-	case zap.FatalLevel:
-		return FatalLevel
-	default:
-		return InfoLevel
-	}
+func NewLoggerWith(cfg *logs.Config) Logger {
+	log := logs.NewSugaredLogger(cfg).WithOptions(zap.AddCallerSkip(1))
+	return &defaultLogger{log: log}
 }
 
-func (l *defaultLogger) SetLevel(level LogLevel) {
-	switch level {
-	case DebugLevel:
-		defaultLevel.SetLevel(zapcore.DebugLevel)
-	case InfoLevel:
-		defaultLevel.SetLevel(zapcore.InfoLevel)
-	case WarnLevel:
-		defaultLevel.SetLevel(zapcore.WarnLevel)
-	case ErrorLevel:
-		defaultLevel.SetLevel(zapcore.ErrorLevel)
-	case FatalLevel:
-		defaultLevel.SetLevel(zapcore.FatalLevel)
-	default:
-		defaultLevel.SetLevel(zapcore.InfoLevel)
-	}
+func (l *defaultLogger) GetLevel() Level {
+	return Level(l.log.Level())
+}
+
+func (l *defaultLogger) SetLevel(level Level) {
+	lev := zapcore.Level(level).String()
+	logs.SetLevel(lev)
 }
 
 func (l *defaultLogger) Debug(args ...interface{}) {
