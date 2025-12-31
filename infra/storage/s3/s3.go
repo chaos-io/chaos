@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -120,12 +121,12 @@ func (c *S3Client) Write(obj *storage.Object, options core.Options) error {
 func (c *S3Client) Download(key, path string, options core.Options) error {
 	options = WithConcurrencyOption(options)
 	ctx := context.Background()
-	file, err := os.Create(path)
+	f, err := os.Create(filepath.Clean(path))
 	if err != nil {
 		return logs.NewErrorw("failed to create file, error: %v", err)
 	}
 
-	return c.download(ctx, key, file, options)
+	return c.download(ctx, key, f, options)
 }
 
 func WithConcurrencyOption(options core.Options) core.Options {
@@ -139,7 +140,7 @@ func (c *S3Client) Upload(localFile, key string, options core.Options) error {
 	ctx := context.Background()
 	bucket := c.cfg.BucketName
 
-	file, err := os.Open(localFile)
+	f, err := os.Open(filepath.Clean(localFile))
 	if err != nil {
 		return logs.NewErrorw("failed to open local file, error: %v", err)
 	}
@@ -154,7 +155,7 @@ func (c *S3Client) Upload(localFile, key string, options core.Options) error {
 	output, err := uploader.UploadWithContext(ctx, &s3manager.UploadInput{
 		Bucket: lo.ToPtr(bucket),
 		Key:    lo.ToPtr(key),
-		Body:   file,
+		Body:   f,
 	})
 	if err != nil {
 		return logs.NewErrorw("failed to upload file, error: %v", err)
