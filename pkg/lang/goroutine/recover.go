@@ -25,10 +25,6 @@ func Recover(ctx context.Context, errPtr *error) {
 		*errPtr = _err
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
 	logs.Errorf("panic occurred, error: %v\nstacktrace:\n%s", fmt.Errorf("%v", e), debug.Stack())
 }
 
@@ -36,10 +32,6 @@ func Recovery(ctx context.Context) {
 	e := recover()
 	if e == nil {
 		return
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	logs.Errorf("panic occurred, error: %v\n stacktrace:\n%s", fmt.Errorf("%v", e), debug.Stack())

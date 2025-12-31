@@ -36,6 +36,17 @@ func TestRecover(t *testing.T) {
 		assert.Contains(t, err.Error(), "panic: ")
 		assert.Contains(t, err.Error(), originalErr.Error())
 	})
+
+	t.Run("recover with nil context", func(t *testing.T) {
+		var err error
+
+		func() {
+			defer Recover(nil, &err)
+			panic("test panic")
+		}()
+
+		assert.Error(t, err)
+	})
 }
 
 func TestRecovery(t *testing.T) {
