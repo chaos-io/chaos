@@ -1,6 +1,6 @@
 module github.com/chaos-io/chaos
 
-go 1.24.1
+go 1.24.11
 
 require (
 	dario.cat/mergo v1.0.1
@@ -22,7 +22,7 @@ require (
 	github.com/nats-io/nats.go v1.39.1
 	github.com/nicksnyder/go-i18n/v2 v2.6.0
 	github.com/pkg/errors v0.9.1
-	github.com/redis/go-redis/v9 v9.0.5
+	github.com/redis/go-redis/v9 v9.6.3
 	github.com/samber/lo v1.51.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
