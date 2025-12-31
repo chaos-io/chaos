@@ -64,6 +64,6 @@ func backoffFn(ctx context.Context, fn func() error, policy *backoff.Exponential
 	return backoff.Retry(fn, backoffCtx)
 }
 
-func RetryWithMaxTimes(ctx context.Context, max int, fn func() error) error {
+func RetryWithMaxTimes(ctx context.Context, max uint, fn func() error) error {
 	return backoff.Retry(fn, backoff.WithMaxRetries(&backoff.ZeroBackOff{}, uint64(max)))
 }
