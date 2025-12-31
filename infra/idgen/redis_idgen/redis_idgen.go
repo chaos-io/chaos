@@ -2,8 +2,9 @@ package redis_idgen
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"time"
 
 	"github.com/chaos-io/chaos/infra/idgen"
@@ -49,7 +50,10 @@ func (g *generator) GenMultiIDs(ctx context.Context, counts int) ([]int64, error
 	leftNum := int64(counts)
 	lastMs := int64(0)
 	ids := make([]int64, 0, counts)
-	serverID := g.pickServerID()
+	serverID, err := g.pickServerID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to pick server id: %w", err)
+	}
 
 	for idx := int64(0); leftNum > 0 && idx < maxTimeAddrTimes; idx++ {
 		ms := lo.Ternary(g.timeMS() > lastMs, g.timeMS(), lastMs)
@@ -126,6 +130,11 @@ func (g *generator) counterKey(space string, serverID int64, ms int64) string {
 	return fmt.Sprintf("id_generator:%v:%v:%v", space, serverID, ms)
 }
 
-func (g *generator) pickServerID() int64 {
-	return g.serverIDs[rand.Intn(len(g.serverIDs))]
+func (g *generator) pickServerID() (int64, error) {
+	r, err := rand.Int(rand.Reader, big.NewInt(int64(len(g.serverIDs))))
+	if err != nil {
+		return 0, err
+	}
+
+	return g.serverIDs[r.Int64()], nil
 }
