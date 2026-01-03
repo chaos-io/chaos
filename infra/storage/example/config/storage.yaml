@@ -1,6 +1,0 @@
-storage:
-  vendor: minio
-  endpoint: 127.0.0.1:9000
-  AccessKey: l1cw0MNw8Zt6gJl4
-  SecretKey: 99aiigACHIhd9FSEWXQceYrKtiV7Vt45
-  bucketName: minio1
