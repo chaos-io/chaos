@@ -5,7 +5,7 @@ go 1.24.12
 require (
 	dario.cat/mergo v1.0.1
 	github.com/bitly/go-simplejson v0.5.1
-	github.com/chaos-io/core/go v0.0.0-20260201134459-472c47b04506
+	github.com/chaos-io/core/go v0.0.0-20260224143023-f292b463d8f3
 	github.com/coocood/freecache v1.2.4
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
