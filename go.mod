@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.1
 	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/bitly/go-simplejson v0.5.1
-	github.com/chaos-io/core/go v0.0.0-20260224143023-f292b463d8f3
+	github.com/chaos-io/core/go v0.0.0-20260227124330-c109b5a961e2
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/mock v1.6.0
