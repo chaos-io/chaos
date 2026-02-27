@@ -1,0 +1,4 @@
+db:
+  driver: mysql
+  dsn: root:@tcp(127.0.0.1:3306)/db1?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local&timeout=1s&readTimeout=3s&writeTimeout=3s
+  debug: false
