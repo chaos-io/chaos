@@ -4,6 +4,7 @@ go 1.24.12
 
 require (
 	dario.cat/mergo v1.0.1
+	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/bitly/go-simplejson v0.5.1
 	github.com/chaos-io/core/go v0.0.0-20260224143023-f292b463d8f3
 	github.com/fatih/structs v1.1.0
@@ -13,6 +14,7 @@ require (
 	github.com/nats-io/nats.go v1.39.1
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.18.0
+	github.com/samber/lo v1.52.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -45,6 +47,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
