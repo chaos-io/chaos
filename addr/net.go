@@ -1,4 +1,4 @@
-package net
+package addr
 
 import (
 	"errors"
