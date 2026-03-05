@@ -6,11 +6,12 @@ require (
 	dario.cat/mergo v1.0.1
 	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/bitly/go-simplejson v0.5.1
-	github.com/chaos-io/core/go v0.0.0-20260303035920-195ab27d7064
+	github.com/chaos-io/core/go v0.0.0-20260304143905-d5a7cb74efce
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
+	github.com/json-iterator/go v1.1.12
 	github.com/nats-io/nats.go v1.39.1
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.18.0
@@ -37,7 +38,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
