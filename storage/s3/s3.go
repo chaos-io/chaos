@@ -169,6 +169,11 @@ func (c *S3Client) Upload(ctx context.Context, localFile, key string, options co
 	return nil
 }
 
+func (c *S3Client) PresignedUrl(ctx context.Context, key string) (string, error) {
+	// TODO
+	return "", nil
+}
+
 func (c *S3Client) Stat(ctx context.Context, key string, options core.Options) (*storage.Object, error) {
 	bucket := c.cfg.BucketName
 	input := &s3.HeadObjectInput{

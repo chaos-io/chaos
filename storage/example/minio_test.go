@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package example
 
 import (
@@ -72,6 +75,33 @@ func TestUpload(t *testing.T) {
 			if err := storage.Upload(ctx, tt.args.localFile, tt.args.key, tt.args.options); (err != nil) != tt.wantErr {
 				t.Errorf("Upload() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestPresignedUpload(t *testing.T) {
+	type args struct {
+		localFile string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "upload",
+			args: args{
+				localFile: "presigned/write_test1",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			preUrl, err := storage.PresignedUrl(ctx, tt.args.localFile)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PresignedUpload() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			t.Logf("PresignedUpload() preUrl = %s", preUrl)
 		})
 	}
 }

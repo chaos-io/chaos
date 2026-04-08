@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/chaos-io/core/go/chaos/core"
 	"github.com/minio/minio-go/v7"
@@ -146,4 +147,13 @@ func (m *Minio) Upload(ctx context.Context, localFile string, key string, option
 	}
 
 	return nil
+}
+
+func (m *Minio) PresignedUrl(ctx context.Context, key string) (string, error) {
+	presignedUrl, err := m.client.PresignedPutObject(ctx, m.bucketName, key, time.Minute*10)
+	if err != nil {
+		return "", logs.NewErrorw("minio failed to gen presigned url", "key", key, "error", err)
+	}
+
+	return presignedUrl.String(), nil
 }

@@ -36,6 +36,7 @@ type Storage interface {
 
 	Download(ctx context.Context, key, path string, options core.Options) error
 	Upload(ctx context.Context, localFile, key string, options core.Options) error
+	PresignedUrl(ctx context.Context, key string) (string, error)
 }
 
 func NewStorage(cfg *Config) Storage {
@@ -81,6 +82,10 @@ func Upload(ctx context.Context, localFile string, key string, options core.Opti
 	return GetStorage().Upload(ctx, localFile, key, options)
 }
 
+func PresignedUrl(ctx context.Context, key string) (string, error) {
+	return GetStorage().PresignedUrl(ctx, key)
+}
+
 type DummyStorage struct {
 	err error
 }
@@ -94,3 +99,4 @@ func (s *DummyStorage) Read(context.Context, string, core.Options) (*Object, err
 func (s *DummyStorage) Write(context.Context, *Object, core.Options) error           { return s.err }
 func (s *DummyStorage) Download(context.Context, string, string, core.Options) error { return s.err }
 func (s *DummyStorage) Upload(context.Context, string, string, core.Options) error   { return s.err }
+func (s *DummyStorage) PresignedUrl(context.Context, string) (string, error)         { return "", s.err }
