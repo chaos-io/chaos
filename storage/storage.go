@@ -14,6 +14,7 @@ import (
 var (
 	initializers     map[string]initializer
 	initializersOnce sync.Once
+	initializersMu   sync.RWMutex
 )
 
 type initializer func(cfg *Config) Storage
@@ -23,7 +24,9 @@ func Register(name string, init initializer) {
 		initializers = make(map[string]initializer)
 	})
 
+	initializersMu.Lock()
 	initializers[name] = init
+	initializersMu.Unlock()
 }
 
 //go:generate mockgen -destination=mocks/storage.go -package=mocks . Storage
@@ -40,10 +43,18 @@ type Storage interface {
 }
 
 func NewStorage(cfg *Config) Storage {
-	if init, ok := initializers[cfg.Vendor]; ok {
-		return init(cfg)
+	if cfg == nil {
+		return nil
 	}
-	return nil
+
+	initializersMu.RLock()
+	init, ok := initializers[cfg.Vendor]
+	initializersMu.RUnlock()
+	if !ok {
+		return nil
+	}
+
+	return init(cfg)
 }
 
 var (

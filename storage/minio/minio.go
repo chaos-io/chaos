@@ -17,9 +17,10 @@ import (
 	"github.com/chaos-io/chaos/storage"
 )
 
-func init() {
-	storage.Register("minio", NewMinio)
-}
+// 消除隐式注册，需在项目中显式注册
+// func init() {
+// 	storage.Register("minio", NewMinio)
+// }
 
 type Minio struct {
 	client     *minio.Client

@@ -9,13 +9,17 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/chaos-io/chaos/storage/minio"
 	"github.com/chaos-io/core/go/chaos/core"
 
 	"github.com/chaos-io/chaos/storage"
-	_ "github.com/chaos-io/chaos/storage/minio"
 )
 
 var ctx = context.Background()
+
+func init() {
+	storage.Register("minio", minio.NewMinio)
+}
 
 func TestWrite(t *testing.T) {
 	type args struct {
