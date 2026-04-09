@@ -11,6 +11,11 @@ import (
 	"github.com/chaos-io/chaos/logs"
 )
 
+const (
+	VendorMinio = "minio"
+	VendorS3    = "s3"
+)
+
 var (
 	initializers     map[string]initializer
 	initializersOnce sync.Once

@@ -1,6 +1,3 @@
-//go:build local
-// +build local
-
 package example
 
 import (
@@ -18,7 +15,7 @@ import (
 var ctx = context.Background()
 
 func init() {
-	storage.Register("minio", minio.NewMinio)
+	storage.Register(storage.VendorMinio, minio.NewMinio)
 }
 
 func TestWrite(t *testing.T) {
