@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/chaos-io/core/go/chaos/core"
 	"github.com/samber/lo"
 
 	"github.com/chaos-io/chaos/logs"
@@ -42,16 +41,8 @@ func NewS3Client(cfg *storage.Config) (*S3Client, error) {
 	return &S3Client{s3: cli, cfg: cfg}, nil
 }
 
-func (c *S3Client) BucketName() string {
-	return c.cfg.BucketName
-}
-
-func (c *S3Client) SetBucket(ctx context.Context, name string) error {
-	return nil
-}
-
-func (c *S3Client) Read(ctx context.Context, key string, options core.Options) (*storage.Object, error) {
-	info, err := c.Stat(ctx, key, options)
+func (c *S3Client) Read(ctx context.Context, key string, opts ...storage.Option) (*storage.Object, error) {
+	info, err := c.Stat(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +86,7 @@ func (c *S3Client) Read(ctx context.Context, key string, options core.Options) (
 
 	logs.Debugw("s3 object will be download, %s at %s, size=%d", key, tempFile.Name(), info.Size)
 
-	if err := c.download(ctx, key, tempFile, options); err != nil {
+	if err := c.download(ctx, key, tempFile, opts...); err != nil {
 		return nil, err
 	}
 
@@ -117,12 +108,11 @@ func (c *S3Client) Read(ctx context.Context, key string, options core.Options) (
 	}, nil
 }
 
-func (c *S3Client) Write(ctx context.Context, obj *storage.Object, options core.Options) error {
+func (c *S3Client) Write(ctx context.Context, obj *storage.Object, opts ...storage.Option) error {
 	return nil
 }
 
-func (c *S3Client) Download(ctx context.Context, key, path string, options core.Options) error {
-	options = WithConcurrencyOption(options)
+func (c *S3Client) Download(ctx context.Context, key, path string, opts ...storage.Option) error {
 	f, err := os.Create(filepath.Clean(path))
 	if err != nil {
 		return logs.NewErrorw("failed to create file, error: %v", err)
@@ -131,17 +121,11 @@ func (c *S3Client) Download(ctx context.Context, key, path string, options core.
 		_ = f.Close()
 	}()
 
-	return c.download(ctx, key, f, options)
+	return c.download(ctx, key, f, opts...)
 }
 
-func WithConcurrencyOption(options core.Options) core.Options {
-	opt := core.NewOptions("concurrency", storage.DefaultConcurrency)
-	opt.Merge(options)
-	return opt
-}
-
-func (c *S3Client) Upload(ctx context.Context, localFile, key string, options core.Options) error {
-	options = WithConcurrencyOption(options)
+func (c *S3Client) Upload(ctx context.Context, localFile, key string, opts ...storage.Option) error {
+	options := storage.ApplyOptions(opts...)
 	bucket := c.cfg.BucketName
 
 	f, err := os.Open(filepath.Clean(localFile))
@@ -151,9 +135,7 @@ func (c *S3Client) Upload(ctx context.Context, localFile, key string, options co
 
 	uploader := s3manager.NewUploaderWithClient(c.s3, func(u *s3manager.Uploader) {
 		u.PartSize = c.cfg.UploadPartSize
-		if options != nil {
-			u.Concurrency = options["concurrency"].(int)
-		}
+		u.Concurrency = options.Concurrency
 	})
 
 	output, err := uploader.UploadWithContext(ctx, &s3manager.UploadInput{
@@ -169,12 +151,21 @@ func (c *S3Client) Upload(ctx context.Context, localFile, key string, options co
 	return nil
 }
 
-func (c *S3Client) PresignedUrl(ctx context.Context, key string) (string, error) {
+func (c *S3Client) PresignedDownloadURL(ctx context.Context, key string) (string, error) {
+	_ = ctx
+	_ = key
 	// TODO
 	return "", nil
 }
 
-func (c *S3Client) Stat(ctx context.Context, key string, options core.Options) (*storage.Object, error) {
+func (c *S3Client) PresignedUploadURL(ctx context.Context, key string) (string, error) {
+	_ = ctx
+	_ = key
+	// TODO
+	return "", nil
+}
+
+func (c *S3Client) Stat(ctx context.Context, key string) (*storage.Object, error) {
 	bucket := c.cfg.BucketName
 	input := &s3.HeadObjectInput{
 		Bucket: lo.ToPtr(bucket),
@@ -193,7 +184,8 @@ func (c *S3Client) Stat(ctx context.Context, key string, options core.Options) (
 	}, nil
 }
 
-func (c *S3Client) download(ctx context.Context, key string, tempFile io.WriterAt, options core.Options) error {
+func (c *S3Client) download(ctx context.Context, key string, tempFile io.WriterAt, opts ...storage.Option) error {
+	options := storage.ApplyOptions(opts...)
 	input := &s3.GetObjectInput{
 		Bucket: lo.ToPtr(c.cfg.BucketName),
 		Key:    lo.ToPtr(key),
@@ -201,9 +193,7 @@ func (c *S3Client) download(ctx context.Context, key string, tempFile io.WriterA
 
 	downloader := s3manager.NewDownloaderWithClient(c.s3, func(d *s3manager.Downloader) {
 		d.PartSize = c.cfg.DownloadPartSize
-		if options != nil {
-			d.Concurrency = options["concurrency"].(int)
-		}
+		d.Concurrency = options.Concurrency
 	})
 
 	if _, err := downloader.DownloadWithContext(ctx, tempFile, input); err != nil {

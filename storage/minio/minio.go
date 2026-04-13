@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
-	"github.com/chaos-io/core/go/chaos/core"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
@@ -40,7 +38,7 @@ func NewMinio(cfg *storage.Config) storage.Storage {
 		m.client = client
 	}
 
-	if err := m.SetBucket(context.Background(), cfg.BucketName); err != nil {
+	if err := m.ensureBucket(context.Background(), cfg.BucketName); err != nil {
 		logs.Errorw("failed to get bucket name", "error", err)
 		return nil
 	}
@@ -48,11 +46,7 @@ func NewMinio(cfg *storage.Config) storage.Storage {
 	return m
 }
 
-func (m *Minio) BucketName() string {
-	return m.bucketName
-}
-
-func (m *Minio) SetBucket(ctx context.Context, name string) error {
+func (m *Minio) ensureBucket(ctx context.Context, name string) error {
 	if len(name) > 0 && name != m.bucketName {
 		if ok, err := m.client.BucketExists(ctx, name); err != nil {
 			return err
@@ -67,7 +61,7 @@ func (m *Minio) SetBucket(ctx context.Context, name string) error {
 	return nil
 }
 
-func (m *Minio) Read(ctx context.Context, key string, options core.Options) (*storage.Object, error) {
+func (m *Minio) Read(ctx context.Context, key string, opts ...storage.Option) (*storage.Object, error) {
 	obj, err := m.client.GetObject(ctx, m.bucketName, key, minio.GetObjectOptions{})
 	if err != nil {
 		errResponse := &minio.ErrorResponse{}
@@ -116,12 +110,12 @@ func (m *Minio) Read(ctx context.Context, key string, options core.Options) (*st
 	return object, nil
 }
 
-func (m *Minio) Write(ctx context.Context, object *storage.Object, options core.Options) error {
+func (m *Minio) Write(ctx context.Context, object *storage.Object, opts ...storage.Option) error {
 	_, err := m.client.PutObject(ctx, m.bucketName, object.Key, bytes.NewReader(object.Content), object.Size, minio.PutObjectOptions{})
 	return err
 }
 
-func (m *Minio) Download(ctx context.Context, key string, path string, options core.Options) error {
+func (m *Minio) Download(ctx context.Context, key string, path string, opts ...storage.Option) error {
 	if err := m.client.FGetObject(ctx, m.bucketName, key, path, minio.GetObjectOptions{}); err != nil {
 		errResponse := &minio.ErrorResponse{}
 		if errors.As(err, errResponse) && errResponse.Code == "NoSuchKey" && strings.HasPrefix(key, "/") {
@@ -142,7 +136,7 @@ func (m *Minio) Download(ctx context.Context, key string, path string, options c
 	return nil
 }
 
-func (m *Minio) Upload(ctx context.Context, localFile string, key string, options core.Options) error {
+func (m *Minio) Upload(ctx context.Context, localFile string, key string, opts ...storage.Option) error {
 	if _, err := m.client.FPutObject(ctx, m.bucketName, key, localFile, minio.PutObjectOptions{}); err != nil {
 		return logs.NewErrorw(fmt.Sprintf("minio failed to upload %s to %s", localFile, key), "error", err)
 	}
@@ -150,11 +144,20 @@ func (m *Minio) Upload(ctx context.Context, localFile string, key string, option
 	return nil
 }
 
-func (m *Minio) PresignedUrl(ctx context.Context, key string) (string, error) {
-	presignedUrl, err := m.client.PresignedPutObject(ctx, m.bucketName, key, time.Minute*10)
+func (m *Minio) PresignedDownloadURL(ctx context.Context, key string) (string, error) {
+	presignedURL, err := m.client.PresignedGetObject(ctx, m.bucketName, key, storage.DefaultSignTTL, nil)
 	if err != nil {
-		return "", logs.NewErrorw("minio failed to gen presigned url", "key", key, "error", err)
+		return "", logs.NewErrorw("minio failed to gen presigned download url", "key", key, "error", err)
 	}
 
-	return presignedUrl.String(), nil
+	return presignedURL.String(), nil
+}
+
+func (m *Minio) PresignedUploadURL(ctx context.Context, key string) (string, error) {
+	presignedURL, err := m.client.PresignedPutObject(ctx, m.bucketName, key, storage.DefaultSignTTL)
+	if err != nil {
+		return "", logs.NewErrorw("minio failed to gen presigned upload url", "key", key, "error", err)
+	}
+
+	return presignedURL.String(), nil
 }

@@ -50,7 +50,7 @@ func NewConfig(opts ...ConfigOption) *Config {
 		MaxObjectSize:    DefaultMaxObjectSize,
 	}
 	for _, opt := range opts {
-		opt(&Config{})
+		opt(cfg)
 	}
 	return cfg
 }
