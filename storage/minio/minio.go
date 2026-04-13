@@ -144,8 +144,9 @@ func (m *Minio) Upload(ctx context.Context, localFile string, key string, opts .
 	return nil
 }
 
-func (m *Minio) PresignedDownloadURL(ctx context.Context, key string) (string, error) {
-	presignedURL, err := m.client.PresignedGetObject(ctx, m.bucketName, key, storage.DefaultSignTTL, nil)
+func (m *Minio) PresignedDownloadURL(ctx context.Context, key string, opts ...storage.Option) (string, error) {
+	option := storage.ApplyOptions(opts...)
+	presignedURL, err := m.client.PresignedGetObject(ctx, coalesceBucket(option.Bucket, m.bucketName), key, option.TTL, nil)
 	if err != nil {
 		return "", logs.NewErrorw("minio failed to gen presigned download url", "key", key, "error", err)
 	}
@@ -153,11 +154,19 @@ func (m *Minio) PresignedDownloadURL(ctx context.Context, key string) (string, e
 	return presignedURL.String(), nil
 }
 
-func (m *Minio) PresignedUploadURL(ctx context.Context, key string) (string, error) {
-	presignedURL, err := m.client.PresignedPutObject(ctx, m.bucketName, key, storage.DefaultSignTTL)
+func (m *Minio) PresignedUploadURL(ctx context.Context, key string, opts ...storage.Option) (string, error) {
+	option := storage.ApplyOptions(opts...)
+	presignedURL, err := m.client.PresignedPutObject(ctx, coalesceBucket(option.Bucket, m.bucketName), key, option.TTL)
 	if err != nil {
 		return "", logs.NewErrorw("minio failed to gen presigned upload url", "key", key, "error", err)
 	}
 
 	return presignedURL.String(), nil
+}
+
+func coalesceBucket(bucket, fallback string) string {
+	if bucket != "" {
+		return bucket
+	}
+	return fallback
 }

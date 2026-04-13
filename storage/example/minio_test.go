@@ -1,3 +1,6 @@
+//go:build local
+// +build local
+
 package example
 
 import (
@@ -93,11 +96,11 @@ func TestPresignedUploadURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			preURL, err := storage.PresignedUploadURL(ctx, tt.args.key)
+			signURL, err := storage.PresignedUploadURL(ctx, tt.args.key)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PresignedUploadURL() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			t.Logf("PresignedUploadURL() preURL = %s", preURL)
+			t.Logf("PresignedUploadURL() url = %s", signURL)
 		})
 	}
 }
@@ -120,11 +123,11 @@ func TestPresignedDownloadURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			preURL, err := storage.PresignedDownloadURL(ctx, tt.args.key)
+			signURL, err := storage.PresignedDownloadURL(ctx, tt.args.key)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PresignedDownloadURL() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			t.Logf("PresignedDownloadURL() preURL = %s", preURL)
+			t.Logf("PresignedDownloadURL() url = %s", signURL)
 		})
 	}
 }

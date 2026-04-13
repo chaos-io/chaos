@@ -151,18 +151,30 @@ func (c *S3Client) Upload(ctx context.Context, localFile, key string, opts ...st
 	return nil
 }
 
-func (c *S3Client) PresignedDownloadURL(ctx context.Context, key string) (string, error) {
+func (c *S3Client) PresignedDownloadURL(ctx context.Context, key string, opts ...storage.Option) (string, error) {
 	_ = ctx
-	_ = key
-	// TODO
-	return "", nil
+	option := storage.ApplyOptions(opts...)
+	bucket := lo.CoalesceOrEmpty(option.Bucket, c.cfg.BucketName)
+	input := &s3.GetObjectInput{
+		Bucket: lo.ToPtr(bucket),
+		Key:    lo.ToPtr(key),
+	}
+	req, _ := c.s3.GetObjectRequest(input)
+	url, _, err := req.PresignRequest(option.TTL)
+	return url, err
 }
 
-func (c *S3Client) PresignedUploadURL(ctx context.Context, key string) (string, error) {
+func (c *S3Client) PresignedUploadURL(ctx context.Context, key string, opts ...storage.Option) (string, error) {
 	_ = ctx
-	_ = key
-	// TODO
-	return "", nil
+	option := storage.ApplyOptions(opts...)
+	bucket := lo.CoalesceOrEmpty(option.Bucket, c.cfg.BucketName)
+	input := &s3.PutObjectInput{
+		Bucket: lo.ToPtr(bucket),
+		Key:    lo.ToPtr(key),
+	}
+	req, _ := c.s3.PutObjectRequest(input)
+	url, _, err := req.PresignRequest(option.TTL)
+	return url, err
 }
 
 func (c *S3Client) Stat(ctx context.Context, key string) (*storage.Object, error) {

@@ -40,8 +40,8 @@ type Storage interface {
 	Download(ctx context.Context, key, path string, opts ...Option) error
 	Upload(ctx context.Context, localFile, key string, opts ...Option) error
 
-	PresignedDownloadURL(ctx context.Context, key string) (string, error)
-	PresignedUploadURL(ctx context.Context, key string) (string, error)
+	PresignedDownloadURL(ctx context.Context, key string, opts ...Option) (string, error)
+	PresignedUploadURL(ctx context.Context, key string, opts ...Option) (string, error)
 }
 
 func NewStorage(cfg *Config) Storage {
@@ -95,12 +95,12 @@ func Upload(ctx context.Context, localFile string, key string, opts ...Option) e
 	return GetStorage().Upload(ctx, localFile, key, opts...)
 }
 
-func PresignedDownloadURL(ctx context.Context, key string) (string, error) {
-	return GetStorage().PresignedDownloadURL(ctx, key)
+func PresignedDownloadURL(ctx context.Context, key string, opts ...Option) (string, error) {
+	return GetStorage().PresignedDownloadURL(ctx, key, opts...)
 }
 
-func PresignedUploadURL(ctx context.Context, key string) (string, error) {
-	return GetStorage().PresignedUploadURL(ctx, key)
+func PresignedUploadURL(ctx context.Context, key string, opts ...Option) (string, error) {
+	return GetStorage().PresignedUploadURL(ctx, key, opts...)
 }
 
 type DummyStorage struct {
@@ -112,7 +112,9 @@ func (s *DummyStorage) Read(context.Context, string, ...Option) (*Object, error)
 func (s *DummyStorage) Write(context.Context, *Object, ...Option) error           { return s.err }
 func (s *DummyStorage) Download(context.Context, string, string, ...Option) error { return s.err }
 func (s *DummyStorage) Upload(context.Context, string, string, ...Option) error   { return s.err }
-func (s *DummyStorage) PresignedDownloadURL(context.Context, string) (string, error) {
+func (s *DummyStorage) PresignedDownloadURL(context.Context, string, ...Option) (string, error) {
 	return "", s.err
 }
-func (s *DummyStorage) PresignedUploadURL(context.Context, string) (string, error) { return "", s.err }
+func (s *DummyStorage) PresignedUploadURL(context.Context, string, ...Option) (string, error) {
+	return "", s.err
+}
