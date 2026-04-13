@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/samber/lo"
 
@@ -18,11 +20,15 @@ import (
 )
 
 type S3Client struct {
-	s3  *s3.S3
+	s3  s3iface.S3API
 	cfg *storage.Config
 }
 
 func NewS3Client(cfg *storage.Config) (*S3Client, error) {
+	if cfg == nil {
+		return nil, logs.NewError("storage config is required")
+	}
+
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -42,12 +48,11 @@ func NewS3Client(cfg *storage.Config) (*S3Client, error) {
 }
 
 func (c *S3Client) Read(ctx context.Context, key string, opts ...storage.Option) (*storage.Object, error) {
-	info, err := c.Stat(ctx, key)
+	bucket := c.bucketName(opts...)
+	info, err := c.stat(ctx, bucket, key)
 	if err != nil {
 		return nil, err
 	}
-
-	bucket := c.cfg.BucketName
 
 	// small object, read in memory
 	if info.Size < c.cfg.CacheSizeGT {
@@ -59,6 +64,9 @@ func (c *S3Client) Read(ctx context.Context, key string, opts ...storage.Option)
 		if err != nil {
 			return nil, logs.NewErrorf("failed to get object %s: %v", key, err)
 		}
+		defer func() {
+			_ = obj.Body.Close()
+		}()
 
 		data, err := io.ReadAll(obj.Body)
 		if err != nil {
@@ -82,11 +90,12 @@ func (c *S3Client) Read(ctx context.Context, key string, opts ...storage.Option)
 	}
 	defer func() {
 		_ = tempFile.Close()
+		_ = os.Remove(tempFile.Name())
 	}()
 
-	logs.Debugw("s3 object will be download, %s at %s, size=%d", key, tempFile.Name(), info.Size)
+	logs.Debugw("s3 object will be downloaded", "bucket", bucket, "key", key, "path", tempFile.Name(), "size", info.Size)
 
-	if err := c.download(ctx, key, tempFile, opts...); err != nil {
+	if err := c.download(ctx, bucket, key, tempFile, opts...); err != nil {
 		return nil, err
 	}
 
@@ -109,29 +118,53 @@ func (c *S3Client) Read(ctx context.Context, key string, opts ...storage.Option)
 }
 
 func (c *S3Client) Write(ctx context.Context, obj *storage.Object, opts ...storage.Option) error {
+	size, err := c.validateWriteObject(obj)
+	if err != nil {
+		return err
+	}
+
+	bucket := c.bucketName(opts...)
+	input := &s3.PutObjectInput{
+		Bucket:        lo.ToPtr(bucket),
+		Key:           lo.ToPtr(obj.Key),
+		Body:          bytes.NewReader(obj.Content),
+		ContentLength: lo.ToPtr(size),
+	}
+	if obj.ContentType != "" {
+		input.ContentType = lo.ToPtr(obj.ContentType)
+	}
+
+	if _, err := c.s3.PutObjectWithContext(ctx, input); err != nil {
+		return logs.NewErrorw("failed to write object", "bucket", bucket, "key", obj.Key, "error", err)
+	}
+
 	return nil
 }
 
 func (c *S3Client) Download(ctx context.Context, key, path string, opts ...storage.Option) error {
+	bucket := c.bucketName(opts...)
 	f, err := os.Create(filepath.Clean(path))
 	if err != nil {
-		return logs.NewErrorw("failed to create file, error: %v", err)
+		return logs.NewErrorw("failed to create file", "path", path, "error", err)
 	}
 	defer func() {
 		_ = f.Close()
 	}()
 
-	return c.download(ctx, key, f, opts...)
+	return c.download(ctx, bucket, key, f, opts...)
 }
 
 func (c *S3Client) Upload(ctx context.Context, localFile, key string, opts ...storage.Option) error {
 	options := storage.ApplyOptions(opts...)
-	bucket := c.cfg.BucketName
+	bucket := c.bucketName(opts...)
 
 	f, err := os.Open(filepath.Clean(localFile))
 	if err != nil {
-		return logs.NewErrorw("failed to open local file, error: %v", err)
+		return logs.NewErrorw("failed to open local file", "path", localFile, "error", err)
 	}
+	defer func() {
+		_ = f.Close()
+	}()
 
 	uploader := s3manager.NewUploaderWithClient(c.s3, func(u *s3manager.Uploader) {
 		u.PartSize = c.cfg.UploadPartSize
@@ -144,7 +177,7 @@ func (c *S3Client) Upload(ctx context.Context, localFile, key string, opts ...st
 		Body:   f,
 	})
 	if err != nil {
-		return logs.NewErrorw("failed to upload file, error: %v", err)
+		return logs.NewErrorw("failed to upload file", "bucket", bucket, "key", key, "path", localFile, "error", err)
 	}
 
 	logs.Infof("uploaded object %q, upload_id=%s", key, output.UploadID)
@@ -178,7 +211,10 @@ func (c *S3Client) PresignedUploadURL(ctx context.Context, key string, opts ...s
 }
 
 func (c *S3Client) Stat(ctx context.Context, key string) (*storage.Object, error) {
-	bucket := c.cfg.BucketName
+	return c.stat(ctx, c.cfg.BucketName, key)
+}
+
+func (c *S3Client) stat(ctx context.Context, bucket, key string) (*storage.Object, error) {
 	input := &s3.HeadObjectInput{
 		Bucket: lo.ToPtr(bucket),
 		Key:    lo.ToPtr(key),
@@ -196,10 +232,10 @@ func (c *S3Client) Stat(ctx context.Context, key string) (*storage.Object, error
 	}, nil
 }
 
-func (c *S3Client) download(ctx context.Context, key string, tempFile io.WriterAt, opts ...storage.Option) error {
+func (c *S3Client) download(ctx context.Context, bucket, key string, tempFile io.WriterAt, opts ...storage.Option) error {
 	options := storage.ApplyOptions(opts...)
 	input := &s3.GetObjectInput{
-		Bucket: lo.ToPtr(c.cfg.BucketName),
+		Bucket: lo.ToPtr(bucket),
 		Key:    lo.ToPtr(key),
 	}
 
@@ -209,8 +245,39 @@ func (c *S3Client) download(ctx context.Context, key string, tempFile io.WriterA
 	})
 
 	if _, err := downloader.DownloadWithContext(ctx, tempFile, input); err != nil {
-		return logs.NewErrorw("failed to download object %s: %v", key, err)
+		return logs.NewErrorw("failed to download object", "bucket", bucket, "key", key, "error", err)
 	}
 
 	return nil
+}
+
+func (c *S3Client) bucketName(opts ...storage.Option) string {
+	option := storage.ApplyOptions(opts...)
+	return lo.CoalesceOrEmpty(option.Bucket, c.cfg.BucketName)
+}
+
+func (c *S3Client) validateWriteObject(obj *storage.Object) (int64, error) {
+	if obj == nil {
+		return 0, logs.NewError("object is required")
+	}
+	if obj.Key == "" {
+		return 0, logs.NewError("object key is required")
+	}
+
+	contentSize := int64(len(obj.Content))
+	size := obj.Size
+	if size == 0 {
+		size = contentSize
+	}
+	if size < 0 {
+		return 0, logs.NewError("object size must be greater than or equal to 0")
+	}
+	if size != contentSize {
+		return 0, logs.NewErrorw("object size does not match content length", "key", obj.Key, "size", size, "contentLength", contentSize)
+	}
+	if size > c.cfg.MaxObjectSize {
+		return 0, logs.NewErrorw("object size exceeds max object size", "key", obj.Key, "size", size, "maxObjectSize", c.cfg.MaxObjectSize)
+	}
+
+	return size, nil
 }
