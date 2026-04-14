@@ -1,23 +1,35 @@
 package memory
 
 import (
+	"sync"
+
 	"github.com/chaos-io/chaos/config/source"
 )
 
 type watcher struct {
-	Id      string
-	Updates chan *source.ChangeSet
-	Source  *memory
+	ID      string
+	updates chan *source.ChangeSet
+	exit    chan struct{}
+	source  *memory
+	once    sync.Once
 }
 
 func (w *watcher) Next() (*source.ChangeSet, error) {
-	cs := <-w.Updates
-	return cs, nil
+	select {
+	case cs := <-w.updates:
+		return cs, nil
+	case <-w.exit:
+		return nil, source.ErrWatcherStopped
+	}
 }
 
 func (w *watcher) Stop() error {
-	w.Source.Lock()
-	delete(w.Source.Watchers, w.Id)
-	w.Source.Unlock()
+	w.once.Do(func() {
+		close(w.exit)
+		w.source.Lock()
+		delete(w.source.Watchers, w.ID)
+		w.source.Unlock()
+	})
+
 	return nil
 }

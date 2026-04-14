@@ -15,6 +15,6 @@ func IncludeUnset(b bool) source.Option {
 		if o.Context == nil {
 			o.Context = context.Background()
 		}
-		o.Context = context.WithValue(o.Context, includeUnsetKey{}, true)
+		o.Context = context.WithValue(o.Context, includeUnsetKey{}, b)
 	}
 }

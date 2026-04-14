@@ -1,13 +1,12 @@
 package config
 
 import (
-	"fmt"
 	"io"
-	"log"
 	"os"
-	"path"
 	"path/filepath"
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/chaos-io/chaos/config/reader"
 	"github.com/chaos-io/chaos/config/source"
@@ -21,8 +20,10 @@ var supportedFileSuffixes = map[string]bool{
 	"yaml": true,
 }
 
-func init() {
-	_ = Load(defaultSources()...)
+// LoadDefaultSources discovers and loads config sources from conventional
+// directories. This must be called explicitly by applications.
+func LoadDefaultSources() error {
+	return Load(defaultSources()...)
 }
 
 func defaultSources() []source.Source {
@@ -55,21 +56,25 @@ func defaultSources() []source.Source {
 func newFileSources(dir string, env string) []source.Source {
 	var sources []source.Source
 
-	files, _ := os.ReadDir(dir)
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Name() < files[j].Name()
+	})
+
 	for _, f := range files {
 		if f.IsDir() {
-			ss := newFileSources(f.Name(), env)
+			ss := newFileSources(filepath.Join(dir, f.Name()), env)
 			sources = append(sources, ss...)
 		} else {
 			segments := strings.Split(f.Name(), ".")
-			suffix := ""
-			if len(segments) >= 2 {
-				suffix = segments[len(segments)-1]
-			}
+			suffix := strings.TrimPrefix(strings.ToLower(filepath.Ext(f.Name())), ".")
 			if !supportedFileSuffixes[suffix] {
 				continue
 			}
-			p := path.Join(dir, f.Name())
+			p := filepath.Join(dir, f.Name())
 			if len(env) > 0 {
 				name := strings.Join(segments[:len(segments)-1], ".")
 				if strings.HasSuffix(name, env) {
@@ -86,11 +91,13 @@ func newFileSources(dir string, env string) []source.Source {
 
 type watchCloser struct {
 	exit chan struct{}
+	once sync.Once
 }
 
-func (w watchCloser) Close() error {
-	fmt.Println("close")
-	w.exit <- struct{}{}
+func (w *watchCloser) Close() error {
+	w.once.Do(func() {
+		close(w.exit)
+	})
 	return nil
 }
 
@@ -109,18 +116,12 @@ func WatchFunc(handle func(reader.Value), paths ...string) (io.Closer, error) {
 	go func() {
 		for {
 			v, err := w.Next()
-			// if err == err_code.WatchStoppedError {
-			//	return
-			// }
 			if err != nil {
+				if err == source.ErrWatcherStopped {
+					return
+				}
 				continue
 			}
-
-			log.Printf("file changed, %s", string(v.Bytes()))
-
-			// if v.Empty() {
-			//	continue
-			// }
 
 			if handle != nil {
 				handle(v)
@@ -133,5 +134,5 @@ func WatchFunc(handle func(reader.Value), paths ...string) (io.Closer, error) {
 		_ = w.Stop()
 	}()
 
-	return watchCloser{exit: exit}, nil
+	return &watchCloser{exit: exit}, nil
 }

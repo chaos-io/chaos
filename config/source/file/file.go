@@ -2,9 +2,11 @@
 package file
 
 import (
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"strconv"
 
 	"github.com/chaos-io/chaos/config/source"
 )
@@ -16,6 +18,11 @@ type file struct {
 }
 
 var DefaultPath = "config.json"
+
+const (
+	defaultMaxConfigSizeBytes = 16 << 20 // 16MB
+	maxConfigSizeEnvKey       = "CHAOS_CONFIG_FILE_MAX_BYTES"
+)
 
 func (f *file) Read() (*source.ChangeSet, error) {
 	var fh fs.File
@@ -34,11 +41,16 @@ func (f *file) Read() (*source.ChangeSet, error) {
 		_ = fh.Close()
 	}()
 
-	b, err := io.ReadAll(fh)
+	info, err := fh.Stat()
 	if err != nil {
 		return nil, err
 	}
-	info, err := fh.Stat()
+	maxSize := maxConfigSizeBytes()
+	if info.Size() > maxSize {
+		return nil, fmt.Errorf("config file %q exceeds max allowed size (%d bytes)", f.path, maxSize)
+	}
+
+	b, err := io.ReadAll(fh)
 	if err != nil {
 		return nil, err
 	}
@@ -85,4 +97,18 @@ func NewSource(opts ...source.Option) source.Source {
 		path = f
 	}
 	return &file{opts: options, fs: fs, path: path}
+}
+
+func maxConfigSizeBytes() int64 {
+	raw := os.Getenv(maxConfigSizeEnvKey)
+	if raw == "" {
+		return defaultMaxConfigSizeBytes
+	}
+
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n <= 0 {
+		return defaultMaxConfigSizeBytes
+	}
+
+	return n
 }

@@ -1,21 +1,22 @@
 package source
 
-import (
-	"errors"
-)
+import "sync"
 
 type noopWatcher struct {
 	exit chan struct{}
+	once sync.Once
 }
 
 func (w *noopWatcher) Next() (*ChangeSet, error) {
 	<-w.exit
 
-	return nil, errors.New("noopWatcher stopped")
+	return nil, ErrWatcherStopped
 }
 
 func (w *noopWatcher) Stop() error {
-	close(w.exit)
+	w.once.Do(func() {
+		close(w.exit)
+	})
 	return nil
 }
 

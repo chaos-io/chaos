@@ -91,3 +91,28 @@ func TestWithFS(t *testing.T) {
 		t.Error("data from file does not match")
 	}
 }
+
+func TestFileRead_ExceedsMaxSize(t *testing.T) {
+	t.Setenv("CHAOS_CONFIG_FILE_MAX_BYTES", "1")
+
+	data := []byte(`{"foo":"bar"}`)
+	path := filepath.Join(os.TempDir(), fmt.Sprintf("file.%d", time.Now().UnixNano()))
+	fh, err := os.Create(path)
+	if err != nil {
+		t.Error(err)
+	}
+	defer func() {
+		_ = fh.Close()
+		_ = os.Remove(path)
+	}()
+
+	_, err = fh.Write(data)
+	if err != nil {
+		t.Error(err)
+	}
+
+	f := file.NewSource(file.WithPath(path))
+	if _, err = f.Read(); err == nil {
+		t.Fatal("expected file size limit error")
+	}
+}

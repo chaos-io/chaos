@@ -1,12 +1,13 @@
 package testdata
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 
-	config2 "github.com/chaos-io/chaos/config"
+	"github.com/chaos-io/chaos/config"
 	"github.com/chaos-io/chaos/config/reader"
 )
 
@@ -14,17 +15,31 @@ type ProjectLogs struct {
 	Level string `json:"level" default:"info"`
 }
 
+func initDefaultConfigForTests(t *testing.T) {
+	t.Helper()
+
+	err := config.InitDefault()
+	assert.NoError(t, err)
+
+	err = config.LoadPath(filepath.Join("config"))
+	assert.NoError(t, err)
+}
+
 func TestScanFrom(t *testing.T) {
+	initDefaultConfigForTests(t)
+
 	cfg := &ProjectLogs{}
-	if err := config2.ScanFrom(cfg, "projectLogs"); err != nil {
+	if err := config.ScanFrom(cfg, "projectLogs"); err != nil {
 		t.Errorf("ScanFrom() error = %v", err)
 	}
 	t.Logf("got level %v", cfg.Level)
 }
 
 func TestGet(t *testing.T) {
+	initDefaultConfigForTests(t)
+
 	cfg := &ProjectLogs{}
-	get, err := config2.Get("projectLogs")
+	get, err := config.Get("projectLogs")
 	if err != nil {
 		t.Errorf("Get() error = %v", err)
 	}
@@ -32,14 +47,14 @@ func TestGet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "debug", cfg.Level)
 
-	level, err := config2.Get("projectLogs.level")
+	level, err := config.Get("projectLogs.level")
 	if err != nil {
 		t.Errorf("Get() error = %v", err)
 	}
 	get1 := level.String("s1")
 	assert.Equal(t, "debug", get1)
 
-	level2, err := config2.Get("projectLogs.level1")
+	level2, err := config.Get("projectLogs.level1")
 	if err != nil {
 		t.Errorf("Get() error = %v", err)
 	}
@@ -48,14 +63,16 @@ func TestGet(t *testing.T) {
 }
 
 func TestHotLoad(t *testing.T) {
+	initDefaultConfigForTests(t)
+
 	cfg := &ProjectLogs{}
-	if err := config2.ScanFrom(cfg, "projectLogs"); err != nil {
+	if err := config.ScanFrom(cfg, "projectLogs"); err != nil {
 		t.Errorf("ScanFrom() error = %v", err)
 	}
 
 	t.Logf("got first level %v", cfg.Level)
 
-	watcherObj, err := config2.WatchFunc(func(v reader.Value) {
+	watcherObj, err := config.WatchFunc(func(v reader.Value) {
 		if err := v.Scan(&cfg); err != nil {
 			t.Logf("scan error: %v", err)
 		}
@@ -75,7 +92,9 @@ type Host struct {
 }
 
 func Test1(t *testing.T) {
+	initDefaultConfigForTests(t)
+
 	var host Host
-	err := config2.ScanFrom(&host, "host")
+	err := config.ScanFrom(&host, "host")
 	t.Logf("host ip: %v, err: %v", host.IP, err)
 }

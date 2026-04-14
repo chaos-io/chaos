@@ -66,3 +66,22 @@ func TestFlag_SourceReadAll(t *testing.T) {
 		t.Errorf("expected %v got %v", *dbuser, actualDB["user"])
 	}
 }
+
+func TestFlag_SourceRead_IncludeUnsetFalse(t *testing.T) {
+	initTestFlags()
+	source := NewSource(IncludeUnset(false))
+	c, err := source.Read()
+	if err != nil {
+		t.Error(err)
+	}
+
+	var actual map[string]interface{}
+	if err := json.Unmarshal(c.Data, &actual); err != nil {
+		t.Error(err)
+	}
+
+	actualDB := actual["database"].(map[string]interface{})
+	if actualDB["user"] != nil {
+		t.Errorf("expected %v got %v", nil, actualDB["user"])
+	}
+}

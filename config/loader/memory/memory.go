@@ -5,6 +5,7 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -104,10 +105,7 @@ func (m *memory) watch(idx int, s source.Source) {
 			case <-done:
 			case <-m.exit:
 			}
-			err = w.Stop()
-			if err != nil {
-				fmt.Printf("watch stop error: %s\n", err)
-			}
+			_ = w.Stop()
 		}()
 
 		// block watch
@@ -150,8 +148,11 @@ func (m *memory) reload() error {
 	}
 
 	// set values
-	if vals, err := m.opts.Reader.Values(set); err != nil {
+	if vals, err := m.opts.Reader.Values(set); err == nil {
 		m.vals = vals
+	} else {
+		m.Unlock()
+		return err
 	}
 	m.snap = &loader.Snapshot{
 		ChangeSet: set,
@@ -178,16 +179,19 @@ func (m *memory) update() {
 	vals := m.vals
 	snap := m.snap
 	m.RUnlock()
+	if vals == nil || snap == nil {
+		return
+	}
 
 	for _, w := range watchers {
-		if w.getVersion() >= snap.Version {
+		if !snapshotNewer(snap.Version, w.getVersion()) {
 			continue
 		}
 
 		val, _ := vals.Get(w.path...)
 
 		uv := updateValue{
-			version: m.snap.Version,
+			version: snap.Version,
 			value:   val,
 		}
 
@@ -412,14 +416,17 @@ func (w *watcher) Next() (*loader.Snapshot, error) {
 	for {
 		select {
 		case <-w.exit:
-			return nil, errors.New("watcher stopped")
+			return nil, source.ErrWatcherStopped
 
 		case uv := <-w.updates:
-			if uv.version <= w.getVersion() {
+			if !snapshotNewer(uv.version, w.getVersion()) {
 				continue
 			}
 
 			v := uv.value
+			if v == nil {
+				continue
+			}
 
 			w.version.Store(uv.version)
 
@@ -440,7 +447,6 @@ func (w *watcher) Stop() error {
 	case <-w.exit:
 	default:
 		close(w.exit)
-		close(w.updates)
 	}
 
 	return nil
@@ -448,6 +454,16 @@ func (w *watcher) Stop() error {
 
 func genVer() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
+}
+
+func snapshotNewer(next, current string) bool {
+	nextVer, nextErr := strconv.ParseInt(next, 10, 64)
+	curVer, curErr := strconv.ParseInt(current, 10, 64)
+	if nextErr == nil && curErr == nil {
+		return nextVer > curVer
+	}
+
+	return next > current
 }
 
 func NewLoader(opts ...loader.Option) loader.Loader {

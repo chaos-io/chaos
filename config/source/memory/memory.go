@@ -2,6 +2,7 @@
 package memory
 
 import (
+	"bytes"
 	"sync"
 	"time"
 
@@ -18,26 +19,31 @@ type memory struct {
 
 func (m *memory) Read() (*source.ChangeSet, error) {
 	m.RLock()
+	defer m.RUnlock()
+	if m.ChangeSet == nil {
+		return &source.ChangeSet{Source: m.String()}, nil
+	}
+
 	cs := &source.ChangeSet{
 		Format:    m.ChangeSet.Format,
 		Timestamp: m.ChangeSet.Timestamp,
-		Data:      m.ChangeSet.Data,
+		Data:      bytes.Clone(m.ChangeSet.Data),
 		Checksum:  m.ChangeSet.Checksum,
 		Source:    m.ChangeSet.Source,
 	}
-	m.RUnlock()
 	return cs, nil
 }
 
 func (m *memory) Watch() (source.Watcher, error) {
 	w := &watcher{
-		Id:      uuid.New().String(),
-		Updates: make(chan *source.ChangeSet, 100),
-		Source:  m,
+		ID:      uuid.New().String(),
+		updates: make(chan *source.ChangeSet, 100),
+		exit:    make(chan struct{}),
+		source:  m,
 	}
 
 	m.Lock()
-	m.Watchers[w.Id] = w
+	m.Watchers[w.ID] = w
 	m.Unlock()
 	return w, nil
 }
@@ -58,7 +64,7 @@ func (m *memory) Update(c *source.ChangeSet) {
 	m.Lock()
 	// update changeset
 	m.ChangeSet = &source.ChangeSet{
-		Data:      c.Data,
+		Data:      bytes.Clone(c.Data),
 		Format:    c.Format,
 		Source:    "memory",
 		Timestamp: time.Now(),
@@ -68,7 +74,7 @@ func (m *memory) Update(c *source.ChangeSet) {
 	// update watchers
 	for _, w := range m.Watchers {
 		select {
-		case w.Updates <- m.ChangeSet:
+		case w.updates <- m.ChangeSet:
 		default:
 		}
 	}
@@ -80,20 +86,20 @@ func (m *memory) String() string {
 }
 
 func NewSource(opts ...source.Option) source.Source {
-	var options source.Options
-	for _, o := range opts {
-		o(&options)
-	}
+	options := source.NewOptions(opts...)
 
 	s := &memory{
-		Watchers: make(map[string]*watcher),
+		Watchers: map[string]*watcher{},
+		ChangeSet: &source.ChangeSet{
+			Format:    options.Encoder.String(),
+			Source:    "memory",
+			Timestamp: time.Now(),
+		},
 	}
 
-	if options.Context != nil {
-		c, ok := options.Context.Value(changeSetKey{}).(*source.ChangeSet)
-		if ok {
-			s.Update(c)
-		}
+	c, ok := options.Context.Value(changeSetKey{}).(*source.ChangeSet)
+	if ok {
+		s.Update(c)
 	}
 
 	return s

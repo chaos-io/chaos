@@ -2,7 +2,7 @@ package config
 
 import (
 	"bytes"
-	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -94,19 +94,23 @@ func (c *config) run() {
 			if err != nil {
 				return err
 			}
+			if snap == nil || snap.ChangeSet == nil {
+				continue
+			}
 
 			c.Lock()
 
-			if c.snap.Version >= snap.Version {
+			if c.snap != nil && !snapshotNewerVersion(snap.Version, c.snap.Version) {
 				c.Unlock()
 				continue
 			}
 
-			// save
-			c.snap = snap
-
-			// set values
-			c.vals, _ = c.opts.Reader.Values(snap.ChangeSet)
+			// Update values only when the new snapshot is parsable.
+			vals, err := c.opts.Reader.Values(snap.ChangeSet)
+			if err == nil {
+				c.snap = snap
+				c.vals = vals
+			}
 
 			c.Unlock()
 		}
@@ -127,8 +131,7 @@ func (c *config) run() {
 			case <-done:
 			case <-c.exit:
 			}
-			err := w.Stop()
-			fmt.Println(err)
+			_ = w.Stop()
 		}()
 
 		// block watch
@@ -152,12 +155,18 @@ func (c *config) run() {
 func (c *config) Map() map[string]interface{} {
 	c.RLock()
 	defer c.RUnlock()
+	if c.vals == nil {
+		return nil
+	}
 	return c.vals.Map()
 }
 
 func (c *config) Scan(v interface{}) error {
 	c.RLock()
 	defer c.RUnlock()
+	if c.vals == nil {
+		return nil
+	}
 	return c.vals.Scan(v)
 }
 
@@ -305,4 +314,14 @@ func (w *watcher) Next() (reader.Value, error) {
 
 func (w *watcher) Stop() error {
 	return w.lw.Stop()
+}
+
+func snapshotNewerVersion(next, current string) bool {
+	nextVer, nextErr := strconv.ParseInt(next, 10, 64)
+	curVer, curErr := strconv.ParseInt(current, 10, 64)
+	if nextErr == nil && curErr == nil {
+		return nextVer > curVer
+	}
+
+	return next > current
 }

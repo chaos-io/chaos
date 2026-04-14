@@ -3,7 +3,10 @@ package config
 
 import (
 	"context"
+	"errors"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/chaos-io/chaos/config/loader"
 	"github.com/chaos-io/chaos/config/reader"
@@ -51,29 +54,76 @@ type Option func(o *Options)
 
 // Default Config Manager.
 var DefaultConfig, _ = NewConfig()
+var defaultConfigInited atomic.Bool
+var defaultConfigMu sync.RWMutex
+
+var ErrDefaultConfigUninitialized = errors.New("default config is uninitialized, call InitDefault or Load* explicitly first")
 
 // NewConfig returns new config.
 func NewConfig(opts ...Option) (Config, error) {
 	return newConfig(opts...)
 }
 
+// InitDefault reinitializes the package-level default config manager.
+// This is explicit initialization and must be called by applications
+// that rely on package-level helpers.
+func InitDefault(opts ...Option) error {
+	cfg, err := NewConfig(opts...)
+	if err != nil {
+		return err
+	}
+
+	defaultConfigMu.Lock()
+	defer defaultConfigMu.Unlock()
+
+	if DefaultConfig != nil {
+		_ = DefaultConfig.Close()
+	}
+	DefaultConfig = cfg
+	defaultConfigInited.Store(true)
+
+	return nil
+}
+
+func IsDefaultInitialized() bool {
+	return defaultConfigInited.Load()
+}
+
 // Bytes Return config as raw json.
 func Bytes() []byte {
+	if !defaultConfigInited.Load() {
+		return nil
+	}
+	defaultConfigMu.RLock()
+	defer defaultConfigMu.RUnlock()
 	return DefaultConfig.Bytes()
 }
 
 // Map Return config as a map.
 func Map() map[string]interface{} {
+	if !defaultConfigInited.Load() {
+		return nil
+	}
+	defaultConfigMu.RLock()
+	defer defaultConfigMu.RUnlock()
 	return DefaultConfig.Map()
 }
 
 // Scan values to a go type.
 func Scan(v interface{}) error {
+	if !defaultConfigInited.Load() {
+		return ErrDefaultConfigUninitialized
+	}
+	defaultConfigMu.RLock()
+	defer defaultConfigMu.RUnlock()
 	return DefaultConfig.Scan(v)
 }
 
 // ScanFrom scan from the specifier keys to a go type
 func ScanFrom(v interface{}, key string, alternatives ...string) error {
+	if !defaultConfigInited.Load() {
+		return ErrDefaultConfigUninitialized
+	}
 	val, err := Get(key)
 	if err != nil {
 		return err
@@ -95,21 +145,39 @@ func ScanFrom(v interface{}, key string, alternatives ...string) error {
 
 // Sync Force a source changeset sync.
 func Sync() error {
+	if !defaultConfigInited.Load() {
+		return ErrDefaultConfigUninitialized
+	}
+	defaultConfigMu.RLock()
+	defer defaultConfigMu.RUnlock()
 	return DefaultConfig.Sync()
 }
 
 // Get a value from the config.
 func Get(path ...string) (reader.Value, error) {
+	if !defaultConfigInited.Load() {
+		return nil, ErrDefaultConfigUninitialized
+	}
+	defaultConfigMu.RLock()
+	defer defaultConfigMu.RUnlock()
 	return DefaultConfig.Get(normalizePath(path...)...)
 }
 
 // Load config sources.
 func Load(source ...source.Source) error {
+	defaultConfigInited.Store(true)
+	defaultConfigMu.RLock()
+	defer defaultConfigMu.RUnlock()
 	return DefaultConfig.Load(source...)
 }
 
 // Watch a value for changes.
 func Watch(path ...string) (Watcher, error) {
+	if !defaultConfigInited.Load() {
+		return nil, ErrDefaultConfigUninitialized
+	}
+	defaultConfigMu.RLock()
+	defer defaultConfigMu.RUnlock()
 	return DefaultConfig.Watch(normalizePath(path...)...)
 }
 

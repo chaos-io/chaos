@@ -1,11 +1,14 @@
 package env
 
 import (
+	"sync"
+
 	"github.com/chaos-io/chaos/config/source"
 )
 
 type watcher struct {
 	exit chan struct{}
+	once sync.Once
 }
 
 func (w *watcher) Next() (*source.ChangeSet, error) {
@@ -15,7 +18,9 @@ func (w *watcher) Next() (*source.ChangeSet, error) {
 }
 
 func (w *watcher) Stop() error {
-	close(w.exit)
+	w.once.Do(func() {
+		close(w.exit)
+	})
 	return nil
 }
 
