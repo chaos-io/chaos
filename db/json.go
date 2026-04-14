@@ -13,6 +13,9 @@ import (
 type JSONValuer struct{}
 
 func (v JSONValuer) Value(value any) (driver.Value, error) {
+	if isNilValue(value) {
+		return nil, nil
+	}
 	if val := reflect.ValueOf(value); val.IsZero() {
 		return nil, nil
 	}
@@ -23,10 +26,7 @@ func (v JSONValuer) Value(value any) (driver.Value, error) {
 type JSONScanner struct{}
 
 func (s JSONScanner) Scan(value, src any) error {
-	if src == nil {
-		return nil
-	}
-	if val := reflect.ValueOf(value); !val.IsValid() || (val.CanAddr() && val.IsNil()) {
+	if src == nil || isNilValue(value) {
 		return nil
 	}
 
@@ -36,17 +36,21 @@ func (s JSONScanner) Scan(value, src any) error {
 	case string:
 		return jsoniter.ConfigFastest.Unmarshal([]byte(v), value)
 	default:
-		return fmt.Errorf("failed to unmarshall JSONB value: %v", src)
+		return fmt.Errorf("failed to unmarshal JSON value from %T", src)
 	}
 }
 
 type JSONDbDataType struct{}
 
-func (JSONDbDataType) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+func (JSONDbDataType) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
 	return gormDBJSONType(db)
 }
 
 func gormDBJSONType(db *gorm.DB) string {
+	if db == nil || db.Dialector == nil {
+		return ""
+	}
+
 	switch db.Dialector.Name() {
 	case "sqlite":
 		return "JSON"
@@ -56,4 +60,22 @@ func gormDBJSONType(db *gorm.DB) string {
 		return "JSONB"
 	}
 	return ""
+}
+
+func isNilValue(v any) bool {
+	if v == nil {
+		return true
+	}
+
+	rv := reflect.ValueOf(v)
+	if !rv.IsValid() {
+		return true
+	}
+
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return rv.IsNil()
+	default:
+		return false
+	}
 }

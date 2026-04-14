@@ -6,15 +6,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
-	"gorm.io/gorm/schema"
 
 	"gorm.io/gorm"
-)
-
-const (
-	MysqlDriver    = "mysql"
-	SqliteDriver   = "sqlite"
-	PostgresDriver = "postgres"
 )
 
 type DB struct {
@@ -22,45 +15,60 @@ type DB struct {
 	Config *Config
 }
 
-func New(cfg *Config) *DB {
-	var err error
-	var d *gorm.DB
-
-	cfg.Config = &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{
-			// TablePrefix:   "t_", // 表名前缀，`User` 的表名应该是 `t_users`
-			// SingularTable: true, // 使用单数表名，启用该选项，此时，`User` 的表名应该是 `t_user`
-		},
-		// Logger: logger.Default.LogMode(logger.Info),
+func Open(cfg *Config) (*DB, error) {
+	normalized, err := cfg.normalized()
+	if err != nil {
+		return nil, err
 	}
 
-	switch cfg.Driver {
-	case MysqlDriver:
-		d, err = gorm.Open(mysql.Open(cfg.DSN), cfg.Config)
-	case SqliteDriver:
-		d, err = gorm.Open(sqlite.Open(cfg.DSN), cfg.Config)
-	case PostgresDriver:
-		d, err = gorm.Open(postgres.Open(cfg.DSN), cfg.Config)
-	default:
-		err = fmt.Errorf("database %q is not support", cfg.Driver)
+	dialector, err := newDialector(normalized.Driver, normalized.DSN)
+	if err != nil {
+		return nil, err
 	}
-	if d == nil || err != nil {
-		panic(fmt.Errorf("failed to connect database, error: %v", err))
+	d, err := gorm.Open(dialector, normalized.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect database: %w", err)
 	}
 
-	if cfg.Debug {
+	if normalized.Debug {
 		d = d.Debug()
 	}
 
-	db, err := d.DB()
+	sqlDB, err := d.DB()
 	if err != nil {
-		panic(fmt.Sprintf("get db error: %v", err))
+		return nil, fmt.Errorf("failed to get sql DB: %w", err)
 	}
 
-	db.SetMaxIdleConns(cfg.MaxIdleConns)
-	db.SetMaxOpenConns(cfg.MaxOpenConns)
-	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
+	sqlDB.SetMaxIdleConns(normalized.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(normalized.MaxOpenConns)
+	sqlDB.SetConnMaxLifetime(normalized.ConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(normalized.ConnMaxIdleTime)
 
-	return &DB{d, cfg}
+	return &DB{DB: d, Config: normalized}, nil
+}
+
+func New(cfg *Config) *DB {
+	d, err := Open(cfg)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
+func newDialector(driverName, dsn string) (gorm.Dialector, error) {
+	driver, err := ParseDriver(driverName)
+	if err != nil {
+		return nil, err
+	}
+
+	switch driver {
+	case MysqlDriver:
+		return mysql.Open(dsn), nil
+	case SqliteDriver:
+		return sqlite.Open(dsn), nil
+	case PostgresDriver:
+		return postgres.Open(dsn), nil
+	default:
+		return nil, fmt.Errorf("%w: %q", ErrUnsupportedDriver, driverName)
+	}
 }
