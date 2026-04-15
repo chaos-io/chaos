@@ -3,12 +3,13 @@ package redis_idgen
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/chaos-io/chaos/idgen"
-	"github.com/chaos-io/chaos/redis"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/samber/lo"
 )
 
@@ -18,19 +19,32 @@ const (
 	counterKeyExpiration = 10 * time.Minute
 )
 
+var (
+	ErrNilStore      = errors.New("redis store is nil")
+	ErrEmptyServerID = errors.New("serverIDs is empty")
+)
+
+type counterStore interface {
+	IncrBy(ctx context.Context, key string, value int64) *goredis.IntCmd
+	Expire(ctx context.Context, key string, expiration time.Duration) *goredis.BoolCmd
+}
+
 // NewIDGenerator 32b timestamp + 10b timestamp+ 8b counter + 14b serverID
-func NewIDGenerator(client redis.Cmdable, serverIDs []int64) idgen.IIDGenerator {
+func NewIDGenerator(client counterStore, serverIDs []int64) (idgen.IIDGenerator, error) {
+	if client == nil {
+		return nil, ErrNilStore
+	}
 	if len(serverIDs) == 0 {
-		panic("idgen must init with valid serverIDs")
+		return nil, ErrEmptyServerID
 	}
 	return &generator{
 		cli:       client,
 		serverIDs: serverIDs,
-	}
+	}, nil
 }
 
 type generator struct {
-	cli       redis.Cmdable
+	cli       counterStore
 	serverIDs []int64
 	namespace string
 }

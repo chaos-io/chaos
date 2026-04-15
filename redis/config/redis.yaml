@@ -1,5 +1,5 @@
 redis:
-  connections:
+  addresses:
     - 127.0.0.1:6379
-  maxIdleConnections: 30
+  minIdleConns: 30
   password:

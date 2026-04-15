@@ -1,95 +1,94 @@
 package redis
 
 import (
-	"sync"
-	"time"
+	"context"
+	"errors"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 var (
-	redisClient     Cmdable
-	redisClientOnce sync.Once
+	ErrNilRawClient = errors.New("redis raw client is nil")
+	ErrNilService   = errors.New("redis service is nil")
 )
 
-func Redis() Cmdable {
-	redisClientOnce.Do(func() {
-		redisClient = NewClient(NewConfig())
-	})
-	return redisClient
+type Service struct {
+	raw goredis.UniversalClient
 }
 
-func InitRedis(cfg *Config) {
-	redisClientOnce.Do(func() {
-		redisClient = NewClient(cfg)
-	})
+func New(cfg Config) (*Service, error) {
+	normalized, err := normalizeConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	var cli goredis.UniversalClient
+	if len(normalized.Addresses) == 1 {
+		cli = goredis.NewClient(&goredis.Options{
+			Addr:                  normalized.Addresses[0],
+			Username:              normalized.Username,
+			Password:              normalized.Password,
+			DB:                    normalized.DB,
+			MaxRetries:            normalized.MaxRetries,
+			MinRetryBackoff:       normalized.MinRetryBackoff,
+			MaxRetryBackoff:       normalized.MaxRetryBackoff,
+			DialTimeout:           normalized.DialTimeout,
+			ReadTimeout:           normalized.ReadTimeout,
+			WriteTimeout:          normalized.WriteTimeout,
+			ContextTimeoutEnabled: normalized.ContextTimeoutEnabled,
+			PoolSize:              normalized.PoolSize,
+			MinIdleConns:          normalized.MinIdleConns,
+			PoolTimeout:           normalized.PoolTimeout,
+			TLSConfig:             normalized.TLSConfig,
+		})
+	} else {
+		cli = goredis.NewClusterClient(&goredis.ClusterOptions{
+			Addrs:                 normalized.Addresses,
+			Username:              normalized.Username,
+			Password:              normalized.Password,
+			ReadOnly:              normalized.ReadOnly,
+			MaxRetries:            normalized.MaxRetries,
+			MinRetryBackoff:       normalized.MinRetryBackoff,
+			MaxRetryBackoff:       normalized.MaxRetryBackoff,
+			DialTimeout:           normalized.DialTimeout,
+			ReadTimeout:           normalized.ReadTimeout,
+			WriteTimeout:          normalized.WriteTimeout,
+			ContextTimeoutEnabled: normalized.ContextTimeoutEnabled,
+			PoolSize:              normalized.PoolSize,
+			MinIdleConns:          normalized.MinIdleConns,
+			PoolTimeout:           normalized.PoolTimeout,
+			TLSConfig:             normalized.TLSConfig,
+		})
+	}
+
+	return &Service{raw: cli}, nil
 }
 
-func NewClient(cfg *Config) Cmdable {
-	if cfg == nil {
-		cfg = NewConfig()
+func Wrap(raw goredis.UniversalClient) (*Service, error) {
+	if raw == nil {
+		return nil, ErrNilRawClient
 	}
-
-	normalizeConfig(cfg)
-
-	if len(cfg.Connections) == 1 {
-		return NewProvider(newSingle(cfg))
-	}
-
-	return NewProvider(newCluster(cfg))
+	return &Service{raw: raw}, nil
 }
 
-func newSingle(cfg *Config) redis.UniversalClient {
-	return redis.NewClient(&redis.Options{
-		Addr:            cfg.Connections[0],
-		Password:        cfg.Password,
-		DB:              cfg.DB,
-		MinIdleConns:    cfg.MinIdleConns,
-		PoolSize:        cfg.PoolSize,
-		ReadTimeout:     cfg.ReadTimeout,
-		WriteTimeout:    cfg.WriteTimeout,
-		MaxRetries:      cfg.MaxRetries,
-		MaxRetryBackoff: cfg.MaxRetryBackoff,
-		MinRetryBackoff: cfg.MinRetryBackoff,
-	})
+func (s *Service) Raw() goredis.UniversalClient {
+	if s == nil {
+		return nil
+	}
+	return s.raw
 }
 
-func newCluster(cfg *Config) redis.UniversalClient {
-	return redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:           cfg.Connections,
-		Password:        cfg.Password,
-		MinIdleConns:    cfg.MinIdleConns,
-		PoolSize:        cfg.PoolSize,
-		ReadTimeout:     cfg.ReadTimeout,
-		WriteTimeout:    cfg.WriteTimeout,
-		MaxRetries:      cfg.MaxRetries,
-		MaxRetryBackoff: cfg.MaxRetryBackoff,
-		MinRetryBackoff: cfg.MinRetryBackoff,
-	})
+func (s *Service) Ping(ctx context.Context) error {
+	if s == nil || s.raw == nil {
+		return ErrNilService
+	}
+	return s.raw.Ping(ctx).Err()
 }
 
-func normalizeConfig(cfg *Config) {
-	if len(cfg.Connections) == 0 {
-		cfg.Connections = []string{":6379"}
+func (s *Service) Close(ctx context.Context) error {
+	_ = ctx
+	if s == nil || s.raw == nil {
+		return nil
 	}
-
-	if cfg.MinIdleConns == 0 {
-		if cfg.MaxIdleConns > 0 {
-			cfg.MinIdleConns = cfg.MaxIdleConns
-		} else {
-			cfg.MinIdleConns = 100
-		}
-	}
-
-	if cfg.PoolSize == 0 {
-		cfg.PoolSize = 300
-	}
-
-	if cfg.ReadTimeout == 0 {
-		cfg.ReadTimeout = time.Second
-	}
-
-	if cfg.WriteTimeout == 0 {
-		cfg.WriteTimeout = cfg.ReadTimeout
-	}
+	return s.raw.Close()
 }
