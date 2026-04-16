@@ -1,25 +1,20 @@
 package messaging
 
-import (
-	"net/url"
-)
+import "strings"
 
 type Subscription struct {
-	Name  string
-	Topic string
-	Group string
-
-	Pull              bool
-	AutoAck           bool
-	AckTimeout        string
-	PullMaxWaiting    int64
-	PendingMsgLimit   int64
-	PendingBytesLimit int64
-	Endpoint          *PushEndpoint
+	Name    string
+	Topic   string
+	Group   string
+	AutoAck bool
 }
 
-type PushEndpoint struct {
-	Service string
-	Method  string
-	Url     *url.URL
+func (s *Subscription) Validate() error {
+	if s == nil {
+		return ErrNilSubscription
+	}
+	if strings.TrimSpace(s.Topic) == "" {
+		return ErrEmptyTopic
+	}
+	return nil
 }

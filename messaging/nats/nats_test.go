@@ -5,12 +5,14 @@ package nats
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/nats-io/nats.go"
+	gonats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/chaos-io/chaos/config"
@@ -18,71 +20,98 @@ import (
 	"github.com/chaos-io/chaos/messaging"
 )
 
+type localConfig struct {
+	Nats          Config              `json:"nats"`
+	Subscriptions []localSubscription `json:"subscriptions"`
+}
+
+type localSubscription struct {
+	Name    string `json:"name"`
+	Topic   string `json:"topic"`
+	Group   string `json:"group"`
+	Service string `json:"service"`
+	Method  string `json:"method"`
+	Pull    bool   `json:"pull"`
+	AutoAck bool   `json:"autoAck"`
+	AckWait string `json:"ackWait"`
+}
+
+func (s localSubscription) toConsumer() (Consumer, error) {
+	consumer := Consumer{
+		Subscription: messaging.Subscription{
+			Name:    s.Name,
+			Topic:   s.Topic,
+			Group:   s.Group,
+			AutoAck: s.AutoAck,
+		},
+		Pull: s.Pull,
+	}
+	if s.AckWait != "" {
+		ackWait, err := time.ParseDuration(s.AckWait)
+		if err != nil {
+			return Consumer{}, err
+		}
+		consumer.AckWait = ackWait
+	}
+	return consumer, nil
+}
+
 func Test_PublishStartTask(t *testing.T) {
-	traceId := uuid.New().String()
-	logs.Infow("publish start task", "traceId", traceId)
-	err := PublishStartTask(context.Background(), &startTaskRequest{Name: "task-" + traceId, Ids: []string{"1", "2"}})
+	traceID := uuid.New().String()
+	logs.Infow("publish start task", "traceId", traceID)
+	err := PublishStartTask(context.Background(), &startTaskRequest{Name: "task-" + traceID, Ids: []string{"1", "2"}})
 	assert.NoError(t, err)
 }
 
 func Test_PublishStopTask(t *testing.T) {
-	traceId := uuid.New().String()
-	logs.Infow("publish stop task", "traceId", traceId)
-	err := PublishStopTask(context.Background(), &stopTaskRequest{Name: "task-" + traceId})
+	traceID := uuid.New().String()
+	logs.Infow("publish stop task", "traceId", traceID)
+	err := PublishStopTask(context.Background(), &stopTaskRequest{Name: "task-" + traceID})
 	assert.NoError(t, err)
 }
 
 func Test_Subscription(t *testing.T) {
-	if err := Register(); err != nil {
-		t.Fatalf("failed to register nats provider: %v", err)
-	}
+	cfg := mustLoadLocalConfig(t)
+	client := mustGetMessaging(t)
 
-	_client, err := messaging.NewClient()
-	if err != nil {
-		logs.Fatalw("failed to create the message client", "error", err)
-	}
-
-	for _, sub := range _client.GetConfig().GetSubscriptions() {
-		ep := sub.Endpoint
-		if len(ep.Service) > 0 && ep.Service != "Agent" {
+	for _, spec := range cfg.Subscriptions {
+		spec := spec
+		if spec.Service != "" && spec.Service != "Agent" {
 			continue
 		}
-		logs.Infof("AgentServer subscribed the %s topic", sub.Topic)
-		_client.Subscribe(sub, func(ctx context.Context, s *messaging.Subscription, m *messaging.SubMessage) error {
-			ctx = context.WithValue(ctx, messaging.TopicKey, s.Topic)
-			ctx = context.WithValue(ctx, messaging.MessageKey, m)
-			ctx = context.WithValue(ctx, messaging.MessageIdKey, m.Id)
-			ctx = context.WithValue(ctx, messaging.MessageAttributesKey, m.Attributes)
-			switch ep.Method {
+
+		consumer, err := spec.toConsumer()
+		if err != nil {
+			t.Fatalf("invalid consumer config: %v", err)
+		}
+
+		if err := client.SubscribeConsumer(consumer, func(ctx context.Context, s *messaging.Subscription, m *messaging.SubMessage) error {
+			switch spec.Method {
 			case "start_task":
 				request := &startTaskRequest{}
-				if err = jsoniter.ConfigFastest.UnmarshalFromString(m.Data, request); err != nil {
-					logs.Warnw("failed to unmarshal the queue's message to json", "error", err)
+				if err := jsoniter.ConfigFastest.UnmarshalFromString(m.Data, request); err != nil {
 					m.Term()
 					return err
 				}
-				logs.Infow("received the message", "topic", s.Topic, "id", m.Id, "request", request)
-				if err = startTask(ctx, request); err != nil {
+				if err := startTask(ctx, request); err != nil {
 					m.Nak()
-				} else {
-					m.Ack()
+					return err
 				}
 			case "stop_tasks":
 				request := &stopTaskRequest{}
-				if err = jsoniter.ConfigFastest.UnmarshalFromString(m.Data, request); err != nil {
-					logs.Warnw("failed to unmarshal the queue's message to json", "error", err)
+				if err := jsoniter.ConfigFastest.UnmarshalFromString(m.Data, request); err != nil {
 					m.Term()
 					return err
 				}
-				logs.Infow("received the message", "topic", s.Topic, "id", m.Id)
-				if err = stopTask(ctx, request); err != nil {
+				if err := stopTask(ctx, request); err != nil {
 					m.Nak()
-				} else {
-					m.Ack()
+					return err
 				}
 			}
 			return nil
-		})
+		}); err != nil {
+			t.Fatalf("subscribe %s failed: %v", spec.Topic, err)
+		}
 	}
 
 	select {}
@@ -94,7 +123,7 @@ type startTaskRequest struct {
 }
 
 func startTask(ctx context.Context, request *startTaskRequest) error {
-	logs.Infow("starting task", "name", request.Name)
+	logs.Infow("starting task", "name", request.Name, "topic", messaging.GetContextTopic(ctx))
 	return nil
 }
 
@@ -103,7 +132,7 @@ type stopTaskRequest struct {
 }
 
 func stopTask(ctx context.Context, request *stopTaskRequest) error {
-	logs.Infow("stopping task", "name", request.Name)
+	logs.Infow("stopping task", "name", request.Name, "topic", messaging.GetContextTopic(ctx))
 	return nil
 }
 
@@ -113,80 +142,120 @@ const (
 )
 
 var (
-	client     *messaging.Client
-	clientOnce sync.Once
+	messageClient *messaging.Client
+	natsClient    *Nats
+	clientOnce    sync.Once
 )
 
-func GetMessaging() *messaging.Client {
+func mustLoadLocalConfig(t *testing.T) *localConfig {
+	t.Helper()
+
+	cfg := &localConfig{}
+	if err := config.ScanFrom(cfg, "messaging"); err != nil {
+		t.Fatalf("failed to load messaging config: %v", err)
+	}
+	return cfg
+}
+
+func initLocalMessaging() {
 	clientOnce.Do(func() {
-		if err := Register(); err != nil {
+		cfg := &localConfig{}
+		if err := config.ScanFrom(cfg, "messaging"); err != nil {
 			panic(err)
 		}
 
-		var err error
-		client, err = messaging.NewClient()
+		queue, err := New(&cfg.Nats)
 		if err != nil {
-			logs.Errorw("failed to create the message client", "error", err)
 			panic(err)
 		}
+
+		wrapped, err := messaging.NewClient(queue)
+		if err != nil {
+			panic(err)
+		}
+		messageClient = wrapped
+		natsClient = queue
 	})
-	return client
 }
 
-func PublishStartTask(ctx context.Context, tsk *startTaskRequest) error {
-	data, err := jsoniter.ConfigFastest.MarshalToString(tsk)
+func mustGetMessaging(t *testing.T) *Nats {
+	t.Helper()
+
+	initLocalMessaging()
+	return natsClient
+}
+
+func PublishStartTask(ctx context.Context, task *startTaskRequest) error {
+	initLocalMessaging()
+	data, err := jsoniter.ConfigFastest.MarshalToString(task)
 	if err != nil {
 		return err
 	}
 
-	if err := GetMessaging().Publish(ctx, StartTaskTopic, &messaging.Message{Id: "1", Data: data}); err != nil {
-		return err
-	}
-
-	logs.Debugw("published the start task message", "task", tsk)
-	return nil
+	return messageClient.Publish(ctx, StartTaskTopic, &messaging.Message{Id: "1", Data: data})
 }
 
-func PublishStopTask(ctx context.Context, tsk *stopTaskRequest) error {
-	data, err := jsoniter.ConfigFastest.MarshalToString(tsk)
+func PublishStopTask(ctx context.Context, task *stopTaskRequest) error {
+	initLocalMessaging()
+	data, err := jsoniter.ConfigFastest.MarshalToString(task)
 	if err != nil {
 		return err
 	}
 
-	if err := GetMessaging().Publish(ctx, StopTasksTopic, &messaging.Message{Id: "2", Data: data}); err != nil {
-		return err
-	}
-
-	logs.Debugw("published the stop task message", "task", tsk)
-	return nil
+	return messageClient.Publish(ctx, StopTasksTopic, &messaging.Message{Id: "2", Data: data})
 }
 
 func Test_ClearStream(t *testing.T) {
-	cfg := &messaging.Config{}
-	if err := config.ScanFrom(cfg, "messaging"); err != nil {
-		logs.Debugw("failed to decode config", "error", err)
-		return
-	}
+	cfg := mustLoadLocalConfig(t)
 
-	nc, err := nats.Connect(cfg.ServiceName)
+	nc, err := gonats.Connect(cfg.Nats.URL)
 	if err != nil {
-		logs.Errorw("failed to connect nats", "error", err)
-		return
+		t.Fatalf("failed to connect nats: %v", err)
 	}
 
 	js, err := nc.JetStream()
 	if err != nil {
-		logs.Errorw("failed to connect nats", "error", err)
-		return
+		t.Fatalf("failed to get jetstream: %v", err)
 	}
 
 	streamNames := js.StreamNames()
 	for name := range streamNames {
 		logs.Infow("stream", "name", name)
-		// logs.Infow("removing stream", "name", name)
-		// err := js.DeleteStream(name)
-		// if err != nil {
-		// 	logs.Errorw("failed to remove stream", "name", name, "error", err)
-		// }
+	}
+}
+
+func TestConsumerValidate(t *testing.T) {
+	consumer := Consumer{}
+	if err := consumer.Validate(); !errors.Is(err, messaging.ErrEmptyTopic) {
+		t.Fatalf("expect ErrEmptyTopic, got %v", err)
+	}
+
+	consumer.Subscription.Topic = "topic"
+	if err := consumer.Validate(); err != nil {
+		t.Fatalf("expect nil error, got %v", err)
+	}
+}
+
+func TestNatsSubscribeValidation(t *testing.T) {
+	queue := &Nats{}
+
+	if err := queue.Subscribe(nil, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrNilSubscription) {
+		t.Fatalf("expect ErrNilSubscription, got %v", err)
+	}
+
+	if err := queue.Subscribe(&messaging.Subscription{}, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrEmptyTopic) {
+		t.Fatalf("expect ErrEmptyTopic, got %v", err)
+	}
+
+	if err := queue.Subscribe(&messaging.Subscription{Topic: "topic"}, nil); !errors.Is(err, messaging.ErrNilHandler) {
+		t.Fatalf("expect ErrNilHandler, got %v", err)
+	}
+
+	if err := queue.SubscribeConsumer(Consumer{}, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrEmptyTopic) {
+		t.Fatalf("expect ErrEmptyTopic, got %v", err)
+	}
+
+	if err := queue.SubscribeConsumer(Consumer{Subscription: messaging.Subscription{Topic: "topic"}}, nil); !errors.Is(err, messaging.ErrNilHandler) {
+		t.Fatalf("expect ErrNilHandler, got %v", err)
 	}
 }

@@ -1,14 +1,12 @@
 package messaging
 
 import (
-	"sync"
 	"sync/atomic"
 )
 
 type SubMessage struct {
 	Message
 
-	mu         sync.RWMutex
 	done       atomic.Bool
 	ack        func()
 	nak        func()
@@ -17,56 +15,66 @@ type SubMessage struct {
 }
 
 func (m *SubMessage) SetAck(ack func()) {
-	m.setAction(func() { m.ack = ack })
-}
-
-func (m *SubMessage) SetNak(nak func()) {
-	m.setAction(func() { m.nak = nak })
-}
-
-func (m *SubMessage) SetTerm(term func()) {
-	m.setAction(func() { m.term = term })
-}
-
-func (m *SubMessage) SetInProgress(inProgress func()) {
-	m.setAction(func() { m.inProgress = inProgress })
-}
-
-func (m *SubMessage) Ack() {
-	m.finish(m.getAction(func(message *SubMessage) func() { return message.ack }))
-}
-
-func (m *SubMessage) Nak() {
-	m.finish(m.getAction(func(message *SubMessage) func() { return message.nak }))
-}
-
-func (m *SubMessage) Term() {
-	m.finish(m.getAction(func(message *SubMessage) func() { return message.term }))
-}
-
-func (m *SubMessage) InProgress() {
-	if fn := m.getAction(func(message *SubMessage) func() { return message.inProgress }); fn != nil {
-		fn()
-	}
-}
-
-func (m *SubMessage) setAction(setter func()) {
 	if m == nil {
 		return
 	}
-	m.mu.Lock()
-	setter()
-	m.mu.Unlock()
+	m.ack = ack
 }
 
-func (m *SubMessage) getAction(selector func(message *SubMessage) func()) func() {
+func (m *SubMessage) SetNak(nak func()) {
 	if m == nil {
-		return nil
+		return
 	}
-	m.mu.RLock()
-	fn := selector(m)
-	m.mu.RUnlock()
-	return fn
+	m.nak = nak
+}
+
+func (m *SubMessage) SetTerm(term func()) {
+	if m == nil {
+		return
+	}
+	m.term = term
+}
+
+func (m *SubMessage) SetInProgress(inProgress func()) {
+	if m == nil {
+		return
+	}
+	m.inProgress = inProgress
+}
+
+func (m *SubMessage) Ack() {
+	if m == nil {
+		return
+	}
+	m.finish(m.ack)
+}
+
+func (m *SubMessage) Nak() {
+	if m == nil {
+		return
+	}
+	m.finish(m.nak)
+}
+
+func (m *SubMessage) Term() {
+	if m == nil {
+		return
+	}
+	m.finish(m.term)
+}
+
+func (m *SubMessage) InProgress() {
+	if m == nil || m.inProgress == nil {
+		return
+	}
+	m.inProgress()
+}
+
+func (m *SubMessage) Done() bool {
+	if m == nil {
+		return false
+	}
+	return m.done.Load()
 }
 
 func (m *SubMessage) finish(fn func()) {

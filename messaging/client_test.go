@@ -3,7 +3,6 @@ package messaging
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync/atomic"
 	"testing"
 )
@@ -28,83 +27,21 @@ func (s *stubQueue) Subscribe(subscription *Subscription, handler Handler) error
 
 func (s *stubQueue) Shutdown() {}
 
-var providerSeq atomic.Uint64
-
-func uniqueProvider(prefix string) string {
-	return fmt.Sprintf("%s-%d", prefix, providerSeq.Add(1))
-}
-
-func TestRegister(t *testing.T) {
-	t.Run("invalid provider name", func(t *testing.T) {
-		err := Register("  ", func(*Config) (Queue, error) { return &stubQueue{}, nil })
-		if !errors.Is(err, ErrInvalidProviderName) {
-			t.Fatalf("expect ErrInvalidProviderName, got %v", err)
+func TestNewClient(t *testing.T) {
+	t.Run("nil queue", func(t *testing.T) {
+		_, err := NewClient(nil)
+		if !errors.Is(err, ErrNilQueue) {
+			t.Fatalf("expect ErrNilQueue, got %v", err)
 		}
 	})
 
-	t.Run("nil constructor", func(t *testing.T) {
-		err := Register(uniqueProvider("nil-constructor"), nil)
-		if !errors.Is(err, ErrNilQueueConstructor) {
-			t.Fatalf("expect ErrNilQueueConstructor, got %v", err)
-		}
-	})
-
-	t.Run("duplicate provider", func(t *testing.T) {
-		name := uniqueProvider("dup-provider")
-		if err := Register(name, func(*Config) (Queue, error) { return &stubQueue{}, nil }); err != nil {
-			t.Fatalf("first register failed: %v", err)
-		}
-
-		err := Register(" "+name+" ", func(*Config) (Queue, error) { return &stubQueue{}, nil })
-		if !errors.Is(err, ErrProviderAlreadyRegistered) {
-			t.Fatalf("expect ErrProviderAlreadyRegistered, got %v", err)
-		}
-	})
-}
-
-func TestNewClientWith(t *testing.T) {
-	t.Run("nil config", func(t *testing.T) {
-		_, err := NewClientWith(nil)
-		if !errors.Is(err, ErrNilConfig) {
-			t.Fatalf("expect ErrNilConfig, got %v", err)
-		}
-	})
-
-	t.Run("unknown provider", func(t *testing.T) {
-		_, err := NewClientWith(&Config{Provider: uniqueProvider("not-found")})
-		if !errors.Is(err, ErrProviderNotRegistered) {
-			t.Fatalf("expect ErrProviderNotRegistered, got %v", err)
-		}
-	})
-
-	t.Run("normalize provider and init", func(t *testing.T) {
-		name := uniqueProvider("normalized")
-		if err := Register(name, func(*Config) (Queue, error) { return &stubQueue{}, nil }); err != nil {
-			t.Fatalf("register provider failed: %v", err)
-		}
-
-		cfg := &Config{Provider: " " + name + " "}
-		client, err := NewClientWith(cfg)
+	t.Run("init", func(t *testing.T) {
+		client, err := NewClient(&stubQueue{})
 		if err != nil {
 			t.Fatalf("new client failed: %v", err)
 		}
-		if cfg.Provider != name {
-			t.Fatalf("expect provider %q, got %q", name, cfg.Provider)
-		}
-		if client.Provider == nil {
-			t.Fatal("expect non-nil provider")
-		}
-	})
-
-	t.Run("constructor returns nil provider", func(t *testing.T) {
-		name := uniqueProvider("nil-provider")
-		if err := Register(name, func(*Config) (Queue, error) { return nil, nil }); err != nil {
-			t.Fatalf("register provider failed: %v", err)
-		}
-
-		_, err := NewClientWith(&Config{Provider: name})
-		if !errors.Is(err, ErrNilProvider) {
-			t.Fatalf("expect ErrNilProvider, got %v", err)
+		if client.queue == nil {
+			t.Fatal("expect non-nil queue")
 		}
 	})
 }
@@ -119,14 +56,14 @@ func TestClientValidation(t *testing.T) {
 	}
 
 	client := &Client{}
-	if err := client.Publish(context.Background(), "topic", &Message{}); !errors.Is(err, ErrNilProvider) {
-		t.Fatalf("expect ErrNilProvider, got %v", err)
+	if err := client.Publish(context.Background(), "topic", &Message{}); !errors.Is(err, ErrNilQueue) {
+		t.Fatalf("expect ErrNilQueue, got %v", err)
 	}
-	if err := client.Subscribe(&Subscription{Topic: "topic"}, func(context.Context, *Subscription, *SubMessage) error { return nil }); !errors.Is(err, ErrNilProvider) {
-		t.Fatalf("expect ErrNilProvider, got %v", err)
+	if err := client.Subscribe(&Subscription{Topic: "topic"}, func(context.Context, *Subscription, *SubMessage) error { return nil }); !errors.Is(err, ErrNilQueue) {
+		t.Fatalf("expect ErrNilQueue, got %v", err)
 	}
 
-	client.Provider = &stubQueue{}
+	client.queue = &stubQueue{}
 	if err := client.Publish(context.Background(), " ", &Message{}); !errors.Is(err, ErrEmptyTopic) {
 		t.Fatalf("expect ErrEmptyTopic, got %v", err)
 	}
@@ -141,13 +78,13 @@ func TestClientValidation(t *testing.T) {
 	}
 
 	publishErr := errors.New("publish err")
-	client.Provider = &stubQueue{publishErr: publishErr}
+	client.queue = &stubQueue{publishErr: publishErr}
 	if err := client.Publish(context.Background(), "topic", &Message{}); !errors.Is(err, publishErr) {
 		t.Fatalf("expect publish error passthrough, got %v", err)
 	}
 
 	subscribeErr := errors.New("subscribe err")
-	client.Provider = &stubQueue{subscribeErr: subscribeErr}
+	client.queue = &stubQueue{subscribeErr: subscribeErr}
 	if err := client.Subscribe(&Subscription{Topic: "topic"}, func(context.Context, *Subscription, *SubMessage) error { return nil }); !errors.Is(err, subscribeErr) {
 		t.Fatalf("expect subscribe error passthrough, got %v", err)
 	}
@@ -202,5 +139,8 @@ func TestSubMessageAckOnlyOnce(t *testing.T) {
 	}
 	if inProgress.Load() != 1 {
 		t.Fatalf("expect inProgress 1, got %d", inProgress.Load())
+	}
+	if !msg.Done() {
+		t.Fatal("expect message marked done after ack")
 	}
 }
