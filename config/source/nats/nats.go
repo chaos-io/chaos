@@ -3,11 +3,11 @@ package nats
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 	"time"
 
-	"github.com/chaos-io/core/go/logs"
 	natsgo "github.com/nats-io/nats.go"
 
 	"github.com/chaos-io/chaos/config/source"
@@ -105,24 +105,24 @@ func NewSource(opts ...source.Option) source.Source {
 
 	nc, err := natsgo.Connect(config.Url)
 	if err != nil {
-		logs.Error(err)
+		slog.Error("failed to connect nats", slog.Any("error", err))
 	}
 
 	js, err := nc.JetStream(natsgo.MaxWait(10 * time.Second))
 	if err != nil {
-		logs.Error(err)
+		slog.Error("failed to get key value", slog.Any("error", err))
 	}
 
 	kv, err := js.KeyValue(bucket)
 	if errors.Is(err, natsgo.ErrBucketNotFound) || errors.Is(err, natsgo.ErrKeyNotFound) {
 		kv, err = js.CreateKeyValue(&natsgo.KeyValueConfig{Bucket: bucket})
 		if err != nil {
-			logs.Error(err)
+			slog.Error("failed to create key value", slog.Any("error", err))
 		}
 	}
 
 	if err != nil {
-		logs.Error(err)
+		slog.Error("failed to get key value", slog.Any("error", err))
 	}
 
 	return &nats{
