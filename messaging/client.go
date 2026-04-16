@@ -2,8 +2,8 @@ package messaging
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/chaos-io/chaos/config"
 )
@@ -21,22 +21,30 @@ func NewClient() (*Client, error) {
 	return NewClientWith(cfg)
 }
 
-func NewClientWith(config *Config) (*Client, error) {
-	if config == nil {
-		return nil, errors.New("there is no config for the messaging client")
+func NewClientWith(cfg *Config) (*Client, error) {
+	if cfg == nil {
+		return nil, ErrNilConfig
 	}
 
-	if queues != nil {
-		if c, ok := queues[config.Provider]; ok {
-			if q, err := c(config); err != nil {
-				return nil, err
-			} else {
-				return &Client{Provider: q, Config: config}, nil
-			}
-		}
+	cfg.Provider = normalizeProvider(cfg.Provider)
+	if cfg.Provider == "" {
+		return nil, ErrInvalidProviderName
 	}
 
-	return nil, fmt.Errorf("has no proper queue provider for the %q", config.Provider)
+	constructor, ok := getConstructor(cfg.Provider)
+	if !ok {
+		return nil, fmt.Errorf("%w: %q (register provider first, e.g. messaging/providers.RegisterDefaults)", ErrProviderNotRegistered, cfg.Provider)
+	}
+
+	provider, err := constructor(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if provider == nil {
+		return nil, ErrNilProvider
+	}
+
+	return &Client{Provider: provider, Config: cfg}, nil
 }
 
 func (c *Client) GetConfig() *Config {
@@ -47,21 +55,40 @@ func (c *Client) GetConfig() *Config {
 }
 
 func (c *Client) Shutdown() {
-	if c != nil {
-		c.Provider.Shutdown()
+	if c == nil || c.Provider == nil {
+		return
 	}
+	c.Provider.Shutdown()
 }
 
-func (c *Client) Subscribe(subscription *Subscription, handler Handler) {
-	if c != nil {
-		c.Provider.Subscribe(subscription, handler)
+func (c *Client) Subscribe(subscription *Subscription, handler Handler) error {
+	if c == nil {
+		return ErrNilClient
 	}
+	if c.Provider == nil {
+		return ErrNilProvider
+	}
+	if subscription == nil {
+		return ErrNilSubscription
+	}
+	if strings.TrimSpace(subscription.Topic) == "" {
+		return ErrEmptyTopic
+	}
+	if handler == nil {
+		return ErrNilHandler
+	}
+	return c.Provider.Subscribe(subscription, handler)
 }
 
 func (c *Client) Publish(ctx context.Context, topic string, messages ...*Message) error {
-	if c != nil {
-		return c.Provider.Publish(ctx, topic, messages...)
+	if c == nil {
+		return ErrNilClient
 	}
-
-	return nil
+	if c.Provider == nil {
+		return ErrNilProvider
+	}
+	if strings.TrimSpace(topic) == "" {
+		return ErrEmptyTopic
+	}
+	return c.Provider.Publish(ctx, topic, messages...)
 }

@@ -33,6 +33,10 @@ func Test_PublishStopTask(t *testing.T) {
 }
 
 func Test_Subscription(t *testing.T) {
+	if err := Register(); err != nil {
+		t.Fatalf("failed to register nats provider: %v", err)
+	}
+
 	_client, err := messaging.NewClient()
 	if err != nil {
 		logs.Fatalw("failed to create the message client", "error", err)
@@ -115,6 +119,10 @@ var (
 
 func GetMessaging() *messaging.Client {
 	clientOnce.Do(func() {
+		if err := Register(); err != nil {
+			panic(err)
+		}
+
 		var err error
 		client, err = messaging.NewClient()
 		if err != nil {

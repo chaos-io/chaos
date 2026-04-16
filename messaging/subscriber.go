@@ -8,5 +8,5 @@ type Handler func(ctx context.Context, subscription *Subscription, m *SubMessage
 
 //go:generate mockgen -destination=mocks/subscriber.go -package=mocks . Subscriber
 type Subscriber interface {
-	Subscribe(subscription *Subscription, handler Handler)
+	Subscribe(subscription *Subscription, handler Handler) error
 }

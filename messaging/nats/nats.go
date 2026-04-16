@@ -2,9 +2,12 @@ package nats
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
@@ -16,10 +19,24 @@ import (
 
 const defaultPullMaxWaiting = 128
 
-func init() {
-	messaging.Register("nats", func(cfg *messaging.Config) (messaging.Queue, error) {
-		return New(cfg)
+var (
+	registerOnce sync.Once
+	registerErr  error
+)
+
+func Register() error {
+	registerOnce.Do(func() {
+		registerErr = messaging.Register("nats", func(cfg *messaging.Config) (messaging.Queue, error) {
+			return New(cfg)
+		})
 	})
+	return registerErr
+}
+
+func MustRegister() {
+	if err := Register(); err != nil {
+		panic(err)
+	}
 }
 
 type Nats struct {
@@ -27,14 +44,23 @@ type Nats struct {
 	conn          *nats.Conn
 	js            nats.JetStreamContext
 	subscriptions map[string]*nats.Subscription
-	shutdown      bool
 	shutdownCh    chan struct{}
+	shutdownOnce  sync.Once
+	subMu         sync.Mutex
+	streamMu      sync.Mutex
 
 	config     *messaging.Config
-	pullNumber int32
+	pullNumber atomic.Int32
 }
 
 func New(cfg *messaging.Config) (*Nats, error) {
+	if cfg == nil {
+		return nil, messaging.ErrNilConfig
+	}
+	if len(strings.TrimSpace(cfg.ServiceName)) == 0 {
+		return nil, errors.New("messaging nats: serviceName is empty")
+	}
+
 	nc, err := nats.Connect(cfg.ServiceName)
 	if err != nil {
 		logs.Errorw("failed to connect nats", "error", err)
@@ -46,6 +72,7 @@ func New(cfg *messaging.Config) (*Nats, error) {
 		conn:          nc,
 		config:        cfg,
 		subscriptions: map[string]*nats.Subscription{},
+		shutdownCh:    make(chan struct{}),
 	}
 
 	if cfg.Nats != nil && len(cfg.Nats.JetStream) > 0 {
@@ -61,14 +88,16 @@ func New(cfg *messaging.Config) (*Nats, error) {
 		}
 
 		n.createStream(n.StreamName(), n.SubjectNames())
-
-		n.shutdownCh = make(chan struct{})
 	}
 
 	return n, nil
 }
 
 func (n *Nats) createStream(name string, subjects []string) {
+	if n == nil || n.js == nil || len(name) == 0 {
+		return
+	}
+
 	streamInfo, err := n.js.StreamInfo(name)
 	if err != nil {
 		logs.Warnw("failed to get the stream info", "name", name, "error", err)
@@ -83,30 +112,46 @@ func (n *Nats) createStream(name string, subjects []string) {
 		}
 	} else {
 		if len(subjects) > 0 {
-			oldSubjects := streamInfo.Config.Subjects
-			var nonExists []string
-			if len(oldSubjects) == 0 {
-				nonExists = subjects
-			} else {
-				set := make(map[string]struct{})
-				for _, subject := range oldSubjects {
-					set[subject] = struct{}{}
-				}
-
-				for _, subject := range subjects {
-					if _, exist := set[subject]; !exist {
-						nonExists = append(nonExists, subject)
-					}
-				}
-			}
-
-			allSubjects := append(nonExists, subjects...)
+			allSubjects := mergeSubjects(streamInfo.Config.Subjects, subjects)
 			streamConfig := n.NewStreamConfig(name, allSubjects)
 			if _, err := n.js.UpdateStream(streamConfig); err != nil {
 				logs.Warnw("failed to update stream", "name", name, "error", err)
 			}
 		}
 	}
+}
+
+func mergeSubjects(existing []string, subjects []string) []string {
+	if len(existing) == 0 {
+		return append([]string{}, subjects...)
+	}
+	if len(subjects) == 0 {
+		return append([]string{}, existing...)
+	}
+
+	set := make(map[string]struct{}, len(existing)+len(subjects))
+	merged := make([]string, 0, len(existing)+len(subjects))
+	for _, s := range existing {
+		if len(s) == 0 {
+			continue
+		}
+		if _, ok := set[s]; ok {
+			continue
+		}
+		set[s] = struct{}{}
+		merged = append(merged, s)
+	}
+	for _, s := range subjects {
+		if len(s) == 0 {
+			continue
+		}
+		if _, ok := set[s]; ok {
+			continue
+		}
+		set[s] = struct{}{}
+		merged = append(merged, s)
+	}
+	return merged
 }
 
 func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging.Message) error {
@@ -144,23 +189,41 @@ func (n *Nats) publish(ctx context.Context, topic string, msg []byte) error {
 }
 
 func (n *Nats) updateSubjectName(name string) {
-	if len(n.StreamName()) > 0 && len(name) > 0 {
-		for _, s := range n.SubjectNames() {
-			if s == name || s == n.StreamName()+".*" {
-				return
-			}
-		}
+	if n == nil || n.js == nil || len(name) == 0 || len(n.StreamName()) == 0 {
+		return
+	}
 
-		n.AppendSubjectName(name)
-		streamCfg := n.NewStreamConfig(n.StreamName(), n.SubjectNames())
-		if _, err := n.js.UpdateStream(streamCfg); err != nil {
-			logs.Warnw("failed to update stream", "name", n.StreamName(), "subject", name, "error", err.Error())
-			n.SetSubjectNames(n.SubjectNames()[0 : len(n.SubjectNames())-1]...)
+	n.streamMu.Lock()
+	defer n.streamMu.Unlock()
+
+	subjects := n.SubjectNames()
+	for _, s := range subjects {
+		if s == name || s == n.StreamName()+".*" {
+			return
 		}
 	}
+
+	updatedSubjects := append(append([]string{}, subjects...), name)
+	streamCfg := n.NewStreamConfig(n.StreamName(), updatedSubjects)
+	if _, err := n.js.UpdateStream(streamCfg); err != nil {
+		logs.Warnw("failed to update stream", "name", n.StreamName(), "subject", name, "error", err.Error())
+		return
+	}
+
+	n.SetSubjectNames(updatedSubjects...)
 }
 
-func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) {
+func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
+	if s == nil {
+		return messaging.ErrNilSubscription
+	}
+	if h == nil {
+		return messaging.ErrNilHandler
+	}
+	if len(strings.TrimSpace(s.Topic)) == 0 {
+		return messaging.ErrEmptyTopic
+	}
+
 	callback := func(m *nats.Msg) {
 		msg := &messaging.SubMessage{}
 		if err := jsoniter.Unmarshal(m.Data, msg); err != nil {
@@ -193,7 +256,9 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) {
 			}
 		})
 
-		if err := h(context.Background(), s, msg); err != nil {
+		ctx := messaging.WithTopic(context.Background(), s.Topic)
+		ctx = messaging.WithMessage(ctx, msg)
+		if err := h(ctx, s, msg); err != nil {
 			return
 		}
 
@@ -204,17 +269,42 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) {
 
 	if len(s.Group) > 0 {
 		sub, err := n.queueSubscribe(s, callback)
-		n.subscriptions[s.Topic] = sub
 		if err != nil {
 			logs.Warnw("Nats: failed to subscribe with group", "topic", s.Topic, "group", s.Group, "error", err)
+			return err
 		}
+		n.setSubscription(s, sub)
 	} else {
 		sub, err := n.subscribe(s, callback)
-		n.subscriptions[s.Topic] = sub
 		if err != nil {
 			logs.Warnw("Nats: failed to subscribe", "topic", s.Topic, "error", err)
+			return err
 		}
+		n.setSubscription(s, sub)
 	}
+
+	return nil
+}
+
+func subscriptionKey(s *messaging.Subscription) string {
+	if s == nil {
+		return ""
+	}
+	return strings.Join([]string{s.Name, s.Topic, s.Group}, "|")
+}
+
+func (n *Nats) setSubscription(s *messaging.Subscription, sub *nats.Subscription) {
+	if n == nil || s == nil || sub == nil {
+		return
+	}
+	key := subscriptionKey(s)
+	if len(key) == 0 {
+		return
+	}
+
+	n.subMu.Lock()
+	n.subscriptions[key] = sub
+	n.subMu.Unlock()
 }
 
 func (n *Nats) queueSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (sub *nats.Subscription, err error) {
@@ -257,7 +347,7 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 	// Create Pull based consumer with maximum 128 inflight.
 	// PullMaxWaiting defines the max inflight pull requests.
 	durableName := s.Group
-	n.pullNumber++
+	pullNumber := n.pullNumber.Add(1)
 
 	suffix := ""
 	segments := strings.Split(s.Topic, ".")
@@ -265,7 +355,7 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 		suffix = segments[len(segments)-1]
 	}
 	if !durableNameRegex.MatchString(suffix) {
-		suffix = strconv.Itoa(int(n.pullNumber))
+		suffix = strconv.Itoa(int(pullNumber))
 	}
 
 	durableName = strings.Join([]string{durableName, suffix}, "-")
@@ -304,7 +394,19 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 
 			logs.Debugw("fetching the next message", "subscribe", durableName)
 
-			ms, _ := subs.Fetch(1)
+			ms, err := subs.Fetch(1, nats.MaxWait(time.Second))
+			if err != nil {
+				if errors.Is(err, nats.ErrTimeout) {
+					continue
+				}
+				if errors.Is(err, nats.ErrConnectionClosed) || errors.Is(err, nats.ErrBadSubscription) {
+					logs.Infow("pull subscribe is stopping", "subscribe", durableName, "error", err)
+					return
+				}
+				logs.Warnw("failed to fetch the next message", "subscribe", durableName, "error", err)
+				continue
+			}
+
 			for _, msg := range ms {
 				logs.Debugw("fetched the message", "subscribe", durableName, "subject", msg.Subject)
 				cb(msg)
@@ -316,6 +418,10 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 }
 
 func setPendingLimit(sub *nats.Subscription, opts *messaging.Subscription) error {
+	if sub == nil || opts == nil {
+		return nil
+	}
+
 	msgLimit := int(opts.PendingMsgLimit)
 	bytesLimit := int(opts.PendingBytesLimit)
 	if msgLimit != 0 || bytesLimit != 0 {
@@ -336,9 +442,30 @@ func setPendingLimit(sub *nats.Subscription, opts *messaging.Subscription) error
 
 // Shutdown shuts down all subscribers
 func (n *Nats) Shutdown() {
-	n.conn.Close()
-	close(n.shutdownCh)
-	n.shutdown = true
+	if n == nil {
+		return
+	}
+
+	n.shutdownOnce.Do(func() {
+		if n.shutdownCh != nil {
+			close(n.shutdownCh)
+		}
+
+		n.subMu.Lock()
+		for key, sub := range n.subscriptions {
+			if sub != nil {
+				if err := sub.Unsubscribe(); err != nil {
+					logs.Warnw("failed to unsubscribe", "subscription", key, "error", err)
+				}
+			}
+			delete(n.subscriptions, key)
+		}
+		n.subMu.Unlock()
+
+		if n.conn != nil {
+			n.conn.Close()
+		}
+	})
 }
 
 func (n *Nats) GetConn() *nats.Conn {
@@ -349,28 +476,28 @@ func (n *Nats) GetConn() *nats.Conn {
 }
 
 func (n *Nats) StreamName() string {
-	if n != nil && n.config != nil {
+	if n != nil && n.config != nil && n.config.Nats != nil {
 		return n.config.Nats.JetStream
 	}
 	return ""
 }
 
 func (n *Nats) SubjectNames() []string {
-	if n != nil && n.config != nil {
+	if n != nil && n.config != nil && n.config.Nats != nil {
 		return n.config.Nats.TopicNames
 	}
 	return nil
 }
 
 func (n *Nats) AppendSubjectName(name string) {
-	if n != nil && n.config != nil {
+	if n != nil && n.config != nil && n.config.Nats != nil {
 		n.config.Nats.TopicNames = append(n.config.Nats.TopicNames, name)
 	}
 }
 
 func (n *Nats) SetSubjectNames(names ...string) {
-	if n != nil && n.config != nil {
-		n.config.Nats.TopicNames = names
+	if n != nil && n.config != nil && n.config.Nats != nil {
+		n.config.Nats.TopicNames = append([]string{}, names...)
 	}
 }
 
@@ -391,14 +518,14 @@ func (n *Nats) NewStreamConfig(name string, subjects []string) *nats.StreamConfi
 }
 
 func (n *Nats) MaxMsgs() int64 {
-	if n != nil && n.config != nil {
+	if n != nil && n.config != nil && n.config.Nats != nil {
 		return n.config.Nats.MaxMsgs
 	}
 	return 0
 }
 
 func (n *Nats) MaxAge() int64 {
-	if n != nil && n.config != nil {
+	if n != nil && n.config != nil && n.config.Nats != nil {
 		return n.config.Nats.MaxAge
 	}
 	return 0
