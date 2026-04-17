@@ -1,0 +1,7 @@
+app_code: 6
+biz_code: 12
+error_code:
+  - name: TaskNotFound
+    code: 1001
+    message: task not found
+    description: task does not exist

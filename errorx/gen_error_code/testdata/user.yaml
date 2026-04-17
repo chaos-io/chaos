@@ -1,0 +1,7 @@
+app_code: 6
+biz_code: 13
+error_code:
+  - name: UserNotFound
+    code: 1001
+    message: user not found
+    no_affects_stability: true
