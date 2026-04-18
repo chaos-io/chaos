@@ -2,16 +2,16 @@ package errorx
 
 import "fmt"
 
-type Message struct {
+type messageError struct {
 	message string
 	cause   error
 }
 
-func (m *Message) Unwrap() error {
+func (m *messageError) Unwrap() error {
 	return m.cause
 }
 
-func (m *Message) Error() string {
+func (m *messageError) Error() string {
 	return fmt.Sprintf("%s\ncause=%s", m.message, m.cause.Error())
 }
 
@@ -20,7 +20,7 @@ func wrapf(err error, format string, args ...any) error {
 		return nil
 	}
 
-	return &Message{
+	return &messageError{
 		message: fmt.Sprintf(format, args...),
 		cause:   err,
 	}

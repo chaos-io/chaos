@@ -6,38 +6,38 @@ import (
 	"strings"
 )
 
-// Status is interface for error with statusError.
+// Status is the public view of a registered status-bearing error.
 // 如果有获取code或其他扩展字段的需求，再考虑对外暴露接口.
 type Status interface {
 	error
 	Code() int32
 }
 
-type status struct {
+type statusValue struct {
 	code    int32
 	message string
 
 	// 稳定性标识 可用于SLA稳定的监测
 	// true:会影响系统稳定性, 并体现在接口错误率中
 	// false:不影响稳定性
-	AffectsStability bool
+	affectsStability bool
 
 	extra map[string]string // 扩展信息
 }
 
-func (s *status) Code() int32 {
+func (s *statusValue) Code() int32 {
 	return s.code
 }
 
-func (s *status) Error() string {
+func (s *statusValue) Error() string {
 	return fmt.Sprintf("code=%d message=%s", s.code, s.message)
 }
 
-func (s *status) Extra() map[string]string {
+func (s *statusValue) Extra() map[string]string {
 	return s.extra
 }
 
-func (s *status) WithExtra(m map[string]string) {
+func (s *statusValue) WithExtra(m map[string]string) {
 	if s.extra == nil {
 		s.extra = make(map[string]string)
 	}
@@ -47,19 +47,19 @@ func (s *status) WithExtra(m map[string]string) {
 	}
 }
 
-type withStatus struct {
-	status *status
+type codedError struct {
+	status *statusValue
 
 	// at intnal server
 	stack string
 	cause error // original error
 }
 
-func (w *withStatus) Unwrap() error {
+func (w *codedError) Unwrap() error {
 	return w.cause
 }
 
-func (w *withStatus) Error() string {
+func (w *codedError) Error() string {
 	b := strings.Builder{}
 	b.WriteString(w.status.Error())
 
@@ -75,11 +75,23 @@ func (w *withStatus) Error() string {
 	return b.String()
 }
 
-func (w *withStatus) StackTrace() string {
+func (w *codedError) Code() int32 {
+	return w.status.Code()
+}
+
+func (w *codedError) Extra() map[string]string {
+	return w.status.Extra()
+}
+
+func (w *codedError) WithExtra(m map[string]string) {
+	w.status.WithExtra(m)
+}
+
+func (w *codedError) StackTrace() string {
 	return w.stack
 }
 
-func (w *withStatus) Is(target error) bool {
+func (w *codedError) Is(target error) bool {
 	var s Status
 	if errors.As(target, &s) && w.status.Code() == s.Code() {
 		return true
@@ -87,6 +99,6 @@ func (w *withStatus) Is(target error) bool {
 	return false
 }
 
-func (w *withStatus) As(target any) bool {
+func (w *codedError) As(target any) bool {
 	return errors.As(w.status, target)
 }

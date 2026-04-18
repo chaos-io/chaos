@@ -1,6 +1,6 @@
-app_code: 6
-biz_code: 12
-error_code:
+appCode: 6
+bizCode: 12
+errorCode:
   - name: TaskNotFound
     code: 1001
     message: task not found

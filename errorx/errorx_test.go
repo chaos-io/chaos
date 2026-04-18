@@ -33,21 +33,37 @@ func TestErrorWithoutStack(t *testing.T) {
 	}
 }
 
-func TestRegisterRejectsDuplicateCode(t *testing.T) {
+func TestRegisterIsIdempotentForSameDefinition(t *testing.T) {
 	const code int32 = 912340001
 
-	Register(code, "first")
+	if err := Register(code, "first", WithAffectsStability(false)); err != nil {
+		t.Fatalf("first Register returned error: %v", err)
+	}
+	if err := Register(code, "first", WithAffectsStability(false)); err != nil {
+		t.Fatalf("second Register returned error: %v", err)
+	}
+}
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("expected duplicate register panic")
-		}
-	}()
-	Register(code, "second")
+func TestRegisterReturnsConflictForDifferentDefinition(t *testing.T) {
+	const code int32 = 912340003
+
+	if err := Register(code, "first", WithAffectsStability(false)); err != nil {
+		t.Fatalf("first Register returned error: %v", err)
+	}
+
+	err := Register(code, "second", WithAffectsStability(true))
+	if err == nil {
+		t.Fatal("expected conflict error")
+	}
+	if !errors.Is(err, ErrRegisterConflict) {
+		t.Fatalf("expected ErrRegisterConflict, got %v", err)
+	}
 }
 
 func TestWithStatusAsStatus(t *testing.T) {
-	Register(912340002, "with status as")
+	if err := Register(912340002, "with status as"); err != nil {
+		t.Fatalf("Register returned error: %v", err)
+	}
 
 	err := NewByCode(912340002)
 
@@ -57,5 +73,25 @@ func TestWithStatusAsStatus(t *testing.T) {
 	}
 	if target.Code() != 912340002 {
 		t.Fatalf("unexpected status code: %d", target.Code())
+	}
+}
+
+func TestGetRegisteredStatusReturnsCopy(t *testing.T) {
+	const code int32 = 912340004
+
+	if err := Register(code, "immutable", WithAffectsStability(false)); err != nil {
+		t.Fatalf("Register returned error: %v", err)
+	}
+
+	got := GetRegisteredStatus(code)
+	got.Message = "changed"
+	got.AffectsStability = true
+
+	again := GetRegisteredStatus(code)
+	if again.Message != "immutable" {
+		t.Fatalf("register status should not be mutated externally: %+v", again)
+	}
+	if again.AffectsStability {
+		t.Fatalf("register stability should not be mutated externally: %+v", again)
 	}
 }

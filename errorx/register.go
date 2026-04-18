@@ -1,6 +1,7 @@
 package errorx
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 )
@@ -10,25 +11,28 @@ const (
 	DefaultAffectsStability = true
 )
 
+var ErrRegisterConflict = errors.New("errorx: register conflict")
+
 var (
-	initializers     map[int32]*RegisterStatus
-	initializersOnce sync.Once
-	initializersMu   sync.RWMutex
+	registeredStatuses     map[int32]*RegisteredStatus
+	registeredStatusesOnce sync.Once
+	registeredStatusesMu   sync.RWMutex
 )
 
-type RegisterStatus struct {
+type RegisteredStatus struct {
 	Code             int32
 	Message          string
 	AffectsStability bool
 }
-type RegisterOption func(s *RegisterStatus)
 
-func Register(code int32, msg string, opts ...RegisterOption) {
-	initializersOnce.Do(func() {
-		initializers = make(map[int32]*RegisterStatus)
+type RegisterOption func(s *RegisteredStatus)
+
+func Register(code int32, msg string, opts ...RegisterOption) error {
+	registeredStatusesOnce.Do(func() {
+		registeredStatuses = make(map[int32]*RegisteredStatus)
 	})
 
-	s := &RegisterStatus{
+	s := &RegisteredStatus{
 		Code:             code,
 		Message:          msg,
 		AffectsStability: DefaultAffectsStability,
@@ -38,37 +42,75 @@ func Register(code int32, msg string, opts ...RegisterOption) {
 		opt(s)
 	}
 
-	initializersMu.Lock()
-	defer initializersMu.Unlock()
+	registeredStatusesMu.Lock()
+	defer registeredStatusesMu.Unlock()
 
-	if _, ok := initializers[code]; ok {
-		panic(fmt.Sprintf("errorx: duplicate register code %d", code))
+	if current, ok := registeredStatuses[code]; ok {
+		if sameRegisteredStatus(current, s) {
+			return nil
+		}
+		return fmt.Errorf(
+			"%w: code=%d current_message=%q new_message=%q current_affects_stability=%t new_affects_stability=%t",
+			ErrRegisterConflict,
+			code,
+			current.Message,
+			s.Message,
+			current.AffectsStability,
+			s.AffectsStability,
+		)
 	}
-	initializers[code] = s
+	registeredStatuses[code] = s
+	return nil
+}
+
+func MustRegister(code int32, msg string, opts ...RegisterOption) {
+	if err := Register(code, msg, opts...); err != nil {
+		panic(err)
+	}
 }
 
 func WithAffectsStability(affectsStability bool) RegisterOption {
-	return func(s *RegisterStatus) {
+	return func(s *RegisteredStatus) {
 		s.AffectsStability = affectsStability
 	}
 }
 
-func GetRegisterStatus(code int32) *RegisterStatus {
-	initializersOnce.Do(func() {
-		initializers = make(map[int32]*RegisterStatus)
+func GetRegisteredStatus(code int32) *RegisteredStatus {
+	registeredStatusesOnce.Do(func() {
+		registeredStatuses = make(map[int32]*RegisteredStatus)
 	})
 
-	initializersMu.RLock()
-	defer initializersMu.RUnlock()
+	registeredStatusesMu.RLock()
+	defer registeredStatusesMu.RUnlock()
 
-	registerStatus, ok := initializers[code]
+	registeredStatus, ok := registeredStatuses[code]
 	if ok {
-		return registerStatus
+		return cloneRegisteredStatus(registeredStatus)
 	}
 
-	return &RegisterStatus{
+	return &RegisteredStatus{
 		Code:             code,
 		Message:          DefaultErrorMsg,
 		AffectsStability: DefaultAffectsStability,
+	}
+}
+
+func sameRegisteredStatus(left, right *RegisteredStatus) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	return left.Code == right.Code &&
+		left.Message == right.Message &&
+		left.AffectsStability == right.AffectsStability
+}
+
+func cloneRegisteredStatus(s *RegisteredStatus) *RegisteredStatus {
+	if s == nil {
+		return nil
+	}
+	return &RegisteredStatus{
+		Code:             s.Code,
+		Message:          s.Message,
+		AffectsStability: s.AffectsStability,
 	}
 }

@@ -25,26 +25,25 @@ const (
 
 //go:generate go run . -out ./testdata/generated ./testdata
 
-type Error struct {
-	Code                 int    `yaml:"code"`
-	Name                 string `yaml:"name"`
-	Message              string `yaml:"message,omitempty"`
-	Description          string `yaml:"description,omitempty"`
-	NoAffectStability    bool   `yaml:"no_affect_stability,omitempty"`
-	LegacyNoAffectStable bool   `yaml:"no_affects_stability,omitempty"`
+type ErrorDefinition struct {
+	Code             int    `yaml:"code"`
+	Name             string `yaml:"name"`
+	Message          string `yaml:"message,omitempty"`
+	Description      string `yaml:"description,omitempty"`
+	AffectsStability *bool  `yaml:"affectsStability,omitempty"`
 }
 
-type Spec struct {
-	AppCode   int     `yaml:"app_code"`
-	BizCode   int     `yaml:"biz_code"`
-	ErrorCode []Error `yaml:"error_code"`
+type ErrorCodeFile struct {
+	AppCode   int               `yaml:"appCode"`
+	BizCode   int               `yaml:"bizCode"`
+	ErrorCode []ErrorDefinition `yaml:"errorCode"`
 }
 
-type specFile struct {
+type inputFile struct {
 	Path     string
 	BizName  string
 	FileName string
-	Spec     Spec
+	Spec     ErrorCodeFile
 }
 
 func main() {
@@ -97,7 +96,7 @@ func printUsage(w io.Writer) {
 		return
 	}
 	_, _ = fmt.Fprintln(w, "usage: gen_error_code [-out output-dir] <yaml-file-or-dir> [more-yaml-files-or-dirs...]")
-	_, _ = fmt.Fprintln(w, "yaml format: app_code, biz_code, error_code")
+	_, _ = fmt.Fprintln(w, "yaml format: appCode, bizCode, errorCode")
 	_, _ = fmt.Fprintln(w, "example: go run ./gen_error_code -out ./generated ./biz_errors")
 }
 
@@ -146,7 +145,7 @@ func collectYAMLFiles(inputs []string) ([]string, error) {
 }
 
 func generateFromFiles(files []string, outputDir string) ([]string, error) {
-	specFiles := make([]specFile, 0, len(files))
+	inputFiles := make([]inputFile, 0, len(files))
 	for _, path := range files {
 		spec, err := loadSpec(path)
 		if err != nil {
@@ -156,30 +155,35 @@ func generateFromFiles(files []string, outputDir string) ([]string, error) {
 			return nil, err
 		}
 		bizName := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-		specFiles = append(specFiles, specFile{
+		inputFiles = append(inputFiles, inputFile{
 			Path:     path,
 			BizName:  bizName,
 			FileName: sanitizeFileName(bizName),
 			Spec:     spec,
 		})
 	}
-	if err := validateSpecFiles(specFiles); err != nil {
+	if err := validateInputFiles(inputFiles); err != nil {
 		return nil, err
 	}
 
-	outputPaths := make([]string, 0, len(specFiles))
-	for _, specFile := range specFiles {
-		outputPath, err := generateGoCode(specFile, outputDir)
+	outputPaths := make([]string, 0, len(inputFiles))
+	for _, inputFile := range inputFiles {
+		outputPath, err := generateGoCode(inputFile, outputDir)
 		if err != nil {
 			return nil, err
 		}
 		outputPaths = append(outputPaths, outputPath)
 	}
+	registerAllPath, err := generateRegisterAll(inputFiles, outputDir)
+	if err != nil {
+		return nil, err
+	}
+	outputPaths = append(outputPaths, registerAllPath)
 	return outputPaths, nil
 }
 
-func loadSpec(path string) (Spec, error) {
-	var spec Spec
+func loadSpec(path string) (ErrorCodeFile, error) {
+	var spec ErrorCodeFile
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -191,15 +195,15 @@ func loadSpec(path string) (Spec, error) {
 	return spec, nil
 }
 
-func validateSpec(path string, spec Spec) error {
+func validateSpec(path string, spec ErrorCodeFile) error {
 	if spec.AppCode < 1 || spec.AppCode > 9 {
-		return fmt.Errorf("%s: app_code must be in [1,9]", path)
+		return fmt.Errorf("%s: appCode must be in [1,9]", path)
 	}
 	if spec.BizCode < 1 || spec.BizCode > 9999 {
-		return fmt.Errorf("%s: biz_code must be in [1,9999]", path)
+		return fmt.Errorf("%s: bizCode must be in [1,9999]", path)
 	}
 	if len(spec.ErrorCode) == 0 {
-		return fmt.Errorf("%s: error_code cannot be empty", path)
+		return fmt.Errorf("%s: errorCode cannot be empty", path)
 	}
 
 	seenNames := make(map[string]struct{}, len(spec.ErrorCode))
@@ -224,26 +228,26 @@ func validateSpec(path string, spec Spec) error {
 	return nil
 }
 
-func validateSpecFiles(specFiles []specFile) error {
-	seenFiles := make(map[string]string, len(specFiles))
+func validateInputFiles(inputFiles []inputFile) error {
+	seenFiles := make(map[string]string, len(inputFiles))
 	seenNames := make(map[string]string)
 	seenCodes := make(map[int]string)
 
-	for _, specFile := range specFiles {
-		outputName := specFile.FileName + ".go"
+	for _, inputFile := range inputFiles {
+		outputName := inputFile.FileName + ".go"
 		if previousPath, ok := seenFiles[outputName]; ok {
-			return fmt.Errorf("output file conflict: %s and %s both map to %s", previousPath, specFile.Path, outputName)
+			return fmt.Errorf("output file conflict: %s and %s both map to %s", previousPath, inputFile.Path, outputName)
 		}
-		seenFiles[outputName] = specFile.Path
+		seenFiles[outputName] = inputFile.Path
 
-		for _, errDef := range specFile.Spec.ErrorCode {
+		for _, errDef := range inputFile.Spec.ErrorCode {
 			if previousPath, ok := seenNames[errDef.Name]; ok {
-				return fmt.Errorf("duplicate error name %q across files: %s and %s", errDef.Name, previousPath, specFile.Path)
+				return fmt.Errorf("duplicate error name %q across files: %s and %s", errDef.Name, previousPath, inputFile.Path)
 			}
-			seenNames[errDef.Name] = specFile.Path
+			seenNames[errDef.Name] = inputFile.Path
 
-			fullCode := errorCode(specFile.Spec.AppCode, specFile.Spec.BizCode, errDef.Code)
-			location := fmt.Sprintf("%s:%s", specFile.Path, errDef.Name)
+			fullCode := composeErrorCode(inputFile.Spec.AppCode, inputFile.Spec.BizCode, errDef.Code)
+			location := fmt.Sprintf("%s:%s", inputFile.Path, errDef.Name)
 			if previousLocation, ok := seenCodes[fullCode]; ok {
 				return fmt.Errorf("duplicate full error code %d: %s and %s", fullCode, previousLocation, location)
 			}
@@ -254,17 +258,17 @@ func validateSpecFiles(specFiles []specFile) error {
 	return nil
 }
 
-func generateGoCode(specFile specFile, outputDir string) (string, error) {
+func generateGoCode(inputFile inputFile, outputDir string) (string, error) {
 	if strings.TrimSpace(outputDir) == "" {
 		outputDir = "."
 	}
 
-	source, err := buildGoCode(specFile.BizName, specFile.Spec)
+	source, err := buildGoCode(inputFile.BizName, inputFile.Spec)
 	if err != nil {
 		return "", err
 	}
 
-	outputPath := filepath.Join(outputDir, specFile.FileName+".go")
+	outputPath := filepath.Join(outputDir, inputFile.FileName+".go")
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return "", err
 	}
@@ -275,8 +279,30 @@ func generateGoCode(specFile specFile, outputDir string) (string, error) {
 	return outputPath, nil
 }
 
-func buildGoCode(bizName string, spec Spec) ([]byte, error) {
+func generateRegisterAll(inputFiles []inputFile, outputDir string) (string, error) {
+	if strings.TrimSpace(outputDir) == "" {
+		outputDir = "."
+	}
+
+	source, err := buildRegisterAllCode(inputFiles)
+	if err != nil {
+		return "", err
+	}
+
+	outputPath := filepath.Join(outputDir, "register_all.go")
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(outputPath, source, 0o644); err != nil {
+		return "", err
+	}
+
+	return outputPath, nil
+}
+
+func buildGoCode(bizName string, spec ErrorCodeFile) ([]byte, error) {
 	var buf bytes.Buffer
+	registerFuncName := registerFuncName(bizName)
 
 	_, _ = fmt.Fprintf(&buf, `// Code generated by gen_error_code. DO NOT EDIT.
 // biz: %s
@@ -294,11 +320,11 @@ const (
 		writeConstBlock(&buf, spec.AppCode, spec.BizCode, errDef)
 	}
 
-	_, _ = fmt.Fprintf(&buf, ")\n\nfunc init() {\n")
+	_, _ = fmt.Fprintf(&buf, ")\n\nfunc %s() error {\n", registerFuncName)
 	for _, errDef := range spec.ErrorCode {
 		writeRegistration(&buf, errDef)
 	}
-	_, _ = fmt.Fprintf(&buf, "}\n\n")
+	_, _ = fmt.Fprintf(&buf, "\treturn nil\n}\n\n")
 	for _, errDef := range spec.ErrorCode {
 		writeFunctions(&buf, errDef)
 	}
@@ -310,7 +336,32 @@ const (
 	return source, nil
 }
 
-func writeConstBlock(buf *bytes.Buffer, appCode int, bizCode int, errDef Error) {
+func buildRegisterAllCode(inputFiles []inputFile) ([]byte, error) {
+	var buf bytes.Buffer
+
+	_, _ = fmt.Fprintf(&buf, `// Code generated by gen_error_code. DO NOT EDIT.
+
+package %s
+
+func RegisterAll() error {
+`, generatedPackageName)
+	for _, inputFile := range inputFiles {
+		_, _ = fmt.Fprintf(
+			&buf,
+			"\tif err := %s(); err != nil {\n\t\treturn err\n\t}\n",
+			registerFuncName(inputFile.BizName),
+		)
+	}
+	_, _ = fmt.Fprintf(&buf, "\treturn nil\n}\n")
+
+	source, err := format.Source(buf.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("format register_all code: %w", err)
+	}
+	return source, nil
+}
+
+func writeConstBlock(buf *bytes.Buffer, appCode int, bizCode int, errDef ErrorDefinition) {
 	comment := ""
 	if errDef.Description != "" {
 		comment = " // " + errDef.Description
@@ -319,29 +370,29 @@ func writeConstBlock(buf *bytes.Buffer, appCode int, bizCode int, errDef Error) 
 	privateName := lowerFirst(errDef.Name)
 	_, _ = fmt.Fprintf(
 		buf,
-		"\t%sCode = %d%s\n\t%sMessage = %q\n\t%sNoAffectStability = %t\n",
+		"\t%sCode = %d%s\n\t%sMessage = %q\n\t%sAffectsStability = %t\n",
 		errDef.Name,
-		errorCode(appCode, bizCode, errDef.Code),
+		composeErrorCode(appCode, bizCode, errDef.Code),
 		comment,
 		privateName,
 		errDef.Message,
 		privateName,
-		errDef.noAffectStability(),
+		errDef.affectsStability(),
 	)
 }
 
-func writeRegistration(buf *bytes.Buffer, errDef Error) {
+func writeRegistration(buf *bytes.Buffer, errDef ErrorDefinition) {
 	privateName := lowerFirst(errDef.Name)
 	_, _ = fmt.Fprintf(
 		buf,
-		"\terrorx.Register(\n\t\t%sCode,\n\t\t%sMessage,\n\t\terrorx.WithAffectsStability(!%sNoAffectStability),\n\t)\n",
+		"\tif err := errorx.Register(\n\t\t%sCode,\n\t\t%sMessage,\n\t\terrorx.WithAffectsStability(%sAffectsStability),\n\t); err != nil {\n\t\treturn err\n\t}\n",
 		errDef.Name,
 		privateName,
 		privateName,
 	)
 }
 
-func writeFunctions(buf *bytes.Buffer, errDef Error) {
+func writeFunctions(buf *bytes.Buffer, errDef ErrorDefinition) {
 	_, _ = fmt.Fprintf(
 		buf,
 		"func New%s(opts ...errorx.Option) error {\n\treturn errorx.NewByCode(%sCode, opts...)\n}\n\n",
@@ -350,7 +401,7 @@ func writeFunctions(buf *bytes.Buffer, errDef Error) {
 	)
 	_, _ = fmt.Fprintf(
 		buf,
-		"func Is%s(err error) bool {\n\tstatus, ok := errorx.FromStatus(err)\n\treturn ok && status.Code() == %sCode\n}\n\n",
+		"func Is%s(err error) bool {\n\tstatusErr, ok := errorx.FromStatus(err)\n\treturn ok && statusErr.Code() == %sCode\n}\n\n",
 		errDef.Name,
 		errDef.Name,
 	)
@@ -368,8 +419,15 @@ func sanitizeFileName(name string) string {
 	return name
 }
 
-func (e Error) noAffectStability() bool {
-	return e.NoAffectStability || e.LegacyNoAffectStable
+func (e ErrorDefinition) affectsStability() bool {
+	if e.AffectsStability != nil {
+		return *e.AffectsStability
+	}
+	return true
+}
+
+func registerFuncName(bizName string) string {
+	return "register" + upperCamelName(sanitizeFileName(bizName))
 }
 
 func lowerFirst(s string) string {
@@ -379,11 +437,39 @@ func lowerFirst(s string) string {
 	return strings.ToLower(s[:1]) + s[1:]
 }
 
+func upperCamelName(s string) string {
+	if s == "" {
+		return "ErrorCode"
+	}
+
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '_' || r == '-' || r == '.' || r == '/' || r == ' '
+	})
+	if len(parts) == 0 {
+		return "ErrorCode"
+	}
+
+	var b strings.Builder
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		b.WriteString(strings.ToUpper(part[:1]))
+		if len(part) > 1 {
+			b.WriteString(part[1:])
+		}
+	}
+	if b.Len() == 0 {
+		return "ErrorCode"
+	}
+	return b.String()
+}
+
 func isYAMLFile(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path))
 	return ext == ".yaml" || ext == ".yml"
 }
 
-func errorCode(appCode int, bizCode int, subCode int) int {
+func composeErrorCode(appCode int, bizCode int, subCode int) int {
 	return appCode*100000000 + bizCode*10000 + subCode
 }

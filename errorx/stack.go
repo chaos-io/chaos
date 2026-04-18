@@ -11,20 +11,20 @@ type StackTracer interface {
 	StackTrace() string
 }
 
-type Stack struct {
+type stackError struct {
 	stack string
 	cause error
 }
 
-func (s *Stack) Unwrap() error {
+func (s *stackError) Unwrap() error {
 	return s.cause
 }
 
-func (s *Stack) Error() string {
+func (s *stackError) Error() string {
 	return fmt.Sprintf("%s\nstack=%s", s.cause.Error(), s.stack)
 }
 
-func (s *Stack) StackTrace() string {
+func (s *stackError) StackTrace() string {
 	return s.stack
 }
 
@@ -61,7 +61,7 @@ func WithStack(err error) error {
 		return err
 	}
 
-	return &Stack{
+	return &stackError{
 		cause: err,
 		stack: stack(),
 	}
