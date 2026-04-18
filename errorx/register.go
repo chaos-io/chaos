@@ -1,6 +1,9 @@
 package errorx
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 const (
 	DefaultErrorMsg         = "Service Internal Error"
@@ -36,8 +39,12 @@ func Register(code int32, msg string, opts ...RegisterOption) {
 	}
 
 	initializersMu.Lock()
+	defer initializersMu.Unlock()
+
+	if _, ok := initializers[code]; ok {
+		panic(fmt.Sprintf("errorx: duplicate register code %d", code))
+	}
 	initializers[code] = s
-	initializersMu.Unlock()
 }
 
 func WithAffectsStability(affectsStability bool) RegisterOption {
@@ -47,6 +54,10 @@ func WithAffectsStability(affectsStability bool) RegisterOption {
 }
 
 func GetRegisterStatus(code int32) *RegisterStatus {
+	initializersOnce.Do(func() {
+		initializers = make(map[int32]*RegisterStatus)
+	})
+
 	initializersMu.RLock()
 	defer initializersMu.RUnlock()
 

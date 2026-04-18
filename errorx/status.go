@@ -88,5 +88,5 @@ func (w *withStatus) Is(target error) bool {
 }
 
 func (w *withStatus) As(target any) bool {
-	return errors.As(w.status, &target)
+	return errors.As(w.status, target)
 }

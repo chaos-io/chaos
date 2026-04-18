@@ -52,7 +52,7 @@ func trimPathPrefix(name string) string {
 }
 
 func WithStack(err error) error {
-	if err != nil {
+	if err == nil {
 		return nil
 	}
 

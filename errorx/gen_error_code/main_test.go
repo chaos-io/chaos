@@ -17,6 +17,7 @@ error_code:
   - name: TaskNotFound
     code: 1001
     message: task not found
+    no_affect_stability: true
 `)
 
 	spec, err := loadSpec(path)
@@ -29,20 +30,27 @@ error_code:
 	if len(spec.ErrorCode) != 1 || spec.ErrorCode[0].Name != "TaskNotFound" {
 		t.Fatalf("unexpected errors: %+v", spec)
 	}
+	if !spec.ErrorCode[0].noAffectStability() {
+		t.Fatalf("expected no_affect_stability to be loaded: %+v", spec.ErrorCode[0])
+	}
 }
 
 func TestGenerateGoCodeWritesFormattedFile(t *testing.T) {
 	outputDir := t.TempDir()
-	path := filepath.Join(t.TempDir(), "loop-task.yaml")
-	spec := Spec{
-		AppCode: 6,
-		BizCode: 12,
-		ErrorCode: []Error{
-			{Name: "TaskNotFound", Code: 1001, Message: "task not found"},
+	specFile := specFile{
+		Path:     filepath.Join(t.TempDir(), "loop-task.yaml"),
+		BizName:  "loop-task",
+		FileName: "loop_task",
+		Spec: Spec{
+			AppCode: 6,
+			BizCode: 12,
+			ErrorCode: []Error{
+				{Name: "TaskNotFound", Code: 1001, Message: "task not found"},
+			},
 		},
 	}
 
-	outputPath, err := generateGoCode(path, spec, outputDir)
+	outputPath, err := generateGoCode(specFile, outputDir)
 	if err != nil {
 		t.Fatalf("generateGoCode returned error: %v", err)
 	}
@@ -57,11 +65,23 @@ func TestGenerateGoCodeWritesFormattedFile(t *testing.T) {
 	}
 
 	got := string(content)
-	if !strings.Contains(got, "package loop_task") {
+	if !strings.Contains(got, "package errcode") {
 		t.Fatalf("generated file missing package name:\n%s", got)
 	}
 	if !strings.Contains(got, "TaskNotFoundCode") || !strings.Contains(got, "600121001") {
 		t.Fatalf("generated file missing error code:\n%s", got)
+	}
+	if !strings.Contains(got, "\"chaos-io/chaos/errorx\"") {
+		t.Fatalf("generated file missing errorx import path:\n%s", got)
+	}
+	if !strings.Contains(got, "errorx.Register(") {
+		t.Fatalf("generated file missing register call:\n%s", got)
+	}
+	if !strings.Contains(got, "func NewTaskNotFound(opts ...errorx.Option) error") {
+		t.Fatalf("generated file missing constructor:\n%s", got)
+	}
+	if !strings.Contains(got, "func IsTaskNotFound(err error) bool") {
+		t.Fatalf("generated file missing matcher:\n%s", got)
 	}
 }
 
@@ -136,6 +156,137 @@ error_code:
 	lines := strings.Fields(strings.TrimSpace(stdout.String()))
 	if len(lines) != 2 {
 		t.Fatalf("unexpected stdout: %q", stdout.String())
+	}
+}
+
+func TestValidateSpecChecksNineDigitLayout(t *testing.T) {
+	err := validateSpec("biz.yaml", Spec{
+		AppCode: 10,
+		BizCode: 12,
+		ErrorCode: []Error{
+			{Name: "TaskNotFound", Code: 1001},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "app_code must be in [1,9]") {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+
+	err = validateSpec("biz.yaml", Spec{
+		AppCode: 6,
+		BizCode: 10000,
+		ErrorCode: []Error{
+			{Name: "TaskNotFound", Code: 1001},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "biz_code must be in [1,9999]") {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+
+	err = validateSpec("biz.yaml", Spec{
+		AppCode: 6,
+		BizCode: 12,
+		ErrorCode: []Error{
+			{Name: "TaskNotFound", Code: 10000},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "must be in [1,9999]") {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+}
+
+func TestValidateSpecFilesRejectsDuplicateErrorNames(t *testing.T) {
+	err := validateSpecFiles([]specFile{
+		{
+			Path:     "order.yaml",
+			BizName:  "order",
+			FileName: "order",
+			Spec: Spec{
+				AppCode: 6,
+				BizCode: 12,
+				ErrorCode: []Error{
+					{Name: "NotFound", Code: 1001},
+				},
+			},
+		},
+		{
+			Path:     "payment.yaml",
+			BizName:  "payment",
+			FileName: "payment",
+			Spec: Spec{
+				AppCode: 6,
+				BizCode: 13,
+				ErrorCode: []Error{
+					{Name: "NotFound", Code: 1002},
+				},
+			},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), `duplicate error name "NotFound"`) {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+}
+
+func TestValidateSpecFilesRejectsDuplicateFullCodes(t *testing.T) {
+	err := validateSpecFiles([]specFile{
+		{
+			Path:     "order.yaml",
+			BizName:  "order",
+			FileName: "order",
+			Spec: Spec{
+				AppCode: 6,
+				BizCode: 12,
+				ErrorCode: []Error{
+					{Name: "OrderNotFound", Code: 1001},
+				},
+			},
+		},
+		{
+			Path:     "payment.yaml",
+			BizName:  "payment",
+			FileName: "payment",
+			Spec: Spec{
+				AppCode: 6,
+				BizCode: 12,
+				ErrorCode: []Error{
+					{Name: "PaymentNotFound", Code: 1001},
+				},
+			},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "duplicate full error code 600121001") {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+}
+
+func TestValidateSpecFilesRejectsOutputConflicts(t *testing.T) {
+	err := validateSpecFiles([]specFile{
+		{
+			Path:     "foo-bar.yaml",
+			BizName:  "foo-bar",
+			FileName: "foo_bar",
+			Spec: Spec{
+				AppCode: 6,
+				BizCode: 12,
+				ErrorCode: []Error{
+					{Name: "FooBarNotFound", Code: 1001},
+				},
+			},
+		},
+		{
+			Path:     "foo_bar.yaml",
+			BizName:  "foo_bar",
+			FileName: "foo_bar",
+			Spec: Spec{
+				AppCode: 6,
+				BizCode: 13,
+				ErrorCode: []Error{
+					{Name: "FooBarAlreadyExists", Code: 1001},
+				},
+			},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "output file conflict") {
+		t.Fatalf("unexpected validation error: %v", err)
 	}
 }
 

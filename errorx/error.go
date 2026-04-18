@@ -80,17 +80,11 @@ func GetStatus(err error) *status {
 }
 
 func GetStatusByCode(code int32) *status {
-	if rs, ok := initializers[code]; ok {
-		return &status{
-			code:             rs.Code,
-			message:          rs.Message,
-			AffectsStability: rs.AffectsStability,
-		}
-	}
+	rs := GetRegisterStatus(code)
 	return &status{
-		code:             code,
-		message:          DefaultErrorMsg,
-		AffectsStability: DefaultAffectsStability,
+		code:             rs.Code,
+		message:          rs.Message,
+		AffectsStability: rs.AffectsStability,
 	}
 }
 
@@ -115,7 +109,7 @@ func ErrorWithoutStack(err error) string {
 	msg := err.Error()
 	index := strings.Index(msg, "stack=")
 	if index == -1 {
-		return msg[:index]
+		return msg
 	}
-	return msg
+	return strings.TrimRight(strings.TrimSpace(msg[:index]), "\n")
 }
