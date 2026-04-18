@@ -20,7 +20,7 @@ var goIdentPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 const (
 	generatedPackageName = "errcode"
-	errorxImportPath     = "chaos-io/chaos/errorx"
+	errorxImportPath     = "github.com/chaos-io/chaos/errorx"
 )
 
 //go:generate go run . -out ./testdata/generated ./testdata

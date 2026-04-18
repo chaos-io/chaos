@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-type Option func(err *codedError)
+type Option func(err *statusError)
 
 func WithExtraMsg(extraMsg string) Option {
-	return func(err *codedError) {
+	return func(err *statusError) {
 		if err == nil || err.status == nil || extraMsg == "" {
 			return
 		}
@@ -17,7 +17,7 @@ func WithExtraMsg(extraMsg string) Option {
 }
 
 func WithMsgParam(k, v string) Option {
-	return func(err *codedError) {
+	return func(err *statusError) {
 		if err == nil || err.status == nil {
 			return
 		}
@@ -26,7 +26,7 @@ func WithMsgParam(k, v string) Option {
 }
 
 func WithExtra(extra map[string]string) Option {
-	return func(err *codedError) {
+	return func(err *statusError) {
 		if err == nil || err.status == nil || extra == nil {
 			return
 		}

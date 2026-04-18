@@ -13,15 +13,13 @@ type CodedError interface {
 	WithExtra(map[string]string)
 }
 
-type Error = CodedError
-
 func New(format string, args ...any) error {
 	return WithStack(fmt.Errorf(format, args...))
 }
 
 func NewByCode(code int32, opts ...Option) error {
-	err := &codedError{
-		status: newStatusValueByCode(code),
+	err := &statusError{
+		status: newStatusDataByCode(code),
 		stack:  stack(),
 		cause:  nil,
 	}
@@ -40,8 +38,8 @@ func WrapByCode(err error, code int32, opts ...Option) error {
 		return nil
 	}
 
-	wrappedErr := &codedError{
-		status: newStatusValueByCode(code),
+	wrappedErr := &statusError{
+		status: newStatusDataByCode(code),
 		cause:  err,
 	}
 
@@ -82,12 +80,12 @@ func GetStatus(err error) Status {
 }
 
 func GetStatusByCode(code int32) Status {
-	return newStatusValueByCode(code)
+	return newStatusDataByCode(code)
 }
 
-func newStatusValueByCode(code int32) *statusValue {
+func newStatusDataByCode(code int32) *statusData {
 	registeredStatus := GetRegisteredStatus(code)
-	return &statusValue{
+	return &statusData{
 		code:             registeredStatus.Code,
 		message:          registeredStatus.Message,
 		affectsStability: registeredStatus.AffectsStability,
