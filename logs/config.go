@@ -21,7 +21,7 @@ type FileConfig struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		Level:  "info",
+		Level:  "debug",
 		Encode: "console",
 		Output: "console",
 		File: FileConfig{
