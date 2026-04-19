@@ -3,8 +3,11 @@ package db
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
+	chaosconfig "github.com/chaos-io/chaos/config"
 	"gorm.io/gorm"
 )
 
@@ -140,25 +143,25 @@ func TestNewDialector(t *testing.T) {
 
 func TestOpenAndNew(t *testing.T) {
 	t.Run("validation error", func(t *testing.T) {
-		_, err := Open(&Config{
+		_, err := NewWithConfig(&Config{
 			Driver: "invalid",
 			DSN:    "dsn",
 		})
 		if !errors.Is(err, ErrUnsupportedDriver) {
-			t.Fatalf("Open() error = %v, want ErrUnsupportedDriver", err)
+			t.Fatalf("NewWithConfig() error = %v, want ErrUnsupportedDriver", err)
 		}
 	})
 
-	t.Run("open sqlite memory", func(t *testing.T) {
-		db, err := Open(&Config{
+	t.Run("new with config", func(t *testing.T) {
+		db, err := NewWithConfig(&Config{
 			Driver: "sqlite",
 			DSN:    ":memory:",
 		})
 		if err != nil {
-			t.Fatalf("Open() error = %v", err)
+			t.Fatalf("NewWithConfig() error = %v", err)
 		}
 		if db == nil || db.DB == nil {
-			t.Fatalf("Open() should return valid db instance")
+			t.Fatalf("NewWithConfig() should return valid db instance")
 		}
 		if db.Config.Driver != SqliteDriver {
 			t.Fatalf("driver = %q, want %q", db.Config.Driver, SqliteDriver)
@@ -168,17 +171,40 @@ func TestOpenAndNew(t *testing.T) {
 		}
 	})
 
-	t.Run("new panics for invalid config", func(t *testing.T) {
-		defer func() {
-			if recover() == nil {
-				t.Fatalf("New() should panic on invalid config")
-			}
-		}()
-		New(&Config{
-			Driver: "invalid",
-			DSN:    "dsn",
-		})
+	t.Run("new loads config", func(t *testing.T) {
+		loadTestConfig(t, "db.yaml", "db:\n  driver: sqlite\n  dsn: \":memory:\"\n")
+
+		db, err := New()
+		if err != nil {
+			t.Fatalf("New() error = %v", err)
+		}
+		if db == nil || db.DB == nil {
+			t.Fatalf("New() should return valid db instance")
+		}
+		if db.Config.Driver != SqliteDriver {
+			t.Fatalf("driver = %q, want %q", db.Config.Driver, SqliteDriver)
+		}
 	})
+}
+
+func loadTestConfig(t *testing.T, filename, body string) {
+	t.Helper()
+
+	if err := chaosconfig.InitDefault(chaosconfig.WithWatcherDisabled()); err != nil {
+		t.Fatalf("InitDefault() failed: %v", err)
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config", filename)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll() failed: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatalf("WriteFile() failed: %v", err)
+	}
+	if err := chaosconfig.LoadPath(filepath.Join(dir, "config")); err != nil {
+		t.Fatalf("LoadPath() failed: %v", err)
+	}
 }
 
 func TestJSONValuer(t *testing.T) {

@@ -1,11 +1,18 @@
 package storage
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"github.com/chaos-io/chaos/logs"
+)
+
+var (
+	ErrNilConfig         = errors.New("storage config is required")
+	ErrUnsupportedVendor = errors.New("storage vendor is unsupported")
 )
 
 type Config struct {
@@ -72,4 +79,31 @@ func (c *Config) Validate() error {
 		return logs.NewError("max_object_size must be greater than 0")
 	}
 	return nil
+}
+
+func (c *Config) normalized() (*Config, error) {
+	if c == nil {
+		return nil, ErrNilConfig
+	}
+
+	cfg := *c
+	cfg.Vendor = strings.ToLower(strings.TrimSpace(cfg.Vendor))
+	if cfg.Vendor == "" {
+		cfg.Vendor = VendorMinio
+	}
+
+	if cfg.CacheSizeGT <= 0 {
+		cfg.CacheSizeGT = DefaultCacheSizeGT
+	}
+	if cfg.DownloadPartSize <= 0 {
+		cfg.DownloadPartSize = DefaultDownloadPartSize
+	}
+	if cfg.UploadPartSize <= 0 {
+		cfg.UploadPartSize = DefaultUploadPartSize
+	}
+	if cfg.MaxObjectSize <= 0 {
+		cfg.MaxObjectSize = DefaultMaxObjectSize
+	}
+
+	return &cfg, nil
 }

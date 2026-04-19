@@ -57,9 +57,9 @@ type Subscription struct {
 
 ## 快速开始
 
-### 1. 初始化底层队列
+### 1. 通过配置初始化
 
-以 NATS 为例：
+推荐直接使用根包配置：
 
 ```go
 package main
@@ -72,7 +72,50 @@ import (
 )
 
 func main() {
-    queue, err := nats.New(&nats.Config{
+    nats.Register()
+
+    client, err := messaging.New()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer client.Shutdown()
+}
+```
+
+默认会读取 `messaging` 配置项，对应 [messaging/config/messaging.yaml](./config/messaging.yaml)：
+
+```yaml
+messaging:
+  driver: nats
+  nats:
+    url: nats://127.0.0.1:4222
+    jetStream: true
+  subscriptions:
+    - name: agent-consumer
+      topic: demo.start-task
+      group: start-task
+      pull: true
+      ackWait: 5m
+      service: Agent
+      method: start_task
+```
+
+### 2. 手动初始化底层队列
+
+如果你不想依赖外部配置，也可以直接构造具体队列：
+
+```go
+package main
+
+import (
+    "log"
+
+    "github.com/chaos-io/chaos/messaging"
+    "github.com/chaos-io/chaos/messaging/nats"
+)
+
+func main() {
+    queue, err := nats.NewWithConfig(&messaging.NatsConfig{
         URL:       "nats://127.0.0.1:4222",
         JetStream: true,
     })
@@ -89,7 +132,7 @@ func main() {
 }
 ```
 
-### 2. 发布消息
+### 3. 发布消息
 
 ```go
 err := client.Publish(ctx, "demo.user.created", &messaging.Message{
@@ -104,7 +147,7 @@ err := client.Publish(ctx, "demo.user.created", &messaging.Message{
 
 发布前会校验 topic 非空。
 
-### 3. 订阅消息
+### 4. 订阅消息
 
 ```go
 err := client.Subscribe(&messaging.Subscription{

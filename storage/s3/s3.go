@@ -24,9 +24,17 @@ type S3Client struct {
 	cfg *storage.Config
 }
 
+func Register() {
+	storage.Register(storage.VendorS3, NewS3)
+}
+
+func NewS3(cfg *storage.Config) (storage.Storage, error) {
+	return NewS3Client(cfg)
+}
+
 func NewS3Client(cfg *storage.Config) (*S3Client, error) {
 	if cfg == nil {
-		return nil, logs.NewError("storage config is required")
+		return nil, storage.ErrNilConfig
 	}
 
 	if err := cfg.Validate(); err != nil {

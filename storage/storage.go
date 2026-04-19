@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/chaos-io/chaos/config"
@@ -20,15 +22,21 @@ var (
 	initializersMu   sync.RWMutex
 )
 
-type initializer func(cfg *Config) Storage
+const defaultConfigKey = "storage"
+
+type initializer func(cfg *Config) (Storage, error)
 
 func Register(name string, init initializer) {
+	if init == nil {
+		panic("storage: initializer is nil")
+	}
+
 	initializersOnce.Do(func() {
 		initializers = make(map[string]initializer)
 	})
 
 	initializersMu.Lock()
-	initializers[name] = init
+	initializers[cfgName(name)] = init
 	initializersMu.Unlock()
 }
 
@@ -44,19 +52,32 @@ type Storage interface {
 	PresignedUploadURL(ctx context.Context, key string, opts ...Option) (string, error)
 }
 
-func NewStorage(cfg *Config) Storage {
-	if cfg == nil {
-		return nil
+func New() (Storage, error) {
+	cfg := &Config{}
+	if err := config.ScanFrom(cfg, defaultConfigKey); err != nil {
+		return nil, err
+	}
+	return NewWithConfig(cfg)
+}
+
+func NewWithConfig(cfg *Config) (Storage, error) {
+	normalized, err := cfg.normalized()
+	if err != nil {
+		return nil, err
 	}
 
 	initializersMu.RLock()
-	init, ok := initializers[cfg.Vendor]
+	init, ok := initializers[cfgName(normalized.Vendor)]
 	initializersMu.RUnlock()
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("%w: %q", ErrUnsupportedVendor, normalized.Vendor)
 	}
 
-	return init(cfg)
+	return init(normalized)
+}
+
+func cfgName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
 }
 
 var (
@@ -66,14 +87,11 @@ var (
 
 func GetStorage() Storage {
 	storageOnce.Do(func() {
-		conf := &Config{}
-		if err := config.ScanFrom(conf, "storage"); err != nil {
-			logs.Warnw("failed to get the storage config", "error", err.Error())
+		var err error
+		storage, err = New()
+		if err != nil {
+			logs.Warnw("failed to build storage", "error", err.Error())
 			storage = NewDummyStorage()
-		} else {
-			if storage = NewStorage(conf); storage == nil {
-				storage = NewDummyStorage()
-			}
 		}
 	})
 	return storage

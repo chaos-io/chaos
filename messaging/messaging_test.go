@@ -3,8 +3,12 @@ package messaging
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
+
+	chaosconfig "github.com/chaos-io/chaos/config"
 )
 
 type stubQueue struct {
@@ -27,21 +31,76 @@ func (s *stubQueue) Subscribe(subscription *Subscription, handler Handler) error
 
 func (s *stubQueue) Shutdown() {}
 
-func TestNewClient(t *testing.T) {
-	t.Run("nil queue", func(t *testing.T) {
-		_, err := NewClient(nil)
-		if !errors.Is(err, ErrNilQueue) {
-			t.Fatalf("expect ErrNilQueue, got %v", err)
+func TestNew(t *testing.T) {
+	driver := "stub-client"
+	defaultDriver := "stub-default"
+	Register(driver, func(cfg *Config) (Queue, error) {
+		_ = cfg
+		return &stubQueue{}, nil
+	})
+	Register(defaultDriver, func(cfg *Config) (Queue, error) {
+		_ = cfg
+		return &stubQueue{}, nil
+	})
+
+	t.Run("new client", func(t *testing.T) {
+		t.Run("nil queue", func(t *testing.T) {
+			_, err := NewClient(nil)
+			if !errors.Is(err, ErrNilQueue) {
+				t.Fatalf("expect ErrNilQueue, got %v", err)
+			}
+		})
+
+		t.Run("init", func(t *testing.T) {
+			client, err := NewClient(&stubQueue{})
+			if err != nil {
+				t.Fatalf("new client failed: %v", err)
+			}
+			if client.queue == nil {
+				t.Fatal("expect non-nil queue")
+			}
+		})
+	})
+
+	t.Run("new with config", func(t *testing.T) {
+		client, err := NewWithConfig(nil)
+		if !errors.Is(err, ErrNilConfig) {
+			t.Fatalf("expect ErrNilConfig, got %v", err)
+		}
+		if client != nil {
+			t.Fatalf("expect nil client, got %#v", client)
 		}
 	})
 
-	t.Run("init", func(t *testing.T) {
-		client, err := NewClient(&stubQueue{})
-		if err != nil {
-			t.Fatalf("new client failed: %v", err)
+	t.Run("unsupported driver", func(t *testing.T) {
+		client, err := NewWithConfig(&Config{Driver: "missing"})
+		if !errors.Is(err, ErrUnsupportedDriver) {
+			t.Fatalf("expect ErrUnsupportedDriver, got %v", err)
 		}
-		if client.queue == nil {
-			t.Fatal("expect non-nil queue")
+		if client != nil {
+			t.Fatalf("expect nil client, got %#v", client)
+		}
+	})
+
+	t.Run("new with config init", func(t *testing.T) {
+		client, err := NewWithConfig(&Config{Driver: driver})
+		if err != nil {
+			t.Fatalf("new client with config failed: %v", err)
+		}
+		if client == nil || client.queue == nil {
+			t.Fatal("expect non-nil client queue")
+		}
+	})
+
+	t.Run("loads config", func(t *testing.T) {
+		loadTestConfig(t, "messaging.yaml", "messaging:\n  driver: "+defaultDriver+"\n")
+
+		client, err := New()
+		if err != nil {
+			t.Fatalf("New() failed: %v", err)
+		}
+		if client == nil || client.queue == nil {
+			t.Fatal("expect non-nil client queue")
 		}
 	})
 }
@@ -142,5 +201,25 @@ func TestSubMessageAckOnlyOnce(t *testing.T) {
 	}
 	if !msg.Done() {
 		t.Fatal("expect message marked done after ack")
+	}
+}
+
+func loadTestConfig(t *testing.T, filename, body string) {
+	t.Helper()
+
+	if err := chaosconfig.InitDefault(chaosconfig.WithWatcherDisabled()); err != nil {
+		t.Fatalf("InitDefault() failed: %v", err)
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config", filename)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll() failed: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatalf("WriteFile() failed: %v", err)
+	}
+	if err := chaosconfig.LoadPath(filepath.Join(dir, "config")); err != nil {
+		t.Fatalf("LoadPath() failed: %v", err)
 	}
 }

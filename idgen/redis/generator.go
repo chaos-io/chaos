@@ -1,4 +1,4 @@
-package redis_idgen
+package redis
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/chaos-io/chaos/idgen"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/samber/lo"
 )
@@ -19,37 +18,37 @@ const (
 	counterKeyExpiration = 10 * time.Minute
 )
 
-var (
-	ErrNilStore      = errors.New("redis store is nil")
-	ErrEmptyServerID = errors.New("serverIDs is empty")
-)
+var ErrNilClient = errors.New("redis client is nil")
 
-type counterStore interface {
-	IncrBy(ctx context.Context, key string, value int64) *goredis.IntCmd
-	Expire(ctx context.Context, key string, expiration time.Duration) *goredis.BoolCmd
+type Generator struct {
+	client    goredis.UniversalClient
+	serverIDs []int64
+	namespace string
+	closeFn   func() error
 }
 
-// NewIDGenerator 32b timestamp + 10b timestamp+ 8b counter + 14b serverID
-func NewIDGenerator(client counterStore, serverIDs []int64) (idgen.IIDGenerator, error) {
+func NewWithClient(client goredis.UniversalClient, serverIDs []int64) (*Generator, error) {
 	if client == nil {
-		return nil, ErrNilStore
+		return nil, ErrNilClient
 	}
 	if len(serverIDs) == 0 {
-		return nil, ErrEmptyServerID
+		return nil, ErrEmptyServerIDs
 	}
-	return &generator{
-		cli:       client,
-		serverIDs: serverIDs,
+
+	return &Generator{
+		client:    client,
+		serverIDs: append([]int64(nil), serverIDs...),
 	}, nil
 }
 
-type generator struct {
-	cli       counterStore
-	serverIDs []int64
-	namespace string
+func (g *Generator) Close() error {
+	if g == nil || g.closeFn == nil {
+		return nil
+	}
+	return g.closeFn()
 }
 
-func (g *generator) GenID(ctx context.Context) (int64, error) {
+func (g *Generator) GenID(ctx context.Context) (int64, error) {
 	ids, err := g.GenMultiIDs(ctx, 1)
 	if err != nil {
 		return 0, fmt.Errorf("failed to generate id: %w", err)
@@ -57,7 +56,7 @@ func (g *generator) GenID(ctx context.Context) (int64, error) {
 	return ids[0], nil
 }
 
-func (g *generator) GenMultiIDs(ctx context.Context, counts int) ([]int64, error) {
+func (g *Generator) GenMultiIDs(ctx context.Context, counts int) ([]int64, error) {
 	const maxTimeAddrTimes = 8
 
 	leftNum := int64(counts)
@@ -127,23 +126,23 @@ func (g *generator) GenMultiIDs(ctx context.Context, counts int) ([]int64, error
 	return ids, nil
 }
 
-func (g *generator) incrBy(ctx context.Context, key string, num int64) (cntPos int64, err error) {
-	return g.cli.IncrBy(ctx, key, num).Result()
+func (g *Generator) incrBy(ctx context.Context, key string, num int64) (cntPos int64, err error) {
+	return g.client.IncrBy(ctx, key, num).Result()
 }
 
-func (g *generator) expire(ctx context.Context, key string) {
-	_, _ = g.cli.Expire(ctx, key, counterKeyExpiration).Result()
+func (g *Generator) expire(ctx context.Context, key string) {
+	_, _ = g.client.Expire(ctx, key, counterKeyExpiration).Result()
 }
 
-func (g *generator) timeMS() int64 {
+func (g *Generator) timeMS() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func (g *generator) counterKey(space string, serverID int64, ms int64) string {
+func (g *Generator) counterKey(space string, serverID int64, ms int64) string {
 	return fmt.Sprintf("id_generator:%v:%v:%v", space, serverID, ms)
 }
 
-func (g *generator) pickServerID() (int64, error) {
+func (g *Generator) pickServerID() (int64, error) {
 	r, err := rand.Int(rand.Reader, big.NewInt(int64(len(g.serverIDs))))
 	if err != nil {
 		return 0, err

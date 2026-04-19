@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	ErrNilConfig            = errors.New("redis config is required")
 	ErrEmptyAddresses       = errors.New("redis addresses is empty")
 	ErrInvalidDB            = errors.New("redis db must be >= 0")
 	ErrClusterDBUnsupported = errors.New("redis cluster does not support non-zero db")
@@ -21,27 +22,27 @@ var (
 )
 
 type Config struct {
-	Addresses []string
-	Username  string
-	Password  string
-	DB        int
+	Addresses []string `json:"addresses"`
+	Username  string   `json:"username"`
+	Password  string   `json:"password"`
+	DB        int      `json:"db"`
 
-	MaxRetries      int
-	MinRetryBackoff time.Duration
-	MaxRetryBackoff time.Duration
+	MaxRetries      int           `json:"maxRetries"`
+	MinRetryBackoff time.Duration `json:"minRetryBackoff"`
+	MaxRetryBackoff time.Duration `json:"maxRetryBackoff"`
 
-	DialTimeout  time.Duration
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
+	DialTimeout  time.Duration `json:"dialTimeout"`
+	ReadTimeout  time.Duration `json:"readTimeout"`
+	WriteTimeout time.Duration `json:"writeTimeout"`
 
-	ContextTimeoutEnabled bool
+	ContextTimeoutEnabled bool `json:"contextTimeoutEnabled"`
 
-	PoolSize     int
-	MinIdleConns int
-	PoolTimeout  time.Duration
+	PoolSize     int           `json:"poolSize"`
+	MinIdleConns int           `json:"minIdleConns"`
+	PoolTimeout  time.Duration `json:"poolTimeout"`
 
-	ReadOnly  bool
-	TLSConfig *tls.Config
+	ReadOnly  bool        `json:"readOnly"`
+	TLSConfig *tls.Config `json:"tlsConfig"`
 }
 
 func DefaultConfig() Config {
@@ -103,6 +104,13 @@ func normalizeConfig(cfg Config) (Config, error) {
 		cfg.MaxRetryBackoff = 512 * time.Millisecond
 	}
 	return cfg, nil
+}
+
+func (c *Config) normalized() (Config, error) {
+	if c == nil {
+		return Config{}, ErrNilConfig
+	}
+	return normalizeConfig(*c)
 }
 
 func normalizeAddresses(addresses []string) []string {

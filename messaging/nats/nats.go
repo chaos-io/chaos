@@ -16,6 +16,8 @@ import (
 
 const defaultFetchWait = time.Second
 
+var ErrEmptyURL = errors.New("messaging nats: url is empty")
+
 type Nats struct {
 	conn          *nats.Conn
 	js            nats.JetStreamContext
@@ -25,15 +27,30 @@ type Nats struct {
 	subMu         sync.Mutex
 }
 
-func New(cfg *Config) (*Nats, error) {
-	if cfg == nil {
-		return nil, messaging.ErrNilConfig
-	}
-	if len(strings.TrimSpace(cfg.URL)) == 0 {
-		return nil, errors.New("messaging nats: url is empty")
+type Consumer struct {
+	Subscription      messaging.Subscription
+	Pull              bool
+	AckWait           time.Duration
+	PullMaxWaiting    int
+	PendingMsgLimit   int
+	PendingBytesLimit int
+}
+
+func Register() {
+	messaging.Register(messaging.DriverNATS, NewQueue)
+}
+
+func (c Consumer) Validate() error {
+	return c.Subscription.Validate()
+}
+
+func NewWithConfig(cfg *messaging.NatsConfig) (*Nats, error) {
+	normalized, err := normalizeConfig(cfg)
+	if err != nil {
+		return nil, err
 	}
 
-	nc, err := nats.Connect(cfg.URL)
+	nc, err := nats.Connect(normalized.URL)
 	if err != nil {
 		logs.Errorw("failed to connect nats", "error", err)
 		return nil, err
@@ -45,7 +62,7 @@ func New(cfg *Config) (*Nats, error) {
 		shutdownCh:    make(chan struct{}),
 	}
 
-	if cfg.JetStream {
+	if normalized.JetStream {
 		js, err := nc.JetStream()
 		if err != nil {
 			return nil, err
@@ -54,6 +71,28 @@ func New(cfg *Config) (*Nats, error) {
 	}
 
 	return n, nil
+}
+
+func NewQueue(cfg *messaging.Config) (messaging.Queue, error) {
+	if cfg == nil {
+		return nil, messaging.ErrNilConfig
+	}
+
+	return NewWithConfig(&cfg.Nats)
+}
+
+func normalizeConfig(cfg *messaging.NatsConfig) (*messaging.NatsConfig, error) {
+	if cfg == nil {
+		return nil, messaging.ErrNilConfig
+	}
+
+	normalized := *cfg
+	normalized.URL = strings.TrimSpace(normalized.URL)
+	if normalized.URL == "" {
+		return nil, ErrEmptyURL
+	}
+
+	return &normalized, nil
 }
 
 func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging.Message) error {

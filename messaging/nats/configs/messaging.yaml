@@ -1,4 +1,5 @@
 messaging:
+  driver: nats
   nats:
     url: nats://127.0.0.1:4222
     jetStream: true

@@ -3,16 +3,31 @@ package db
 import (
 	"fmt"
 
+	"github.com/chaos-io/chaos/config"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
-
 	"gorm.io/gorm"
 )
 
 type DB struct {
 	*gorm.DB
 	Config *Config
+}
+
+const defaultConfigKey = "db"
+
+func New() (*DB, error) {
+	cfg := &Config{}
+	if err := config.ScanFrom(cfg, defaultConfigKey); err != nil {
+		return nil, err
+	}
+	return NewWithConfig(cfg)
+}
+
+func NewWithConfig(cfg *Config) (*DB, error) {
+	return Open(cfg)
 }
 
 func Open(cfg *Config) (*DB, error) {
@@ -45,14 +60,6 @@ func Open(cfg *Config) (*DB, error) {
 	sqlDB.SetConnMaxIdleTime(normalized.ConnMaxIdleTime)
 
 	return &DB{DB: d, Config: normalized}, nil
-}
-
-func New(cfg *Config) *DB {
-	d, err := Open(cfg)
-	if err != nil {
-		panic(err)
-	}
-	return d
 }
 
 func newDialector(driverName, dsn string) (gorm.Dialector, error) {

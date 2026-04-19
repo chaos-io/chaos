@@ -151,7 +151,7 @@ func TestLoadHelpers(t *testing.T) {
 
 func TestNormalizePath(t *testing.T) {
 	require.Equal(t, []string{"a", "b", "c", "d"}, normalizePath("a.b", "c", "d"))
-	require.Equal(t, []string{}, normalizePath())
+	require.Nil(t, normalizePath())
 }
 
 func TestOptionsHelpers(t *testing.T) {

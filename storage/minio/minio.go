@@ -25,25 +25,32 @@ type Minio struct {
 	bucketName string
 }
 
-func NewMinio(cfg *storage.Config) storage.Storage {
-	m := &Minio{}
+func Register() {
+	storage.Register(storage.VendorMinio, NewMinio)
+}
 
-	if client, err := minio.New(cfg.Endpoint, &minio.Options{
+func NewMinio(cfg *storage.Config) (storage.Storage, error) {
+	if cfg == nil {
+		return nil, storage.ErrNilConfig
+	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	client, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
 		Secure: false,
-	}); err != nil {
-		logs.Errorw(fmt.Sprintf("failed to minio connect %s", cfg.Endpoint), "error", err)
-		return nil
-	} else {
-		m.client = client
+	})
+	if err != nil {
+		return nil, logs.NewErrorw(fmt.Sprintf("failed to minio connect %s", cfg.Endpoint), "error", err)
 	}
 
+	m := &Minio{client: client}
 	if err := m.ensureBucket(context.Background(), cfg.BucketName); err != nil {
-		logs.Errorw("failed to get bucket name", "error", err)
-		return nil
+		return nil, logs.NewErrorw("failed to get bucket name", "error", err)
 	}
 
-	return m
+	return m, nil
 }
 
 func (m *Minio) ensureBucket(ctx context.Context, name string) error {

@@ -1,261 +1,55 @@
-//go:build local
-// +build local
-
 package nats
 
 import (
-	"context"
 	"errors"
-	"sync"
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
-	jsoniter "github.com/json-iterator/go"
-	gonats "github.com/nats-io/nats.go"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/chaos-io/chaos/config"
-	"github.com/chaos-io/chaos/logs"
 	"github.com/chaos-io/chaos/messaging"
 )
 
-type localConfig struct {
-	Nats          Config              `json:"nats"`
-	Subscriptions []localSubscription `json:"subscriptions"`
-}
+func TestConfigNormalized(t *testing.T) {
+	t.Run("nil config", func(t *testing.T) {
+		var cfg *messaging.NatsConfig
+		_, err := normalizeConfig(cfg)
+		if !errors.Is(err, messaging.ErrNilConfig) {
+			t.Fatalf("expect ErrNilConfig, got %v", err)
+		}
+	})
 
-type localSubscription struct {
-	Name    string `json:"name"`
-	Topic   string `json:"topic"`
-	Group   string `json:"group"`
-	Service string `json:"service"`
-	Method  string `json:"method"`
-	Pull    bool   `json:"pull"`
-	AutoAck bool   `json:"autoAck"`
-	AckWait string `json:"ackWait"`
-}
+	t.Run("empty url", func(t *testing.T) {
+		_, err := normalizeConfig(&messaging.NatsConfig{})
+		if !errors.Is(err, ErrEmptyURL) {
+			t.Fatalf("expect ErrEmptyURL, got %v", err)
+		}
+	})
 
-func (s localSubscription) toConsumer() (Consumer, error) {
-	consumer := Consumer{
-		Subscription: messaging.Subscription{
-			Name:    s.Name,
-			Topic:   s.Topic,
-			Group:   s.Group,
-			AutoAck: s.AutoAck,
-		},
-		Pull: s.Pull,
-	}
-	if s.AckWait != "" {
-		ackWait, err := time.ParseDuration(s.AckWait)
+	t.Run("trim url", func(t *testing.T) {
+		cfg, err := normalizeConfig(&messaging.NatsConfig{URL: " nats://127.0.0.1:4222 "})
 		if err != nil {
-			return Consumer{}, err
+			t.Fatalf("normalized() failed: %v", err)
 		}
-		consumer.AckWait = ackWait
-	}
-	return consumer, nil
-}
-
-func Test_PublishStartTask(t *testing.T) {
-	traceID := uuid.New().String()
-	logs.Infow("publish start task", "traceId", traceID)
-	err := PublishStartTask(context.Background(), &startTaskRequest{Name: "task-" + traceID, Ids: []string{"1", "2"}})
-	assert.NoError(t, err)
-}
-
-func Test_PublishStopTask(t *testing.T) {
-	traceID := uuid.New().String()
-	logs.Infow("publish stop task", "traceId", traceID)
-	err := PublishStopTask(context.Background(), &stopTaskRequest{Name: "task-" + traceID})
-	assert.NoError(t, err)
-}
-
-func Test_Subscription(t *testing.T) {
-	cfg := mustLoadLocalConfig(t)
-	client := mustGetMessaging(t)
-
-	for _, spec := range cfg.Subscriptions {
-		spec := spec
-		if spec.Service != "" && spec.Service != "Agent" {
-			continue
+		if cfg.URL != "nats://127.0.0.1:4222" {
+			t.Fatalf("expect trimmed url, got %q", cfg.URL)
 		}
-
-		consumer, err := spec.toConsumer()
-		if err != nil {
-			t.Fatalf("invalid consumer config: %v", err)
-		}
-
-		if err := client.SubscribeConsumer(consumer, func(ctx context.Context, s *messaging.Subscription, m *messaging.SubMessage) error {
-			switch spec.Method {
-			case "start_task":
-				request := &startTaskRequest{}
-				if err := jsoniter.ConfigFastest.UnmarshalFromString(m.Data, request); err != nil {
-					m.Term()
-					return err
-				}
-				if err := startTask(ctx, request); err != nil {
-					m.Nak()
-					return err
-				}
-			case "stop_tasks":
-				request := &stopTaskRequest{}
-				if err := jsoniter.ConfigFastest.UnmarshalFromString(m.Data, request); err != nil {
-					m.Term()
-					return err
-				}
-				if err := stopTask(ctx, request); err != nil {
-					m.Nak()
-					return err
-				}
-			}
-			return nil
-		}); err != nil {
-			t.Fatalf("subscribe %s failed: %v", spec.Topic, err)
-		}
-	}
-
-	select {}
-}
-
-type startTaskRequest struct {
-	Name string
-	Ids  []string
-}
-
-func startTask(ctx context.Context, request *startTaskRequest) error {
-	logs.Infow("starting task", "name", request.Name, "topic", messaging.GetContextTopic(ctx))
-	return nil
-}
-
-type stopTaskRequest struct {
-	Name string
-}
-
-func stopTask(ctx context.Context, request *stopTaskRequest) error {
-	logs.Infow("stopping task", "name", request.Name, "topic", messaging.GetContextTopic(ctx))
-	return nil
-}
-
-const (
-	StartTaskTopic = "demo.start-task"
-	StopTasksTopic = "demo.stop-tasks"
-)
-
-var (
-	messageClient *messaging.Client
-	natsClient    *Nats
-	clientOnce    sync.Once
-)
-
-func mustLoadLocalConfig(t *testing.T) *localConfig {
-	t.Helper()
-
-	cfg := &localConfig{}
-	if err := config.ScanFrom(cfg, "messaging"); err != nil {
-		t.Fatalf("failed to load messaging config: %v", err)
-	}
-	return cfg
-}
-
-func initLocalMessaging() {
-	clientOnce.Do(func() {
-		cfg := &localConfig{}
-		if err := config.ScanFrom(cfg, "messaging"); err != nil {
-			panic(err)
-		}
-
-		queue, err := New(&cfg.Nats)
-		if err != nil {
-			panic(err)
-		}
-
-		wrapped, err := messaging.NewClient(queue)
-		if err != nil {
-			panic(err)
-		}
-		messageClient = wrapped
-		natsClient = queue
 	})
 }
 
-func mustGetMessaging(t *testing.T) *Nats {
-	t.Helper()
+func TestNew(t *testing.T) {
+	t.Run("new with config validate args", func(t *testing.T) {
+		client, err := NewWithConfig(nil)
+		if !errors.Is(err, messaging.ErrNilConfig) {
+			t.Fatalf("expect ErrNilConfig, got %v", err)
+		}
+		if client != nil {
+			t.Fatalf("expect nil client, got %#v", client)
+		}
 
-	initLocalMessaging()
-	return natsClient
-}
-
-func PublishStartTask(ctx context.Context, task *startTaskRequest) error {
-	initLocalMessaging()
-	data, err := jsoniter.ConfigFastest.MarshalToString(task)
-	if err != nil {
-		return err
-	}
-
-	return messageClient.Publish(ctx, StartTaskTopic, &messaging.Message{Id: "1", Data: data})
-}
-
-func PublishStopTask(ctx context.Context, task *stopTaskRequest) error {
-	initLocalMessaging()
-	data, err := jsoniter.ConfigFastest.MarshalToString(task)
-	if err != nil {
-		return err
-	}
-
-	return messageClient.Publish(ctx, StopTasksTopic, &messaging.Message{Id: "2", Data: data})
-}
-
-func Test_ClearStream(t *testing.T) {
-	cfg := mustLoadLocalConfig(t)
-
-	nc, err := gonats.Connect(cfg.Nats.URL)
-	if err != nil {
-		t.Fatalf("failed to connect nats: %v", err)
-	}
-
-	js, err := nc.JetStream()
-	if err != nil {
-		t.Fatalf("failed to get jetstream: %v", err)
-	}
-
-	streamNames := js.StreamNames()
-	for name := range streamNames {
-		logs.Infow("stream", "name", name)
-	}
-}
-
-func TestConsumerValidate(t *testing.T) {
-	consumer := Consumer{}
-	if err := consumer.Validate(); !errors.Is(err, messaging.ErrEmptyTopic) {
-		t.Fatalf("expect ErrEmptyTopic, got %v", err)
-	}
-
-	consumer.Subscription.Topic = "topic"
-	if err := consumer.Validate(); err != nil {
-		t.Fatalf("expect nil error, got %v", err)
-	}
-}
-
-func TestNatsSubscribeValidation(t *testing.T) {
-	queue := &Nats{}
-
-	if err := queue.Subscribe(nil, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrNilSubscription) {
-		t.Fatalf("expect ErrNilSubscription, got %v", err)
-	}
-
-	if err := queue.Subscribe(&messaging.Subscription{}, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrEmptyTopic) {
-		t.Fatalf("expect ErrEmptyTopic, got %v", err)
-	}
-
-	if err := queue.Subscribe(&messaging.Subscription{Topic: "topic"}, nil); !errors.Is(err, messaging.ErrNilHandler) {
-		t.Fatalf("expect ErrNilHandler, got %v", err)
-	}
-
-	if err := queue.SubscribeConsumer(Consumer{}, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrEmptyTopic) {
-		t.Fatalf("expect ErrEmptyTopic, got %v", err)
-	}
-
-	if err := queue.SubscribeConsumer(Consumer{Subscription: messaging.Subscription{Topic: "topic"}}, nil); !errors.Is(err, messaging.ErrNilHandler) {
-		t.Fatalf("expect ErrNilHandler, got %v", err)
-	}
+		client, err = NewWithConfig(&messaging.NatsConfig{})
+		if !errors.Is(err, ErrEmptyURL) {
+			t.Fatalf("expect ErrEmptyURL, got %v", err)
+		}
+		if client != nil {
+			t.Fatalf("expect nil client, got %#v", client)
+		}
+	})
 }

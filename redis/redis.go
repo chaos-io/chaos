@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/chaos-io/chaos/config"
 	goredis "github.com/redis/go-redis/v9"
 )
 
@@ -16,8 +17,18 @@ type Service struct {
 	raw goredis.UniversalClient
 }
 
-func New(cfg Config) (*Service, error) {
-	normalized, err := normalizeConfig(cfg)
+const defaultConfigKey = "redis"
+
+func New() (*Service, error) {
+	cfg := &Config{}
+	if err := config.ScanFrom(cfg, defaultConfigKey); err != nil {
+		return nil, err
+	}
+	return NewWithConfig(cfg)
+}
+
+func NewWithConfig(cfg *Config) (*Service, error) {
+	normalized, err := cfg.normalized()
 	if err != nil {
 		return nil, err
 	}
