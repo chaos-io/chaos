@@ -5,12 +5,12 @@ import (
 	"errors"
 	"sync"
 
-	chaosdb "github.com/chaos-io/chaos/db"
+	"github.com/chaos-io/chaos/db"
 	"github.com/chaos-io/chaos/idgen"
 	idredis "github.com/chaos-io/chaos/idgen/redis"
 	"github.com/chaos-io/chaos/messaging"
 	"github.com/chaos-io/chaos/messaging/nats"
-	chaosredis "github.com/chaos-io/chaos/redis"
+	"github.com/chaos-io/chaos/redis"
 	"github.com/chaos-io/chaos/storage"
 	"github.com/chaos-io/chaos/storage/minio"
 	"github.com/chaos-io/chaos/storage/s3"
@@ -21,8 +21,8 @@ var registerInfraDriversOnce sync.Once
 type infra struct {
 	OSS       storage.Storage
 	IDGen     idgen.IDGenerator
-	DB        chaosdb.Provider
-	Redis     chaosredis.Provider
+	DB        db.Provider
+	Redis     redis.Provider
 	Messaging messaging.Provider
 }
 
@@ -43,13 +43,13 @@ func buildInfra() (infra, error) {
 		return infra{}, err
 	}
 
-	dbProvider, err := chaosdb.New()
+	dbProvider, err := db.New()
 	if err != nil {
 		return fail(err)
 	}
 	deps.DB = dbProvider
 
-	redisProvider, err := chaosredis.New()
+	redisProvider, err := redis.New()
 	if err != nil {
 		return fail(err)
 	}
