@@ -95,9 +95,5 @@ func closeInfra(ctx context.Context, deps infra) error {
 		errs = append(errs, deps.Redis.Close(ctx))
 	}
 
-	if deps.DB != nil {
-		errs = append(errs, deps.DB.Close(ctx))
-	}
-
 	return errors.Join(errs...)
 }

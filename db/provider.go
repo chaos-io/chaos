@@ -2,39 +2,102 @@ package db
 
 import (
 	"context"
-	"database/sql"
+	"errors"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"gorm.io/plugin/dbresolver"
 )
 
 type Provider interface {
-	Gorm() *gorm.DB
-	SQLDB() (*sql.DB, error)
-	Close(ctx context.Context) error
+	NewSession(ctx context.Context, opts ...Option) *gorm.DB
+	Transaction(ctx context.Context, fn func(tx *gorm.DB) error, opts ...Option) error
 }
 
 var _ Provider = (*DB)(nil)
 
-func (d *DB) Gorm() *gorm.DB {
-	if d == nil {
+var ErrNilSessionDB = errors.New("db session gorm db is nil")
+
+type Option func(*option)
+
+type option struct {
+	tx *gorm.DB
+
+	debug           bool
+	master          bool
+	deleted         bool
+	selectForUpdate bool
+}
+
+func (d *DB) NewSession(ctx context.Context, opts ...Option) *gorm.DB {
+	if d == nil || d.DB == nil {
 		return nil
 	}
-	return d.DB
+
+	session := d.DB.Session(&gorm.Session{})
+
+	opt := applyOptions(opts...)
+	if opt.tx != nil {
+		session = opt.tx
+	}
+	if opt.debug {
+		session = session.Debug()
+	}
+	if opt.master {
+		session = session.Clauses(dbresolver.Write)
+	}
+	if opt.deleted {
+		session = session.Unscoped()
+	}
+	if opt.selectForUpdate {
+		session = session.Clauses(clause.Locking{Strength: "UPDATE"})
+	}
+
+	return session.WithContext(ctx)
 }
 
-func (d *DB) SQLDB() (*sql.DB, error) {
-	if d == nil || d.DB == nil {
-		return nil, nil
+func (d *DB) Transaction(ctx context.Context, fn func(tx *gorm.DB) error, opts ...Option) error {
+	session := d.NewSession(ctx, opts...)
+	if session == nil {
+		return ErrNilSessionDB
 	}
-	return d.DB.DB()
+	return session.Transaction(fn)
 }
 
-func (d *DB) Close(ctx context.Context) error {
-	_ = ctx
-
-	sqlDB, err := d.SQLDB()
-	if err != nil || sqlDB == nil {
-		return err
+func applyOptions(opts ...Option) *option {
+	o := &option{}
+	for _, fn := range opts {
+		fn(o)
 	}
-	return sqlDB.Close()
+	return o
+}
+
+func WithDebug() Option {
+	return func(o *option) {
+		o.debug = true
+	}
+}
+
+func WithMaster() Option {
+	return func(o *option) {
+		o.master = true
+	}
+}
+
+func WithTransaction(tx *gorm.DB) Option {
+	return func(o *option) {
+		o.tx = tx
+	}
+}
+
+func WithDeleted() Option {
+	return func(o *option) {
+		o.deleted = true
+	}
+}
+
+func WithSelectForUpdate() Option {
+	return func(o *option) {
+		o.selectForUpdate = true
+	}
 }
