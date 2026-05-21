@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -117,7 +118,7 @@ func WatchFunc(handle func(reader.Value), paths ...string) (io.Closer, error) {
 		for {
 			v, err := w.Next()
 			if err != nil {
-				if err == source.ErrWatcherStopped {
+				if errors.Is(err, source.ErrWatcherStopped) {
 					return
 				}
 				continue

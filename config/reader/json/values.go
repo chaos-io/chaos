@@ -209,6 +209,17 @@ func (j *jsonValue) StringMap(def map[string]string) map[string]string {
 }
 
 func (j *jsonValue) Scan(v interface{}) error {
+	if str, err := j.Json.String(); err == nil {
+		if d, ok := v.(*time.Duration); ok {
+			parsed, err := time.ParseDuration(str)
+			if err != nil {
+				return err
+			}
+			*d = parsed
+			return nil
+		}
+	}
+
 	b, err := j.Json.MarshalJSON()
 	if err != nil {
 		return err

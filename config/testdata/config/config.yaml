@@ -1,3 +1,5 @@
 projectLogs:
   level: debug
 #  level: info
+
+ttl: 10m

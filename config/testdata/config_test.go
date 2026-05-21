@@ -91,10 +91,21 @@ type Host struct {
 	IP string
 }
 
-func Test1(t *testing.T) {
+func Test_Host(t *testing.T) {
 	initDefaultConfigForTests(t)
 
 	var host Host
 	err := config.ScanFrom(&host, "host")
 	t.Logf("host ip: %v, err: %v", host.IP, err)
+}
+
+func Test_MyTimeDuration(t *testing.T) {
+	initDefaultConfigForTests(t)
+
+	var dur time.Duration
+	err := config.ScanFrom(&dur, "ttl")
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	assert.Equal(t, 10*time.Minute, dur)
 }
