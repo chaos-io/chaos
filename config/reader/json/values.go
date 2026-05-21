@@ -220,8 +220,6 @@ func (j *jsonValue) Scan(v interface{}) error {
 		if err = d.Load(v); err != nil {
 			return err
 		}
-	} else {
-		// todo map
 	}
 
 	if string(b) == "null" {

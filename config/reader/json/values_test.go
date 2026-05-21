@@ -91,3 +91,25 @@ func TestStructArray(t *testing.T) {
 		}
 	}
 }
+
+func TestScanMap(t *testing.T) {
+	values, err := newValues(&source.ChangeSet{
+		Data: []byte(`{"settings":{"ttl":"10m","enabled":true}}`),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	get, err := values.Get("settings")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := map[string]interface{}{}
+	if err := get.Scan(&got); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, map[string]interface{}{"ttl": "10m", "enabled": true}) {
+		t.Fatalf("Expected settings map got %v", got)
+	}
+}
