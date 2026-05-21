@@ -103,9 +103,7 @@ func Test_MyTimeDuration(t *testing.T) {
 	initDefaultConfigForTests(t)
 
 	var dur time.Duration
-	err := config.ScanFrom(&dur, "ttl")
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
+	err := config.ScanFrom(&dur, "myTimeDuration.ttl")
+	assert.NoError(t, err)
 	assert.Equal(t, 10*time.Minute, dur)
 }

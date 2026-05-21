@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/chaos-io/chaos/config/loader"
 	"github.com/chaos-io/chaos/config/reader"
@@ -138,6 +139,11 @@ func ScanFrom(v interface{}, key string, alternatives ...string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if d, ok := v.(*time.Duration); ok {
+		*d = val.Duration(0)
+		return nil
 	}
 
 	return val.Scan(v)
