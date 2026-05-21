@@ -108,6 +108,32 @@ func TestScanFromParsesDurationFields(t *testing.T) {
 	require.Equal(t, 10*time.Minute, cfg.TTL)
 }
 
+func TestScanFromReturnsDurationParseError(t *testing.T) {
+	isolateDefaultConfig(t)
+
+	err := InitDefault(
+		WithWatcherDisabled(),
+		WithSource(sourcememory.NewSource(sourcememory.WithJSON([]byte(`{
+			"server": {"ttl": "invalid"}
+		}`)))),
+	)
+	require.NoError(t, err)
+
+	var ttl time.Duration
+	err = ScanFrom(&ttl, "server.ttl")
+	require.Error(t, err)
+	require.ErrorContains(t, err, `scan config key "server.ttl" into *time.Duration`)
+	require.ErrorContains(t, err, "invalid duration")
+}
+
+func TestScanFromRequiresPointerTarget(t *testing.T) {
+	isolateDefaultConfig(t)
+	require.NoError(t, InitDefault(WithWatcherDisabled()))
+
+	require.EqualError(t, ScanFrom(nil, "x"), "scan target must be a non-nil pointer")
+	require.EqualError(t, ScanFrom(struct{}{}, "x"), "scan target must be a non-nil pointer")
+}
+
 func TestLoadHelpers(t *testing.T) {
 	t.Run("LoadFile", func(t *testing.T) {
 		isolateDefaultConfig(t)

@@ -4,10 +4,11 @@ package config
 import (
 	"context"
 	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/chaos-io/chaos/config/loader"
 	"github.com/chaos-io/chaos/config/reader"
@@ -59,6 +60,7 @@ var defaultConfigInited atomic.Bool
 var defaultConfigMu sync.RWMutex
 
 var ErrDefaultConfigUninitialized = errors.New("default config is uninitialized, call InitDefault or Load* explicitly first")
+var ErrScanTargetNilPointer = errors.New("scan target must be a non-nil pointer")
 
 // NewConfig returns new config.
 func NewConfig(opts ...Option) (Config, error) {
@@ -125,28 +127,32 @@ func ScanFrom(v interface{}, key string, alternatives ...string) error {
 	if !defaultConfigInited.Load() {
 		return ErrDefaultConfigUninitialized
 	}
-	val, err := Get(key)
-	if err != nil {
-		return err
+
+	if v == nil {
+		return ErrScanTargetNilPointer
+	}
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return ErrScanTargetNilPointer
 	}
 
-	for _, alter := range alternatives {
-		if !val.Null() {
-			break
-		}
-
-		val, err = Get(alter)
+	keys := append([]string{key}, alternatives...)
+	for i, k := range keys {
+		val, err := Get(k)
 		if err != nil {
 			return err
 		}
-	}
 
-	if d, ok := v.(*time.Duration); ok {
-		*d = val.Duration(0)
+		if val.Null() && i < len(keys)-1 {
+			continue
+		}
+		if err := val.Scan(v); err != nil {
+			return fmt.Errorf("scan config key %q into %T: %w", k, v, err)
+		}
 		return nil
 	}
 
-	return val.Scan(v)
+	return nil
 }
 
 // Sync Force a source changeset sync.
