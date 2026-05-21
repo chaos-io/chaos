@@ -90,6 +90,24 @@ func TestInitDefaultAndGlobalAccessors(t *testing.T) {
 	require.Contains(t, Map(), "service")
 }
 
+func TestScanFromParsesDurationFields(t *testing.T) {
+	isolateDefaultConfig(t)
+
+	err := InitDefault(
+		WithWatcherDisabled(),
+		WithSource(sourcememory.NewSource(sourcememory.WithJSON([]byte(`{
+			"server": {"ttl": "10m"}
+		}`)))),
+	)
+	require.NoError(t, err)
+
+	var cfg struct {
+		TTL time.Duration `json:"ttl"`
+	}
+	require.NoError(t, ScanFrom(&cfg, "server"))
+	require.Equal(t, 10*time.Minute, cfg.TTL)
+}
+
 func TestLoadHelpers(t *testing.T) {
 	t.Run("LoadFile", func(t *testing.T) {
 		isolateDefaultConfig(t)

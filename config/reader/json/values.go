@@ -1,15 +1,16 @@
 package json
 
 import (
-	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/fatih/structs"
-
 	simple "github.com/bitly/go-simplejson"
+	"github.com/fatih/structs"
+	"github.com/go-viper/mapstructure/v2"
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/chaos-io/chaos/config/reader"
 	"github.com/chaos-io/chaos/config/source"
@@ -83,7 +84,7 @@ func (j *jsonValues) Scan(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(b, v)
+	return decodeConfigValue(b, v)
 }
 
 func (j *jsonValues) String() string {
@@ -227,7 +228,38 @@ func (j *jsonValue) Scan(v interface{}) error {
 		return nil
 	}
 
-	return json.Unmarshal(b, v)
+	return decodeConfigValue(b, v)
+}
+
+func decodeConfigValue(b []byte, v interface{}) error {
+	var data interface{}
+	if err := jsoniter.ConfigFastest.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook:       stringToDurationHookFunc(),
+		Result:           v,
+		TagName:          "json",
+		WeaklyTypedInput: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	return decoder.Decode(data)
+}
+
+func stringToDurationHookFunc() mapstructure.DecodeHookFuncType {
+	durationType := reflect.TypeOf(time.Duration(0))
+
+	return func(from reflect.Type, to reflect.Type, data interface{}) (interface{}, error) {
+		if from.Kind() != reflect.String || to != durationType {
+			return data, nil
+		}
+
+		return time.ParseDuration(data.(string))
+	}
 }
 
 func (j *jsonValue) Bytes() []byte {

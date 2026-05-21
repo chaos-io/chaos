@@ -10,6 +10,7 @@ require (
 	github.com/chaos-io/core/go v0.0.0-20260418104954-551193c88639
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
+	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12

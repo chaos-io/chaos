@@ -99,6 +99,10 @@ func Test_Host(t *testing.T) {
 	t.Logf("host ip: %v, err: %v", host.IP, err)
 }
 
+type MyTimeDuration struct {
+	Ttl time.Duration
+}
+
 func Test_MyTimeDuration(t *testing.T) {
 	initDefaultConfigForTests(t)
 
@@ -106,4 +110,9 @@ func Test_MyTimeDuration(t *testing.T) {
 	err := config.ScanFrom(&dur, "myTimeDuration.ttl")
 	assert.NoError(t, err)
 	assert.Equal(t, 10*time.Minute, dur)
+
+	var my MyTimeDuration
+	err = config.ScanFrom(&my, "myTimeDuration")
+	assert.NoError(t, err)
+	assert.Equal(t, 10*time.Minute, my.Ttl)
 }
