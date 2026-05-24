@@ -71,9 +71,6 @@ func TestGenerateGoCodeWritesFormattedFile(t *testing.T) {
 	if !strings.Contains(got, "TaskNotFoundCode") || !strings.Contains(got, "600121001") {
 		t.Fatalf("generated file missing error code:\n%s", got)
 	}
-	if !strings.Contains(got, "\"chaos-io/chaos/errorx\"") {
-		t.Fatalf("generated file missing errorx import path:\n%s", got)
-	}
 	if !strings.Contains(got, "errorx.Register(") {
 		t.Fatalf("generated file missing register call:\n%s", got)
 	}

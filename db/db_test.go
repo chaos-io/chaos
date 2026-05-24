@@ -329,7 +329,7 @@ func TestGormDBJSONType(t *testing.T) {
 	})
 
 	t.Run("sqlite", func(t *testing.T) {
-		db, err := Open(&Config{
+		db, err := NewWithConfig(&Config{
 			Driver: SqliteDriver,
 			DSN:    ":memory:",
 		})

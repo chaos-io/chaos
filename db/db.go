@@ -27,10 +27,6 @@ func New() (*DB, error) {
 }
 
 func NewWithConfig(cfg *Config) (*DB, error) {
-	return Open(cfg)
-}
-
-func Open(cfg *Config) (*DB, error) {
 	normalized, err := cfg.normalized()
 	if err != nil {
 		return nil, err
