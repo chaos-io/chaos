@@ -7,7 +7,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/bitly/go-simplejson v0.5.1
-	github.com/chaos-io/core/go v0.0.0-20260418104954-551193c88639
+	github.com/chaos-io/core/go v0.0.0-20260526111317-ffbe2502b241
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
