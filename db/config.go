@@ -80,15 +80,19 @@ func (c *Config) normalized() (*Config, error) {
 }
 
 func cloneGORMConfig(cfg *gorm.Config) *gorm.Config {
+	namingStrategy := schema.NamingStrategy{
+		SingularTable: true,
+	}
+
 	if cfg == nil {
 		return &gorm.Config{
-			NamingStrategy: schema.NamingStrategy{},
+			NamingStrategy: namingStrategy,
 		}
 	}
 
 	cloned := *cfg
 	if cloned.NamingStrategy == nil {
-		cloned.NamingStrategy = schema.NamingStrategy{}
+		cloned.NamingStrategy = namingStrategy
 	}
 	return &cloned
 }
