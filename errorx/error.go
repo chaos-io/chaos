@@ -3,6 +3,7 @@ package errorx
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 )
 
@@ -11,12 +12,6 @@ type CodedError interface {
 	Code() int32
 	Message() string
 	Extra() map[string]string
-}
-
-type Status struct {
-	Code             int32
-	Message          string
-	AffectsStability bool
 }
 
 type Error struct {
@@ -32,13 +27,9 @@ func newError(def Definition, cause error) *Error {
 	return &Error{
 		def:     def,
 		message: def.Message,
-		stack:   stack(),
+		stack:   captureStack(),
 		cause:   cause,
 	}
-}
-
-func New(format string, args ...any) error {
-	return WithStack(fmt.Errorf(format, args...))
 }
 
 func From(err error) (*Error, bool) {
@@ -118,15 +109,34 @@ func (e *Error) StackTrace() string {
 	return e.stack
 }
 
-func (e *Error) Status() Status {
-	return Status{
-		Code:             e.def.Code,
-		Message:          e.message,
-		AffectsStability: e.def.AffectsStability,
-	}
-}
-
 func (e *Error) Is(target error) bool {
 	coded, ok := From(target)
 	return ok && coded.Code() == e.Code()
+}
+
+func captureStack() string {
+	const depth = 32
+	var pcs [depth]uintptr
+	n := runtime.Callers(3, pcs[:])
+
+	b := strings.Builder{}
+	for i := 0; i < n; i++ {
+		fn := runtime.FuncForPC(pcs[i])
+		if fn == nil {
+			continue
+		}
+		file, line := fn.FileLine(pcs[i])
+		b.WriteString(fmt.Sprintf("%s:%d %s\n", file, line, trimFuncName(fn.Name())))
+	}
+	return b.String()
+}
+
+func trimFuncName(name string) string {
+	i := strings.LastIndex(name, "/")
+	name = name[i+1:]
+	i = strings.Index(name, ".")
+	if i == -1 {
+		return name
+	}
+	return name[i+1:]
 }

@@ -44,14 +44,6 @@ func MustRegister(defs ...Definition) {
 	}
 }
 
-func Lookup(code int32) (Definition, bool) {
-	registryMu.RLock()
-	defer registryMu.RUnlock()
-
-	def, ok := registry[code]
-	return def, ok
-}
-
 func sameDefinition(left, right Definition) bool {
 	return left.Code == right.Code &&
 		left.Message == right.Message &&

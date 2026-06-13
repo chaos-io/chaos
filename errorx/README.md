@@ -1,6 +1,6 @@
 # errorx
 
-`errorx` provides a production-oriented business error model for Go services:
+`errorx` provides a small production-oriented business error model for Go services:
 
 1. Define stable business error codes in YAML.
 2. Generate a small `errcode` package.
@@ -81,7 +81,7 @@ appCode=6, bizCode=12, code=1001 -> 600121001
 
 ## Generator
 
-Run the generator from this module:
+Run the generator:
 
 ```bash
 go run ./errorx/gen_error_code \
@@ -94,7 +94,7 @@ go run ./errorx/gen_error_code \
 Common `go:generate` usage inside a service:
 
 ```go
-//go:generate go run github.com/chaos-io/chaos/errorx/gen_error_code -out ./internal/errcode ./configs/error_code
+//go:generate go run github.com/chaos-io/chaos/errorx/gen_error_code -out ./internal/errcode -pkg errcode ./configs/error_code
 ```
 
 Generated code exposes one `errorx.Definition` per YAML item:
@@ -144,22 +144,6 @@ func LoadTask(taskID string) error {
     _ = task
     return nil
 }
-```
-
-## Migration From Old API
-
-Replace code-based calls with generated definitions:
-
-```go
-// Old
-err := errorx.NewByCode(600121001)
-err = errorx.WrapByCode(cause, 600121001)
-status, ok := errorx.FromStatus(err)
-
-// New
-err := errcode.TaskNotFound.New()
-err = errcode.TaskNotFound.Wrap(cause)
-coded, ok := errorx.From(err)
 ```
 
 Use `errorx.CodeOf(err)` or `errorx.Is(err, code)` only at generic boundaries. Business code should prefer generated definitions.

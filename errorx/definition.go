@@ -53,14 +53,6 @@ func (def Definition) Is(err error) bool {
 	return Is(err, def.Code)
 }
 
-func (def Definition) Status() Status {
-	return Status{
-		Code:             def.Code,
-		Message:          def.Message,
-		AffectsStability: def.AffectsStability,
-	}
-}
-
 func (def Definition) normalized() Definition {
 	if strings.TrimSpace(def.Message) == "" {
 		def.Message = DefaultMessage

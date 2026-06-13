@@ -98,15 +98,4 @@ func TestRegisterDefinitions(t *testing.T) {
 	if !errors.Is(err, ErrRegisterConflict) {
 		t.Fatalf("expected ErrRegisterConflict, got %v", err)
 	}
-
-	registered, ok := Lookup(912340001)
-	if !ok {
-		t.Fatal("expected registered definition")
-	}
-	registered.Message = "changed"
-
-	again, ok := Lookup(912340001)
-	if !ok || again.Message != "first" {
-		t.Fatalf("Lookup should return a copy, got %+v", again)
-	}
 }
