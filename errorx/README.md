@@ -99,6 +99,18 @@ var TaskNotFound = errorx.Define(
     errorx.CountInSLA(false),
 )
 
+func NewTaskNotFound(opts ...errorx.Option) error {
+    return TaskNotFound.New(opts...)
+}
+
+func WrapTaskNotFound(err error, opts ...errorx.Option) error {
+    return TaskNotFound.Wrap(err, opts...)
+}
+
+func IsTaskNotFound(err error) bool {
+    return TaskNotFound.Is(err)
+}
+
 func RegisterAll() error {
     return errorx.Register(
         TaskNotFound,
@@ -126,7 +138,7 @@ func Init() error {
 创建业务错误：
 
 ```go
-return errcode.TaskNotFound.New(
+return errcode.NewTaskNotFound(
     errorx.WithMessageParam("task_id", taskID),
     errorx.WithExtra(map[string]string{"task_id": taskID}),
 )
@@ -136,7 +148,7 @@ return errcode.TaskNotFound.New(
 
 ```go
 if err != nil {
-    return errcode.TaskNotFound.Wrap(err, errorx.WithExtra(map[string]string{
+    return errcode.WrapTaskNotFound(err, errorx.WithExtra(map[string]string{
         "task_id": taskID,
     }))
 }
@@ -145,10 +157,12 @@ if err != nil {
 判断错误类型：
 
 ```go
-if errcode.TaskNotFound.Is(err) {
+if errcode.IsTaskNotFound(err) {
     // handle task not found
 }
 ```
+
+生成的 `TaskNotFound` 变量仍然保留，用于 `RegisterAll` 注册和需要读取错误码元数据的通用场景；业务代码优先使用 `NewXxx`、`WrapXxx`、`IsXxx`。
 
 在网关、日志、中间件等通用边界读取错误码：
 

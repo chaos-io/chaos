@@ -47,6 +47,12 @@ errorCode:
 		"600121001,",
 		`"task not found",`,
 		"errorx.CountInSLA(false),",
+		"func NewTaskNotFound(opts ...errorx.Option) error",
+		"return TaskNotFound.New(opts...)",
+		"func WrapTaskNotFound(err error, opts ...errorx.Option) error",
+		"return TaskNotFound.Wrap(err, opts...)",
+		"func IsTaskNotFound(err error) bool",
+		"return TaskNotFound.Is(err)",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated file missing %q:\n%s", want, got)

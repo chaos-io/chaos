@@ -341,6 +341,7 @@ import (
 
 	for _, errDef := range spec.ErrorCode {
 		writeDefinition(&buf, spec.AppCode, spec.BizCode, errDef)
+		writeFunctions(&buf, errDef)
 	}
 
 	source, err := format.Source(buf.Bytes())
@@ -391,6 +392,27 @@ func writeDefinition(buf *bytes.Buffer, appCode int, bizCode int, errDef Definit
 		composeErrorCode(appCode, bizCode, errDef.Code),
 		errDef.Message,
 		errDef.countInSLA(),
+	)
+}
+
+func writeFunctions(buf *bytes.Buffer, errDef Definition) {
+	_, _ = fmt.Fprintf(
+		buf,
+		"func New%s(opts ...errorx.Option) error {\n\treturn %s.New(opts...)\n}\n\n",
+		errDef.Name,
+		errDef.Name,
+	)
+	_, _ = fmt.Fprintf(
+		buf,
+		"func Wrap%s(err error, opts ...errorx.Option) error {\n\treturn %s.Wrap(err, opts...)\n}\n\n",
+		errDef.Name,
+		errDef.Name,
+	)
+	_, _ = fmt.Fprintf(
+		buf,
+		"func Is%s(err error) bool {\n\treturn %s.Is(err)\n}\n\n",
+		errDef.Name,
+		errDef.Name,
 	)
 }
 
