@@ -4,4 +4,4 @@ errorCode:
   - name: UserNotFound
     code: 1001
     message: user not found
-    affectsStability: false
+    countInSLA: false

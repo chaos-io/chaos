@@ -7,7 +7,7 @@ import (
 )
 
 func TestDefinitionNewCreatesCodedError(t *testing.T) {
-	def := Define(600121001, "task {task_id} not found", AffectsStability(false))
+	def := Define(600121001, "task {task_id} not found", CountInSLA(false))
 
 	err := def.New(
 		WithMessageParam("task_id", "t-1"),
@@ -30,8 +30,8 @@ func TestDefinitionNewCreatesCodedError(t *testing.T) {
 	if got.StackTrace() == "" {
 		t.Fatal("expected stack trace")
 	}
-	if def.AffectsStability {
-		t.Fatalf("definition should keep explicit stability flag: %+v", def)
+	if def.CountInSLA {
+		t.Fatalf("definition should keep explicit SLA flag: %+v", def)
 	}
 }
 
@@ -80,8 +80,8 @@ func TestCodeOfAndWithoutStack(t *testing.T) {
 }
 
 func TestRegisterDefinitions(t *testing.T) {
-	first := Define(912340001, "first", AffectsStability(false))
-	same := Define(912340001, "first", AffectsStability(false))
+	first := Define(912340001, "first", CountInSLA(false))
+	same := Define(912340001, "first", CountInSLA(false))
 	conflict := Define(912340001, "second")
 
 	if err := Register(first); err != nil {

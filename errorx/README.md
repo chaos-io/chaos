@@ -27,7 +27,7 @@ errorCode:
     code: 1001
     message: task {task_id} not found
     description: task does not exist
-    affectsStability: false
+    countInSLA: false
 
   - name: TaskStateInvalid
     code: 1002
@@ -44,7 +44,9 @@ errorCode:
 - `code`：当前业务模块内的错误子码，范围 `1..9999`。
 - `message`：错误消息，支持 `{key}` 占位符。
 - `description`：生成代码里的注释，可选。
-- `affectsStability`：是否影响稳定性指标，可选，默认 `true`。
+- `countInSLA`：是否计入服务稳定性指标，可选，默认 `true`。
+
+`countInSLA` 用于统一观测层统计错误率、SLA 或告警。通常系统错误、依赖异常、内部处理失败应保持 `true`；参数错误、资源不存在、权限不足、业务状态不允许等预期业务错误可设为 `false`。
 
 完整错误码规则：
 
@@ -94,7 +96,7 @@ go generate ./...
 var TaskNotFound = errorx.Define(
     600121001,
     "task {task_id} not found",
-    errorx.AffectsStability(false),
+    errorx.CountInSLA(false),
 )
 
 func RegisterAll() error {

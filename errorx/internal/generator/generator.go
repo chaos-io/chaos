@@ -34,11 +34,11 @@ type Config struct {
 }
 
 type Definition struct {
-	Code             int    `yaml:"code"`
-	Name             string `yaml:"name"`
-	Message          string `yaml:"message,omitempty"`
-	Description      string `yaml:"description,omitempty"`
-	AffectsStability *bool  `yaml:"affectsStability,omitempty"`
+	Code        int    `yaml:"code"`
+	Name        string `yaml:"name"`
+	Message     string `yaml:"message,omitempty"`
+	Description string `yaml:"description,omitempty"`
+	CountInSLA  *bool  `yaml:"countInSLA,omitempty"`
 }
 
 type File struct {
@@ -385,12 +385,12 @@ func writeDefinition(buf *bytes.Buffer, appCode int, bizCode int, errDef Definit
 	}
 	_, _ = fmt.Fprintf(
 		buf,
-		"%svar %s = errorx.Define(\n\t%d,\n\t%q,\n\terrorx.AffectsStability(%t),\n)\n\n",
+		"%svar %s = errorx.Define(\n\t%d,\n\t%q,\n\terrorx.CountInSLA(%t),\n)\n\n",
 		comment,
 		errDef.Name,
 		composeErrorCode(appCode, bizCode, errDef.Code),
 		errDef.Message,
-		errDef.affectsStability(),
+		errDef.countInSLA(),
 	)
 }
 
@@ -406,9 +406,9 @@ func sanitizeFileName(name string) string {
 	return name
 }
 
-func (e Definition) affectsStability() bool {
-	if e.AffectsStability != nil {
-		return *e.AffectsStability
+func (e Definition) countInSLA() bool {
+	if e.CountInSLA != nil {
+		return *e.CountInSLA
 	}
 	return true
 }

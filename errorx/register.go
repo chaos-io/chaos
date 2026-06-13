@@ -24,13 +24,13 @@ func Register(defs ...Definition) error {
 				continue
 			}
 			return fmt.Errorf(
-				"%w: code=%d current_message=%q new_message=%q current_affects_stability=%t new_affects_stability=%t",
+				"%w: code=%d current_message=%q new_message=%q current_count_in_sla=%t new_count_in_sla=%t",
 				ErrRegisterConflict,
 				def.Code,
 				current.Message,
 				def.Message,
-				current.AffectsStability,
-				def.AffectsStability,
+				current.CountInSLA,
+				def.CountInSLA,
 			)
 		}
 		registry[def.Code] = def
@@ -47,5 +47,5 @@ func MustRegister(defs ...Definition) {
 func sameDefinition(left, right Definition) bool {
 	return left.Code == right.Code &&
 		left.Message == right.Message &&
-		left.AffectsStability == right.AffectsStability
+		left.CountInSLA == right.CountInSLA
 }

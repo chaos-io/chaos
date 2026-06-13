@@ -3,24 +3,24 @@ package errorx
 import "strings"
 
 const (
-	DefaultMessage          = "Service Internal Error"
-	DefaultAffectsStability = true
+	DefaultMessage    = "Service Internal Error"
+	DefaultCountInSLA = true
 )
 
 // Definition describes one stable business error code.
 type Definition struct {
-	Code             int32
-	Message          string
-	AffectsStability bool
+	Code       int32
+	Message    string
+	CountInSLA bool
 }
 
 type DefineOption func(*Definition)
 
 func Define(code int32, message string, opts ...DefineOption) Definition {
 	def := Definition{
-		Code:             code,
-		Message:          message,
-		AffectsStability: DefaultAffectsStability,
+		Code:       code,
+		Message:    message,
+		CountInSLA: DefaultCountInSLA,
 	}
 	for _, opt := range opts {
 		opt(&def)
@@ -28,9 +28,9 @@ func Define(code int32, message string, opts ...DefineOption) Definition {
 	return def
 }
 
-func AffectsStability(affectsStability bool) DefineOption {
+func CountInSLA(countInSLA bool) DefineOption {
 	return func(def *Definition) {
-		def.AffectsStability = affectsStability
+		def.CountInSLA = countInSLA
 	}
 }
 

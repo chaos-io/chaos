@@ -19,7 +19,7 @@ errorCode:
     code: 1001
     message: task not found
     description: task does not exist
-    affectsStability: false
+    countInSLA: false
 `)
 
 	outputs, err := Generate(Config{
@@ -46,7 +46,7 @@ errorCode:
 		"var TaskNotFound = errorx.Define(",
 		"600121001,",
 		`"task not found",`,
-		"errorx.AffectsStability(false),",
+		"errorx.CountInSLA(false),",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated file missing %q:\n%s", want, got)
