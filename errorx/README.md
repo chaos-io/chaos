@@ -66,7 +66,7 @@ appCode=6, bizCode=12, code=1001 => 600121001
 
 ```bash
 go run github.com/chaos-io/chaos/errorx/cmd/errorxgen \
-  -out ./internal/errcode \
+  -out ./errcode \
   -pkg errcode \
   ./configs/error_code
 ```
@@ -112,7 +112,7 @@ func RegisterAll() error {
 ```go
 package service
 
-import "your/service/internal/errcode"
+import "your/service/errcode"
 
 func Init() error {
     return errcode.RegisterAll()
