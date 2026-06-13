@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chaos-io/chaos/errorx/gen_error_code/internal/generator"
+	"github.com/chaos-io/chaos/errorx/internal/generator"
 )
 
 func main() {

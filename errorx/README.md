@@ -67,6 +67,17 @@ errorCode:
     affectsStability: false
 ```
 
+Fields:
+
+- `appCode`: required, `1..9`.
+- `bizCode`: required, `1..9999`.
+- `errorCode`: required, non-empty list.
+- `name`: required, exported Go identifier. It becomes the generated variable name.
+- `code`: required, `1..9999`.
+- `message`: optional business message. Empty values use `errorx.DefaultMessage`.
+- `description`: optional generated Go comment.
+- `affectsStability`: optional, defaults to `true`.
+
 The full code layout is:
 
 ```text
@@ -79,12 +90,17 @@ Example:
 appCode=6, bizCode=12, code=1001 -> 600121001
 ```
 
+Use stable business names such as `TaskNotFound`, `UserAlreadyExists`, and `PaymentProviderUnavailable`.
+Avoid transport-specific names such as `HTTP404` or `GRPCInvalidArgument`; protocol mapping belongs in each service adapter.
+
+Generation fails when one input batch contains duplicate generated file names, duplicate error names, duplicate full error codes, invalid code ranges, or invalid Go identifiers.
+
 ## Generator
 
 Run the generator:
 
 ```bash
-go run ./errorx/gen_error_code \
+go run ./errorx/cmd/errorxgen \
   -out ./internal/errcode \
   -pkg errcode \
   -errorx-import github.com/chaos-io/chaos/errorx \
@@ -94,7 +110,7 @@ go run ./errorx/gen_error_code \
 Common `go:generate` usage inside a service:
 
 ```go
-//go:generate go run github.com/chaos-io/chaos/errorx/gen_error_code -out ./internal/errcode -pkg errcode ./configs/error_code
+//go:generate go run github.com/chaos-io/chaos/errorx/cmd/errorxgen -out ./internal/errcode -pkg errcode ./configs/error_code
 ```
 
 Generated code exposes one `errorx.Definition` per YAML item:
