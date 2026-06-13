@@ -6,92 +6,107 @@ import (
 	"testing"
 )
 
-func TestWithStackKeepsErrorAndAddsTrace(t *testing.T) {
-	err := WithStack(errors.New("boom"))
-	if err == nil {
-		t.Fatal("WithStack returned nil")
-	}
+func TestDefinitionNewCreatesCodedError(t *testing.T) {
+	def := Define(600121001, "task {task_id} not found", AffectsStability(false))
 
-	var stackTracer StackTracer
-	if !errors.As(err, &stackTracer) {
-		t.Fatalf("expected stack tracer, got %T", err)
-	}
-	if stackTracer.StackTrace() == "" {
-		t.Fatal("expected stack trace to be present")
-	}
-}
+	err := def.New(
+		WithMessageParam("task_id", "t-1"),
+		WithExtra(map[string]string{"task_id": "t-1"}),
+	)
 
-func TestErrorWithoutStack(t *testing.T) {
-	err := New("boom")
-	if got := ErrorWithoutStack(err); !strings.Contains(got, "boom") {
-		t.Fatalf("unexpected error text: %q", got)
+	got, ok := From(err)
+	if !ok {
+		t.Fatalf("From returned false for %T", err)
 	}
-
-	plain := errors.New("plain error")
-	if got := ErrorWithoutStack(plain); got != "plain error" {
-		t.Fatalf("unexpected plain error text: %q", got)
+	if got.Code() != 600121001 {
+		t.Fatalf("unexpected code: %d", got.Code())
 	}
-}
-
-func TestRegisterIsIdempotentForSameDefinition(t *testing.T) {
-	const code int32 = 912340001
-
-	if err := Register(code, "first", WithAffectsStability(false)); err != nil {
-		t.Fatalf("first Register returned error: %v", err)
+	if got.Message() != "task t-1 not found" {
+		t.Fatalf("unexpected message: %q", got.Message())
 	}
-	if err := Register(code, "first", WithAffectsStability(false)); err != nil {
-		t.Fatalf("second Register returned error: %v", err)
+	if got.Extra()["task_id"] != "t-1" {
+		t.Fatalf("unexpected extra: %+v", got.Extra())
+	}
+	if got.StackTrace() == "" {
+		t.Fatal("expected stack trace")
+	}
+	if def.AffectsStability {
+		t.Fatalf("definition should keep explicit stability flag: %+v", def)
 	}
 }
 
-func TestRegisterReturnsConflictForDifferentDefinition(t *testing.T) {
-	const code int32 = 912340003
+func TestDefinitionWrapKeepsCauseAndSupportsMatching(t *testing.T) {
+	def := Define(600121002, "db failed")
+	cause := errors.New("db down")
 
-	if err := Register(code, "first", WithAffectsStability(false)); err != nil {
-		t.Fatalf("first Register returned error: %v", err)
+	err := def.Wrap(cause, WithExtraMessage("retry later"))
+
+	if !errors.Is(err, cause) {
+		t.Fatalf("wrapped error should keep cause: %v", err)
+	}
+	if !def.Is(err) {
+		t.Fatalf("definition should match wrapped error: %v", err)
+	}
+	if !Is(err, 600121002) {
+		t.Fatalf("Is should match wrapped error: %v", err)
+	}
+	if def.Wrap(nil) != nil {
+		t.Fatal("Wrap(nil) should return nil")
+	}
+	if got := ErrorWithoutStack(err); strings.Contains(got, "stack=") {
+		t.Fatalf("ErrorWithoutStack should remove stack: %q", got)
+	}
+}
+
+func TestCodeOfAndWithoutStack(t *testing.T) {
+	def := Define(600121003, "plain")
+	err := def.New(WithoutStack())
+
+	code, ok := CodeOf(err)
+	if !ok {
+		t.Fatal("CodeOf returned false")
+	}
+	if code != 600121003 {
+		t.Fatalf("unexpected code: %d", code)
 	}
 
-	err := Register(code, "second", WithAffectsStability(true))
+	got, ok := From(err)
+	if !ok {
+		t.Fatal("From returned false")
+	}
+	if got.StackTrace() != "" {
+		t.Fatalf("WithoutStack should skip stack, got %q", got.StackTrace())
+	}
+}
+
+func TestRegisterDefinitions(t *testing.T) {
+	first := Define(912340001, "first", AffectsStability(false))
+	same := Define(912340001, "first", AffectsStability(false))
+	conflict := Define(912340001, "second")
+
+	if err := Register(first); err != nil {
+		t.Fatalf("Register returned error: %v", err)
+	}
+	if err := Register(same); err != nil {
+		t.Fatalf("Register should be idempotent: %v", err)
+	}
+
+	err := Register(conflict)
 	if err == nil {
 		t.Fatal("expected conflict error")
 	}
 	if !errors.Is(err, ErrRegisterConflict) {
 		t.Fatalf("expected ErrRegisterConflict, got %v", err)
 	}
-}
 
-func TestWithStatusAsStatus(t *testing.T) {
-	if err := Register(912340002, "with status as"); err != nil {
-		t.Fatalf("Register returned error: %v", err)
+	registered, ok := Lookup(912340001)
+	if !ok {
+		t.Fatal("expected registered definition")
 	}
+	registered.Message = "changed"
 
-	err := NewByCode(912340002)
-
-	var target Status
-	if !errors.As(err, &target) {
-		t.Fatalf("expected status target, got %T", err)
-	}
-	if target.Code() != 912340002 {
-		t.Fatalf("unexpected status code: %d", target.Code())
-	}
-}
-
-func TestGetRegisteredStatusReturnsCopy(t *testing.T) {
-	const code int32 = 912340004
-
-	if err := Register(code, "immutable", WithAffectsStability(false)); err != nil {
-		t.Fatalf("Register returned error: %v", err)
-	}
-
-	got := GetRegisteredStatus(code)
-	got.Message = "changed"
-	got.AffectsStability = true
-
-	again := GetRegisteredStatus(code)
-	if again.Message != "immutable" {
-		t.Fatalf("register status should not be mutated externally: %+v", again)
-	}
-	if again.AffectsStability {
-		t.Fatalf("register stability should not be mutated externally: %+v", again)
+	again, ok := Lookup(912340001)
+	if !ok || again.Message != "first" {
+		t.Fatalf("Lookup should return a copy, got %+v", again)
 	}
 }

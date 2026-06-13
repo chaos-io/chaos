@@ -1,111 +1,60 @@
 # errorx
 
-`errorx` 用于两件事：
+`errorx` provides a production-oriented business error model for Go services:
 
-1. 在运行时按错误码创建、包装、判断业务错误
-2. 从 YAML 生成业务错误码代码
+1. Define stable business error codes in YAML.
+2. Generate a small `errcode` package.
+3. Register definitions at service startup.
+4. Create, wrap, and match business errors through generated objects.
 
-## 快速开始
+## Runtime API
 
-### 1. 服务启动时注册错误码
-
-如果你使用生成代码：
-
-```go
-if err := errcode.RegisterAll(); err != nil {
-    return err
-}
-```
-
-如果你手工注册：
+Define an error manually:
 
 ```go
-if err := errorx.Register(
+var TaskNotFound = errorx.Define(
     600121001,
-    "task not found",
-    errorx.WithAffectsStability(true),
-); err != nil {
-    return err
-}
-```
-
-### 2. 业务里创建错误
-
-直接按错误码创建：
-
-```go
-err := errorx.NewByCode(
-    600121001,
-    errorx.WithExtra(map[string]string{"task_id": "123"}),
+    "task {task_id} not found",
+    errorx.AffectsStability(false),
 )
 ```
 
-包装已有错误：
+Create and wrap errors:
 
 ```go
-err := errorx.WrapByCode(dbErr, 600121001)
+err := TaskNotFound.New(
+    errorx.WithMessageParam("task_id", "t-1"),
+    errorx.WithExtra(map[string]string{"task_id": "t-1"}),
+)
+
+err = TaskNotFound.Wrap(dbErr)
 ```
 
-生成普通错误：
+Match and read errors:
 
 ```go
-err := errorx.New("load config failed: %v", cause)
-err = errorx.Wrapf(err, "init service")
-```
+if TaskNotFound.Is(err) {
+    // handle task-not-found
+}
 
-### 3. 判断错误类型
-
-```go
-status, ok := errorx.FromStatus(err)
-if ok && status.Code() == 600121001 {
-    // handle
+if coded, ok := errorx.From(err); ok {
+    _ = coded.Code()
+    _ = coded.Message()
+    _ = coded.Extra()
 }
 ```
 
-如果你使用生成代码，优先用生成函数：
+Register definitions during service startup:
 
 ```go
-err := errcode.NewTaskNotFound()
-
-if errcode.IsTaskNotFound(err) {
-    // handle
+func Init() error {
+    return errcode.RegisterAll()
 }
 ```
 
-## 运行时 API
+`Register` is idempotent for identical definitions and returns `ErrRegisterConflict` when the same code is registered with different metadata.
 
-最常用的入口：
-
-- `Register`
-- `MustRegister`
-- `NewByCode`
-- `WrapByCode`
-- `FromStatus`
-- `New`
-- `Wrapf`
-
-常用扩展项：
-
-- `WithAffectsStability`
-- `WithExtraMsg`
-- `WithMsgParam`
-- `WithExtra`
-
-行为说明：
-
-- 相同 `code` 且定义完全一致：`Register` 返回 `nil`
-- 相同 `code` 但定义不一致：返回 `ErrRegisterConflict`
-- `MustRegister` 会在冲突时直接 `panic`
-
-## 生成器使用方式
-
-生成器目录：
-
-- `./gen_error_code`
-
-### YAML 格式
-
-使用小驼峰字段：
+## YAML Format
 
 ```yaml
 appCode: 6
@@ -113,85 +62,64 @@ bizCode: 12
 errorCode:
   - name: TaskNotFound
     code: 1001
-    message: task not found
+    message: task {task_id} not found
     description: task does not exist
-    affectsStability: true
+    affectsStability: false
 ```
 
-约束：
-
-- `appCode` 范围：`1..9`
-- `bizCode` 范围：`1..9999`
-- `errorCode[*].code` 范围：`1..9999`
-- `name` 必须是合法 Go 标识符
-
-完整错误码格式：
+The full code layout is:
 
 ```text
-appCode(1位) + bizCode(4位) + subCode(4位)
+appCode(1 digit) + bizCode(4 digits) + code(4 digits)
 ```
 
-例如：
+Example:
 
 ```text
 appCode=6, bizCode=12, code=1001 -> 600121001
 ```
 
-### 生成命令
+## Generator
+
+Run the generator from this module:
 
 ```bash
-go run ./gen_error_code -out ./internal/errcode ./configs/error_code
+go run ./errorx/gen_error_code \
+  -out ./internal/errcode \
+  -pkg errcode \
+  -errorx-import github.com/chaos-io/chaos/errorx \
+  ./configs/error_code
 ```
 
-或：
+Common `go:generate` usage inside a service:
 
-```bash
-go generate ./gen_error_code
+```go
+//go:generate go run github.com/chaos-io/chaos/errorx/gen_error_code -out ./internal/errcode ./configs/error_code
 ```
 
-### 生成结果
+Generated code exposes one `errorx.Definition` per YAML item:
 
-每个 YAML 会生成一个业务文件，另外统一生成一个注册入口：
+```go
+var TaskNotFound = errorx.Define(
+    600121001,
+    "task {task_id} not found",
+    errorx.AffectsStability(false),
+)
+```
 
-- `loop_task.go`
-- `user.go`
-- `register_all.go`
+It also generates:
 
-生成包名固定为 `errcode`。
+```go
+func RegisterAll() error
+```
 
-每个业务文件通常包含：
-
-- `TaskNotFoundCode`
-- `NewTaskNotFound(opts ...errorx.Option) error`
-- `IsTaskNotFound(err error) bool`
-
-统一入口文件包含：
-
-- `RegisterAll() error`
-
-## 推荐接入方式
-
-### 启动阶段
-
-1. 调用 `errcode.RegisterAll()`
-2. 如果返回错误，直接终止启动
-
-### 业务阶段
-
-1. 优先使用生成的 `NewXxx`
-2. 需要保留底层原因时使用 `WrapByCode`
-3. 判断错误类型时优先使用生成的 `IsXxx`
-4. 跨层取错误码时使用 `FromStatus`
-
-## 最小示例
-
-假设生成目录是 `./internal/errcode`：
+## Recommended Service Usage
 
 ```go
 package service
 
 import (
-    "chaos-io/chaos/errorx"
+    "github.com/chaos-io/chaos/errorx"
     "your/service/internal/errcode"
 )
 
@@ -199,9 +127,39 @@ func Init() error {
     return errcode.RegisterAll()
 }
 
-func FindTask() error {
-    return errcode.NewTaskNotFound(
-        errorx.WithExtra(map[string]string{"task_id": "123"}),
+func FindTask(taskID string) error {
+    return errcode.TaskNotFound.New(
+        errorx.WithMessageParam("task_id", taskID),
+        errorx.WithExtra(map[string]string{"task_id": taskID}),
     )
 }
+
+func LoadTask(taskID string) error {
+    task, err := loadTask(taskID)
+    if err != nil {
+        return errcode.TaskNotFound.Wrap(err, errorx.WithExtra(map[string]string{
+            "task_id": taskID,
+        }))
+    }
+    _ = task
+    return nil
+}
 ```
+
+## Migration From Old API
+
+Replace code-based calls with generated definitions:
+
+```go
+// Old
+err := errorx.NewByCode(600121001)
+err = errorx.WrapByCode(cause, 600121001)
+status, ok := errorx.FromStatus(err)
+
+// New
+err := errcode.TaskNotFound.New()
+err = errcode.TaskNotFound.Wrap(cause)
+coded, ok := errorx.From(err)
+```
+
+Use `errorx.CodeOf(err)` or `errorx.Is(err, code)` only at generic boundaries. Business code should prefer generated definitions.

@@ -1,0 +1,12 @@
+appCode: 6
+bizCode: 12
+errorCode:
+  - name: TaskNotFound
+    code: 1001
+    message: task {task_id} not found
+    description: task does not exist
+    affectsStability: false
+  - name: TaskStateInvalid
+    code: 1002
+    message: task {task_id} state invalid
+    description: task state cannot satisfy current operation

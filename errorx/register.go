@@ -6,111 +6,54 @@ import (
 	"sync"
 )
 
-const (
-	DefaultErrorMsg         = "Service Internal Error"
-	DefaultAffectsStability = true
-)
-
 var ErrRegisterConflict = errors.New("errorx: register conflict")
 
 var (
-	registeredStatuses     map[int32]*RegisteredStatus
-	registeredStatusesOnce sync.Once
-	registeredStatusesMu   sync.RWMutex
+	registryMu sync.RWMutex
+	registry   = make(map[int32]Definition)
 )
 
-type RegisteredStatus struct {
-	Code             int32
-	Message          string
-	AffectsStability bool
-}
+func Register(defs ...Definition) error {
+	registryMu.Lock()
+	defer registryMu.Unlock()
 
-type RegisterOption func(s *RegisteredStatus)
-
-func Register(code int32, msg string, opts ...RegisterOption) error {
-	registeredStatusesOnce.Do(func() {
-		registeredStatuses = make(map[int32]*RegisteredStatus)
-	})
-
-	s := &RegisteredStatus{
-		Code:             code,
-		Message:          msg,
-		AffectsStability: DefaultAffectsStability,
-	}
-
-	for _, opt := range opts {
-		opt(s)
-	}
-
-	registeredStatusesMu.Lock()
-	defer registeredStatusesMu.Unlock()
-
-	if current, ok := registeredStatuses[code]; ok {
-		if sameRegisteredStatus(current, s) {
-			return nil
+	for _, def := range defs {
+		def = def.normalized()
+		if current, ok := registry[def.Code]; ok {
+			if sameDefinition(current, def) {
+				continue
+			}
+			return fmt.Errorf(
+				"%w: code=%d current_message=%q new_message=%q current_affects_stability=%t new_affects_stability=%t",
+				ErrRegisterConflict,
+				def.Code,
+				current.Message,
+				def.Message,
+				current.AffectsStability,
+				def.AffectsStability,
+			)
 		}
-		return fmt.Errorf(
-			"%w: code=%d current_message=%q new_message=%q current_affects_stability=%t new_affects_stability=%t",
-			ErrRegisterConflict,
-			code,
-			current.Message,
-			s.Message,
-			current.AffectsStability,
-			s.AffectsStability,
-		)
+		registry[def.Code] = def
 	}
-	registeredStatuses[code] = s
 	return nil
 }
 
-func MustRegister(code int32, msg string, opts ...RegisterOption) {
-	if err := Register(code, msg, opts...); err != nil {
+func MustRegister(defs ...Definition) {
+	if err := Register(defs...); err != nil {
 		panic(err)
 	}
 }
 
-func WithAffectsStability(affectsStability bool) RegisterOption {
-	return func(s *RegisteredStatus) {
-		s.AffectsStability = affectsStability
-	}
+func Lookup(code int32) (Definition, bool) {
+	registryMu.RLock()
+	defer registryMu.RUnlock()
+
+	def, ok := registry[code]
+	return def, ok
 }
 
-func GetRegisteredStatus(code int32) *RegisteredStatus {
-	registeredStatusesOnce.Do(func() {
-		registeredStatuses = make(map[int32]*RegisteredStatus)
-	})
-
-	registeredStatusesMu.RLock()
-	defer registeredStatusesMu.RUnlock()
-
-	registeredStatus, ok := registeredStatuses[code]
-	if ok {
-		return cloneRegisteredStatus(registeredStatus)
-	}
-
-	return &RegisteredStatus{
-		Code:             code,
-		Message:          DefaultErrorMsg,
-		AffectsStability: DefaultAffectsStability,
-	}
-}
-
-func sameRegisteredStatus(left, right *RegisteredStatus) bool {
-	if left == nil || right == nil {
-		return left == right
-	}
+func sameDefinition(left, right Definition) bool {
 	return left.Code == right.Code &&
 		left.Message == right.Message &&
 		left.AffectsStability == right.AffectsStability
-}
-
-func cloneRegisteredStatus(s *RegisteredStatus) *RegisteredStatus {
-	if s == nil {
-		return nil
-	}
-	return &RegisteredStatus{
-		Code:             s.Code,
-		Message:          s.Message,
-		AffectsStability: s.AffectsStability,
-	}
 }

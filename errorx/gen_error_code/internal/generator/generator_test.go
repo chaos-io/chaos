@@ -1,0 +1,138 @@
+package generator
+
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestGenerateWritesObjectDefinitions(t *testing.T) {
+	inputDir := t.TempDir()
+	outputDir := t.TempDir()
+	writeFile(t, filepath.Join(inputDir, "loop_task.yaml"), `
+appCode: 6
+bizCode: 12
+errorCode:
+  - name: TaskNotFound
+    code: 1001
+    message: task not found
+    description: task does not exist
+    affectsStability: false
+`)
+
+	outputs, err := Generate(Config{
+		Inputs:       []string{inputDir},
+		OutputDir:    outputDir,
+		PackageName:  "bizerr",
+		ErrorxImport: "example.com/platform/errorx",
+	})
+	if err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
+	if len(outputs) != 2 {
+		t.Fatalf("unexpected outputs: %v", outputs)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "loop_task.go"))
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	got := string(content)
+	for _, want := range []string{
+		"package bizerr",
+		`"example.com/platform/errorx"`,
+		"var TaskNotFound = errorx.Define(",
+		"600121001,",
+		`"task not found",`,
+		"errorx.AffectsStability(false),",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("generated file missing %q:\n%s", want, got)
+		}
+	}
+
+	registerAll, err := os.ReadFile(filepath.Join(outputDir, "register_all.go"))
+	if err != nil {
+		t.Fatalf("ReadFile register_all returned error: %v", err)
+	}
+	if got := string(registerAll); !strings.Contains(got, "return errorx.Register(") ||
+		!strings.Contains(got, "TaskNotFound,") {
+		t.Fatalf("register_all missing object registration:\n%s", got)
+	}
+}
+
+func TestRunPrintsGeneratedFiles(t *testing.T) {
+	inputDir := t.TempDir()
+	outputDir := t.TempDir()
+	writeFile(t, filepath.Join(inputDir, "user.yaml"), `
+appCode: 6
+bizCode: 13
+errorCode:
+  - name: UserNotFound
+    code: 1001
+    message: user not found
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if err := Run([]string{"-out", outputDir, "-pkg", "bizerr", inputDir}, &stdout, &stderr); err != nil {
+		t.Fatalf("Run returned error: %v; stderr=%s", err, stderr.String())
+	}
+	lines := strings.Fields(strings.TrimSpace(stdout.String()))
+	if len(lines) != 2 {
+		t.Fatalf("unexpected stdout: %q", stdout.String())
+	}
+}
+
+func TestValidateRejectsDuplicatesAndInvalidNames(t *testing.T) {
+	err := validateInputFiles([]inputFile{
+		{
+			Path:     "order.yaml",
+			BizName:  "order",
+			FileName: "order",
+			Spec: File{
+				AppCode: 6,
+				BizCode: 12,
+				ErrorCode: []Definition{
+					{Name: "NotFound", Code: 1001},
+				},
+			},
+		},
+		{
+			Path:     "payment.yaml",
+			BizName:  "payment",
+			FileName: "payment",
+			Spec: File{
+				AppCode: 6,
+				BizCode: 12,
+				ErrorCode: []Definition{
+					{Name: "PaymentNotFound", Code: 1001},
+				},
+			},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "duplicate full error code 600121001") {
+		t.Fatalf("unexpected duplicate code error: %v", err)
+	}
+
+	err = validateSpec("bad.yaml", File{
+		AppCode: 6,
+		BizCode: 12,
+		ErrorCode: []Definition{
+			{Name: "taskNotFound", Code: 1001},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "exported Go identifier") {
+		t.Fatalf("unexpected invalid name error: %v", err)
+	}
+}
+
+func writeFile(t *testing.T, path string, content string) {
+	t.Helper()
+
+	if err := os.WriteFile(path, []byte(strings.TrimSpace(content)), 0o644); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+}
