@@ -1,7 +1,9 @@
 package errorx
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -55,6 +57,49 @@ func TestDefinitionWrapKeepsCauseAndSupportsMatching(t *testing.T) {
 	}
 	if got := ErrorWithoutStack(err); strings.Contains(got, "stack=") {
 		t.Fatalf("ErrorWithoutStack should remove stack: %q", got)
+	}
+}
+
+func TestErrorStringIsSafeForClientResponse(t *testing.T) {
+	def := Define(600121004, "get task failed")
+	err := def.Wrap(errors.New("record not found"))
+
+	if got := err.Error(); got != "get task failed" {
+		t.Fatalf("Error should return client-safe message, got %q", got)
+	}
+
+	detail := fmt.Sprintf("%+v", err)
+	for _, want := range []string{
+		"code=600121004",
+		"message=get task failed",
+		"cause=record not found",
+	} {
+		if !strings.Contains(detail, want) {
+			t.Fatalf("formatted detail missing %q:\n%s", want, detail)
+		}
+	}
+	if strings.ContainsAny(detail, "{}\"") {
+		t.Fatalf("formatted detail should be readable text, not JSON:\n%s", detail)
+	}
+	if strings.Contains(detail, "stack=") {
+		t.Fatalf("formatted detail should not include stack by default:\n%s", detail)
+	}
+}
+
+func TestErrorMarshalJSONIsSafeForClientResponse(t *testing.T) {
+	def := Define(600121005, "get task failed")
+	err := def.Wrap(errors.New("record not found"))
+
+	body, marshalErr := json.Marshal(err)
+	if marshalErr != nil {
+		t.Fatalf("MarshalJSON returned error: %v", marshalErr)
+	}
+
+	if got, want := string(body), `{"code":"600121005","message":"get task failed","cause":"record not found"}`; got != want {
+		t.Fatalf("unexpected json body: got %s want %s", got, want)
+	}
+	if strings.Contains(string(body), "stack") {
+		t.Fatalf("json body should not expose stack: %s", body)
 	}
 }
 

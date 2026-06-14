@@ -4,7 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strconv"
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type CodedError interface {
@@ -69,17 +72,44 @@ func ErrorWithoutStack(err error) string {
 }
 
 func (e *Error) Error() string {
-	b := strings.Builder{}
-	b.WriteString(fmt.Sprintf("code=%d message=%s", e.Code(), e.Message()))
-	if e.cause != nil {
-		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("cause=%s", e.cause.Error()))
+	return e.Message()
+}
+
+type ErrorView struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Cause   string `json:"cause,omitempty"`
+}
+
+func (e *Error) newErrorView() ErrorView {
+	return ErrorView{
+		Code:    strconv.FormatInt(int64(e.Code()), 10),
+		Message: e.Message(),
+		Cause:   causeMessage(e.cause),
 	}
-	if e.stack != "" {
-		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("stack=%s", e.stack))
+}
+
+func (e *Error) MarshalJSON() ([]byte, error) {
+	if e == nil {
+		return []byte("null"), nil
 	}
-	return b.String()
+	return jsoniter.ConfigFastest.Marshal(e.newErrorView())
+}
+
+func (e *Error) Format(s fmt.State, verb rune) {
+	if verb == 'v' && s.Flag('+') {
+		_, _ = fmt.Fprint(s, e.detail())
+		return
+	}
+	_, _ = fmt.Fprint(s, e.Error())
+}
+
+func (e *Error) detail() string {
+	body, err := e.MarshalJSON()
+	if err != nil {
+		return e.Error()
+	}
+	return string(body)
 }
 
 func (e *Error) Unwrap() error {
@@ -112,6 +142,13 @@ func (e *Error) StackTrace() string {
 func (e *Error) Is(target error) bool {
 	coded, ok := From(target)
 	return ok && coded.Code() == e.Code()
+}
+
+func causeMessage(cause error) string {
+	if cause == nil {
+		return ""
+	}
+	return cause.Error()
 }
 
 func captureStack() string {

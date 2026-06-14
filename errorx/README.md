@@ -175,6 +175,22 @@ if coded, ok := errorx.From(err); ok {
 }
 ```
 
+`err.Error()` 只返回业务消息。JSON 编码会输出业务 `code`、`message`，并在 wrap 了底层错误时输出 `cause`；不会输出 stack。
+
+日志里使用 `%+v` 会输出一行 `code/message/cause`，用于常规错误日志：
+
+```go
+logger.Errorf("request failed: %+v", err)
+```
+
+示例：
+
+```text
+{\"code\":\"100061004\",\"message\":\"get task failed\",\"cause\":\"get task 5: record not found\"}
+```
+
+如果确实需要排查调用路径，可对 `*errorx.Error` 显式读取 `StackTrace()`，不要在常规请求日志里默认展开完整 stack。
+
 ## 约束
 
 - 同一批 YAML 中不能有重复的错误名。
