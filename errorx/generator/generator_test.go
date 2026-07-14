@@ -20,6 +20,7 @@ errorCode:
     message: task not found
     description: task does not exist
     countInSLA: false
+    httpStatus: 404
 `)
 
 	outputs, err := Generate(Config{
@@ -47,6 +48,7 @@ errorCode:
 		"600121001,",
 		`"task not found",`,
 		"errorx.CountInSLA(false),",
+		"errorx.HTTPStatus(404),",
 		"func NewTaskNotFound(opts ...errorx.Option) error",
 		"return TaskNotFound.New(opts...)",
 		"func WrapTaskNotFound(err error, opts ...errorx.Option) error",
@@ -132,6 +134,15 @@ func TestValidateRejectsDuplicatesAndInvalidNames(t *testing.T) {
 	})
 	if err == nil || !strings.Contains(err.Error(), "exported Go identifier") {
 		t.Fatalf("unexpected invalid name error: %v", err)
+	}
+
+	err = validateSpec("bad.yaml", File{
+		AppCode:   6,
+		BizCode:   12,
+		ErrorCode: []Definition{{Name: "TaskNotFound", Code: 1001, HTTPStatus: 99}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "invalid httpStatus") {
+		t.Fatalf("unexpected invalid http status error: %v", err)
 	}
 }
 

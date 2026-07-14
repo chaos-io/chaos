@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 )
 
 func TestDefinitionNewCreatesCodedError(t *testing.T) {
-	def := Define(600121001, "task {task_id} not found", CountInSLA(false))
+	def := Define(600121001, "task {task_id} not found", CountInSLA(false), HTTPStatus(http.StatusNotFound))
 
 	err := def.New(
 		WithMessageParam("task_id", "t-1"),
@@ -34,6 +35,16 @@ func TestDefinitionNewCreatesCodedError(t *testing.T) {
 	}
 	if def.CountInSLA {
 		t.Fatalf("definition should keep explicit SLA flag: %+v", def)
+	}
+	if got.StatusCode() != http.StatusNotFound {
+		t.Fatalf("StatusCode() = %d, want %d", got.StatusCode(), http.StatusNotFound)
+	}
+}
+
+func TestDefinitionDefaultsHTTPStatusToInternalServerError(t *testing.T) {
+	err := Define(600121006, "unknown").New()
+	if got := err.(*Error).StatusCode(); got != http.StatusInternalServerError {
+		t.Fatalf("StatusCode() = %d, want %d", got, http.StatusInternalServerError)
 	}
 }
 

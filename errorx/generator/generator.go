@@ -39,6 +39,7 @@ type Definition struct {
 	Message     string `yaml:"message,omitempty"`
 	Description string `yaml:"description,omitempty"`
 	CountInSLA  *bool  `yaml:"countInSLA,omitempty"`
+	HTTPStatus  int    `yaml:"httpStatus,omitempty"`
 }
 
 type File struct {
@@ -248,6 +249,9 @@ func validateSpec(path string, spec File) error {
 		if errDef.Code < 1 || errDef.Code > 9999 {
 			return fmt.Errorf("%s: invalid error code for %s: must be in [1,9999]", path, errDef.Name)
 		}
+		if errDef.HTTPStatus != 0 && (errDef.HTTPStatus < 100 || errDef.HTTPStatus > 599) {
+			return fmt.Errorf("%s: invalid httpStatus for %s: must be in [100,599]", path, errDef.Name)
+		}
 		if _, ok := seenNames[errDef.Name]; ok {
 			return fmt.Errorf("%s: duplicate error name %q", path, errDef.Name)
 		}
@@ -384,15 +388,11 @@ func writeDefinition(buf *bytes.Buffer, appCode int, bizCode int, errDef Definit
 	if errDef.Description != "" {
 		comment = "// " + errDef.Description + "\n"
 	}
-	_, _ = fmt.Fprintf(
-		buf,
-		"%svar %s = errorx.Define(\n\t%d,\n\t%q,\n\terrorx.CountInSLA(%t),\n)\n\n",
-		comment,
-		errDef.Name,
-		composeErrorCode(appCode, bizCode, errDef.Code),
-		errDef.Message,
-		errDef.countInSLA(),
-	)
+	_, _ = fmt.Fprintf(buf, "%svar %s = errorx.Define(\n\t%d,\n\t%q,\n\terrorx.CountInSLA(%t),\n", comment, errDef.Name, composeErrorCode(appCode, bizCode, errDef.Code), errDef.Message, errDef.countInSLA())
+	if errDef.HTTPStatus != 0 {
+		_, _ = fmt.Fprintf(buf, "\terrorx.HTTPStatus(%d),\n", errDef.HTTPStatus)
+	}
+	_, _ = fmt.Fprint(buf, ")\n\n")
 }
 
 func writeFunctions(buf *bytes.Buffer, errDef Definition) {

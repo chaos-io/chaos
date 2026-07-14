@@ -1,10 +1,14 @@
 package errorx
 
-import "strings"
+import (
+	"net/http"
+	"strings"
+)
 
 const (
 	DefaultMessage    = "Service Internal Error"
 	DefaultCountInSLA = true
+	DefaultHTTPStatus = http.StatusInternalServerError
 )
 
 // Definition describes one stable business error code.
@@ -12,6 +16,7 @@ type Definition struct {
 	Code       int32
 	Message    string
 	CountInSLA bool
+	HTTPStatus int
 }
 
 type DefineOption func(*Definition)
@@ -31,6 +36,12 @@ func Define(code int32, message string, opts ...DefineOption) Definition {
 func CountInSLA(countInSLA bool) DefineOption {
 	return func(def *Definition) {
 		def.CountInSLA = countInSLA
+	}
+}
+
+func HTTPStatus(status int) DefineOption {
+	return func(def *Definition) {
+		def.HTTPStatus = status
 	}
 }
 
@@ -56,6 +67,9 @@ func (def Definition) Is(err error) bool {
 func (def Definition) normalized() Definition {
 	if strings.TrimSpace(def.Message) == "" {
 		def.Message = DefaultMessage
+	}
+	if def.HTTPStatus < http.StatusContinue || def.HTTPStatus > 599 {
+		def.HTTPStatus = DefaultHTTPStatus
 	}
 	return def
 }

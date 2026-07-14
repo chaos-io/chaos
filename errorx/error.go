@@ -120,6 +120,13 @@ func (e *Error) Code() int32 {
 	return e.def.Code
 }
 
+func (e *Error) StatusCode() int {
+	if e == nil {
+		return DefaultHTTPStatus
+	}
+	return e.def.HTTPStatus
+}
+
 func (e *Error) Message() string {
 	return e.message
 }
