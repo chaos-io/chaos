@@ -42,8 +42,11 @@ func TestDefinitionNewCreatesCodedError(t *testing.T) {
 }
 
 func TestDefinitionDefaultsHTTPStatusToInternalServerError(t *testing.T) {
-	err := Define(600121006, "unknown").New()
-	if got := err.(*Error).StatusCode(); got != http.StatusInternalServerError {
+	def := Define(600121006, "unknown")
+	if got := def.StatusCode(); got != http.StatusInternalServerError {
+		t.Fatalf("StatusCode() = %d, want %d", got, http.StatusInternalServerError)
+	}
+	if got := def.New().(*Error).StatusCode(); got != http.StatusInternalServerError {
 		t.Fatalf("StatusCode() = %d, want %d", got, http.StatusInternalServerError)
 	}
 }
@@ -106,8 +109,11 @@ func TestErrorMarshalJSONIsSafeForClientResponse(t *testing.T) {
 		t.Fatalf("MarshalJSON returned error: %v", marshalErr)
 	}
 
-	if got, want := string(body), `{"code":"600121005","message":"get task failed","cause":"record not found"}`; got != want {
+	if got, want := string(body), `{"code":"600121005","message":"get task failed"}`; got != want {
 		t.Fatalf("unexpected json body: got %s want %s", got, want)
+	}
+	if strings.Contains(string(body), "cause") {
+		t.Fatalf("json body should not expose cause: %s", body)
 	}
 	if strings.Contains(string(body), "stack") {
 		t.Fatalf("json body should not expose stack: %s", body)

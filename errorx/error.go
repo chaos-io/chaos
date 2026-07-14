@@ -22,7 +22,8 @@ type Error struct {
 	message string
 	extra   map[string]string
 	stack   string
-	cause   error
+	// cause is retained for error unwrapping and internal diagnostics only.
+	cause error
 }
 
 func newError(def Definition, cause error) *Error {
@@ -78,14 +79,12 @@ func (e *Error) Error() string {
 type ErrorView struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
-	Cause   string `json:"cause,omitempty"`
 }
 
 func (e *Error) newErrorView() ErrorView {
 	return ErrorView{
 		Code:    strconv.FormatInt(int64(e.Code()), 10),
 		Message: e.Message(),
-		Cause:   causeMessage(e.cause),
 	}
 }
 
@@ -105,11 +104,10 @@ func (e *Error) Format(s fmt.State, verb rune) {
 }
 
 func (e *Error) detail() string {
-	body, err := e.MarshalJSON()
-	if err != nil {
-		return e.Error()
+	if cause := causeMessage(e.cause); cause != "" {
+		return fmt.Sprintf("code=%d message=%s cause=%s", e.Code(), e.Message(), cause)
 	}
-	return string(body)
+	return fmt.Sprintf("code=%d message=%s", e.Code(), e.Message())
 }
 
 func (e *Error) Unwrap() error {
@@ -124,7 +122,7 @@ func (e *Error) StatusCode() int {
 	if e == nil {
 		return DefaultHTTPStatus
 	}
-	return e.def.HTTPStatus
+	return e.def.StatusCode()
 }
 
 func (e *Error) Message() string {

@@ -64,12 +64,17 @@ func (def Definition) Is(err error) bool {
 	return Is(err, def.Code)
 }
 
+func (def Definition) StatusCode() int {
+	if def.HTTPStatus < http.StatusContinue || def.HTTPStatus > 599 {
+		return DefaultHTTPStatus
+	}
+	return def.HTTPStatus
+}
+
 func (def Definition) normalized() Definition {
 	if strings.TrimSpace(def.Message) == "" {
 		def.Message = DefaultMessage
 	}
-	if def.HTTPStatus < http.StatusContinue || def.HTTPStatus > 599 {
-		def.HTTPStatus = DefaultHTTPStatus
-	}
+	def.HTTPStatus = def.StatusCode()
 	return def
 }
