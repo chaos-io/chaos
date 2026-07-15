@@ -32,7 +32,7 @@ errorCode:
 	if err != nil {
 		t.Fatalf("Generate returned error: %v", err)
 	}
-	if len(outputs) != 2 {
+	if len(outputs) != 1 {
 		t.Fatalf("unexpected outputs: %v", outputs)
 	}
 
@@ -61,13 +61,8 @@ errorCode:
 		}
 	}
 
-	registerAll, err := os.ReadFile(filepath.Join(outputDir, "register_all.go"))
-	if err != nil {
-		t.Fatalf("ReadFile register_all returned error: %v", err)
-	}
-	if got := string(registerAll); !strings.Contains(got, "return errorx.Register(") ||
-		!strings.Contains(got, "TaskNotFound,") {
-		t.Fatalf("register_all missing object registration:\n%s", got)
+	if _, err := os.Stat(filepath.Join(outputDir, "register_all.go")); !os.IsNotExist(err) {
+		t.Fatalf("register_all.go should not be generated: %v", err)
 	}
 }
 
@@ -89,7 +84,7 @@ errorCode:
 		t.Fatalf("Run returned error: %v; stderr=%s", err, stderr.String())
 	}
 	lines := strings.Fields(strings.TrimSpace(stdout.String()))
-	if len(lines) != 2 {
+	if len(lines) != 1 {
 		t.Fatalf("unexpected stdout: %q", stdout.String())
 	}
 }

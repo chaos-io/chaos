@@ -140,24 +140,3 @@ func TestCodeOfAndWithoutStack(t *testing.T) {
 		t.Fatalf("WithoutStack should skip stack, got %q", got.StackTrace())
 	}
 }
-
-func TestRegisterDefinitions(t *testing.T) {
-	first := Define(912340001, "first", CountInSLA(false))
-	same := Define(912340001, "first", CountInSLA(false))
-	conflict := Define(912340001, "second")
-
-	if err := Register(first); err != nil {
-		t.Fatalf("Register returned error: %v", err)
-	}
-	if err := Register(same); err != nil {
-		t.Fatalf("Register should be idempotent: %v", err)
-	}
-
-	err := Register(conflict)
-	if err == nil {
-		t.Fatal("expected conflict error")
-	}
-	if !errors.Is(err, ErrRegisterConflict) {
-		t.Fatalf("expected ErrRegisterConflict, got %v", err)
-	}
-}

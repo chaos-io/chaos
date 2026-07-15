@@ -6,8 +6,7 @@
 
 1. 用 YAML 定义业务错误码。
 2. 用 `errorxgen` 生成 `errcode` Go 包。
-3. 服务启动时注册错误码。
-4. 业务代码通过生成的错误定义创建、包装、判断错误。
+3. 业务代码通过生成的错误定义创建、包装、判断错误。
 
 ## 1. 定义错误码
 
@@ -110,30 +109,11 @@ func WrapTaskNotFound(err error, opts ...errorx.Option) error {
 func IsTaskNotFound(err error) bool {
     return TaskNotFound.Is(err)
 }
-
-func RegisterAll() error {
-    return errorx.Register(
-        TaskNotFound,
-        TaskStateInvalid,
-    )
-}
 ```
 
-## 3. 服务启动时注册
+生成时会校验错误名称、业务子码和完整错误码是否重复，冲突会直接终止生成。
 
-```go
-package service
-
-import "your/service/errcode"
-
-func Init() error {
-    return errcode.RegisterAll()
-}
-```
-
-如果同一个错误码重复注册且定义不一致，`RegisterAll` 会返回错误；服务应直接启动失败。
-
-## 4. 业务代码中使用
+## 3. 业务代码中使用
 
 创建业务错误：
 
@@ -162,7 +142,7 @@ if errcode.IsTaskNotFound(err) {
 }
 ```
 
-生成的 `TaskNotFound` 变量仍然保留，用于 `RegisterAll` 注册和需要读取错误码元数据的通用场景；业务代码优先使用 `NewXxx`、`WrapXxx`、`IsXxx`。
+生成的 `TaskNotFound` 变量保留用于读取错误码元数据；业务代码优先使用 `NewXxx`、`WrapXxx`、`IsXxx`。
 
 在网关、日志、中间件等通用边界读取错误码：
 
