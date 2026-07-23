@@ -7,7 +7,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/bitly/go-simplejson v0.5.1
-	github.com/chaos-io/core/go v0.0.0-20260526111317-ffbe2502b241
+	github.com/chaos-io/core/go v0.0.0-20260723055627-5cde8cc84861
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
@@ -31,7 +31,6 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/chaos-io/core v0.0.0-20260717040035-f1d5a6eddf4e // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
