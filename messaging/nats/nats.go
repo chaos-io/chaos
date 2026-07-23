@@ -21,7 +21,7 @@ var ErrEmptyURL = errors.New("messaging nats: url is empty")
 type Nats struct {
 	conn          *nats.Conn
 	js            nats.JetStreamContext
-	subscriptions map[string]*nats.Subscription
+	subscriptions []*nats.Subscription
 	shutdownCh    chan struct{}
 	shutdownOnce  sync.Once
 	subMu         sync.Mutex
@@ -44,14 +44,14 @@ func NewWithConfig(cfg *messaging.NatsConfig) (*Nats, error) {
 	}
 
 	n := &Nats{
-		conn:          nc,
-		subscriptions: map[string]*nats.Subscription{},
-		shutdownCh:    make(chan struct{}),
+		conn:       nc,
+		shutdownCh: make(chan struct{}),
 	}
 
 	if normalized.JetStream {
 		js, err := nc.JetStream()
 		if err != nil {
+			nc.Close()
 			return nil, err
 		}
 		n.js = js
@@ -97,7 +97,7 @@ func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging
 			return err
 		}
 
-		if err = n.publish(ctx, topic, bytes); err != nil {
+		if err = n.publish(topic, bytes); err != nil {
 			return logs.NewErrorw("publish message error", "topic", topic, "error", err)
 		}
 	}
@@ -105,14 +105,7 @@ func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging
 	return nil
 }
 
-func (n *Nats) publish(ctx context.Context, topic string, msg []byte) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-
+func (n *Nats) publish(topic string, msg []byte) error {
 	if n.js != nil {
 		if _, err := n.js.Publish(topic, msg); err != nil {
 			return err
@@ -166,16 +159,7 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 
 		ctx := messaging.WithTopic(context.Background(), s.Topic)
 		ctx = messaging.WithMessage(ctx, msg)
-		if err := h(ctx, s, msg); err != nil {
-			if !msg.Done() {
-				msg.Nak()
-			}
-			return
-		}
-
-		if s.AutoAck && !msg.Done() {
-			msg.Ack()
-		}
+		completeMessage(msg, h(ctx, s, msg))
 	}
 
 	var (
@@ -191,28 +175,27 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 		return err
 	}
 
-	n.setSubscription(s, sub)
+	n.addSubscription(sub)
 	return nil
 }
 
-func subscriptionKey(s *messaging.Subscription) string {
-	if s == nil {
-		return ""
+func completeMessage(message *messaging.SubMessage, handlerErr error) {
+	if message == nil || message.Done() {
+		return
 	}
-	return strings.Join([]string{s.Name, s.Topic, s.Group}, "|")
+	if handlerErr != nil {
+		message.Nak()
+		return
+	}
+	message.Ack()
 }
 
-func (n *Nats) setSubscription(s *messaging.Subscription, sub *nats.Subscription) {
-	if n == nil || s == nil || sub == nil {
+func (n *Nats) addSubscription(sub *nats.Subscription) {
+	if n == nil || sub == nil {
 		return
 	}
-	key := subscriptionKey(s)
-	if key == "" {
-		return
-	}
-
 	n.subMu.Lock()
-	n.subscriptions[key] = sub
+	n.subscriptions = append(n.subscriptions, sub)
 	n.subMu.Unlock()
 }
 
@@ -343,14 +326,14 @@ func (n *Nats) Shutdown() {
 		}
 
 		n.subMu.Lock()
-		for key, sub := range n.subscriptions {
+		for _, sub := range n.subscriptions {
 			if sub != nil {
 				if err := sub.Unsubscribe(); err != nil {
-					logs.Warnw("failed to unsubscribe", "subscription", key, "error", err)
+					logs.Warnw("failed to unsubscribe", "subject", sub.Subject, "error", err)
 				}
 			}
-			delete(n.subscriptions, key)
 		}
+		n.subscriptions = nil
 		n.subMu.Unlock()
 
 		if n.conn != nil {

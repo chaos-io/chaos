@@ -35,7 +35,6 @@ type Subscription struct {
     Name              string
     Topic             string
     Group             string
-    AutoAck           bool
     Pull              bool
     AckWait           time.Duration
     PullMaxWaiting    int
@@ -47,7 +46,6 @@ type Subscription struct {
 
 - `Topic` 不能为空，`Client.Subscribe` 和各具体实现都会复用 `Validate()` 做校验。
 - `Group` 非空时，底层实现可以按队列订阅方式消费。
-- `AutoAck` 为 `true` 时，handler 成功返回后会自动确认消息。
 
 ### `SubMessage`
 
@@ -131,7 +129,7 @@ func main() {
     }
     defer queue.Shutdown()
 
-    client, err := messaging.NewClient(queue)
+    client, err := messaging.NewWithQueue(queue)
     if err != nil {
         log.Fatal(err)
     }
@@ -158,10 +156,9 @@ err := client.Publish(ctx, "demo.user.created", &messaging.Message{
 
 ```go
 err := client.Subscribe(&messaging.Subscription{
-    Name:    "user-created-worker",
-    Topic:   "demo.user.created",
-    Group:   "user-workers",
-    AutoAck: true,
+    Name:  "user-created-worker",
+    Topic: "demo.user.created",
+    Group: "user-workers",
 }, func(ctx context.Context, sub *messaging.Subscription, msg *messaging.SubMessage) error {
     topic := messaging.GetContextTopic(ctx)
     messageID := messaging.GetContextMessageId(ctx)
@@ -178,32 +175,25 @@ err := client.Subscribe(&messaging.Subscription{
 
 默认行为：
 
-- handler 返回 `nil` 且 `AutoAck=true` 时，框架自动 `Ack()`。
-- handler 返回错误且消息还没结束时，具体实现可以执行 `Nak()`；当前 `nats` 实现就是这个行为。
+- handler 返回 `nil` 且消息还没结束时，框架自动 `Ack()`。
+- handler 返回错误且消息还没结束时，框架自动 `Nak()`。
 - 如果你在 handler 内主动调用了 `Ack()` / `Nak()` / `Term()`，后续不会重复执行。
 
-## 手动确认示例
+## 显式终结示例
 
-当你不想依赖 `AutoAck` 时，可以显式控制确认：
+不可重试的消息可以显式 `Term()`；其他成功和失败路径交给统一确认策略：
 
 ```go
 err := client.Subscribe(&messaging.Subscription{
-    Name:    "manual-worker",
-    Topic:   "demo.task",
-    AutoAck: false,
+    Name:  "task-worker",
+    Topic: "demo.task",
 }, func(ctx context.Context, sub *messaging.Subscription, msg *messaging.SubMessage) error {
     if msg.Data == "" {
         msg.Term()
         return nil
     }
 
-    if err := handle(msg.Data); err != nil {
-        msg.Nak()
-        return err
-    }
-
-    msg.Ack()
-    return nil
+    return handle(msg.Data)
 })
 ```
 

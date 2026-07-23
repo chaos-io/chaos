@@ -36,13 +36,13 @@ func NewWithConfig(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 
-	client, err := NewClient(queue)
-	if err != nil {
-		queue.Shutdown()
-		return nil, err
+	if queue == nil {
+		return nil, ErrNilQueue
 	}
-	client.subscriptions = cfg.Subscriptions
-	return client, nil
+	return &Client{
+		queue:         queue,
+		subscriptions: cfg.Subscriptions,
+	}, nil
 }
 
 func (c *Config) normalized() (*Config, error) {

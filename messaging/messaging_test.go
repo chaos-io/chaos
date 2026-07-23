@@ -46,14 +46,14 @@ func TestNew(t *testing.T) {
 
 	t.Run("new client", func(t *testing.T) {
 		t.Run("nil queue", func(t *testing.T) {
-			_, err := NewClient(nil)
+			_, err := NewWithQueue(nil)
 			if !errors.Is(err, ErrNilQueue) {
 				t.Fatalf("expect ErrNilQueue, got %v", err)
 			}
 		})
 
 		t.Run("init", func(t *testing.T) {
-			client, err := NewClient(&stubQueue{})
+			client, err := NewWithQueue(&stubQueue{})
 			if err != nil {
 				t.Fatalf("new client failed: %v", err)
 			}

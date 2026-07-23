@@ -2,11 +2,52 @@ package nats
 
 import (
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/chaos-io/chaos/messaging"
 )
+
+func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
+	t.Run("success acknowledges", func(t *testing.T) {
+		var acked atomic.Bool
+		message := &messaging.SubMessage{}
+		message.SetAck(func() { acked.Store(true) })
+
+		completeMessage(message, nil)
+
+		if !acked.Load() {
+			t.Fatal("expected successful handler to acknowledge message")
+		}
+	})
+
+	t.Run("failure negatively acknowledges", func(t *testing.T) {
+		var naked atomic.Bool
+		message := &messaging.SubMessage{}
+		message.SetNak(func() { naked.Store(true) })
+
+		completeMessage(message, errors.New("handler failed"))
+
+		if !naked.Load() {
+			t.Fatal("expected failed handler to negatively acknowledge message")
+		}
+	})
+
+	t.Run("explicit terminal action wins", func(t *testing.T) {
+		var acked atomic.Bool
+		message := &messaging.SubMessage{}
+		message.SetTerm(func() {})
+		message.SetAck(func() { acked.Store(true) })
+		message.Term()
+
+		completeMessage(message, nil)
+
+		if acked.Load() {
+			t.Fatal("expected completed message not to be acknowledged again")
+		}
+	})
+}
 
 func TestSubscriptionCarriesNATSConsumerSettings(t *testing.T) {
 	subscription := &messaging.Subscription{

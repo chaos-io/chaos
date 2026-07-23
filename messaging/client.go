@@ -10,7 +10,7 @@ type Client struct {
 	subscriptions []*Subscription
 }
 
-func NewClient(queue Queue) (*Client, error) {
+func NewWithQueue(queue Queue) (*Client, error) {
 	if queue == nil {
 		return nil, ErrNilQueue
 	}

@@ -127,7 +127,7 @@ func initLocalMessaging() {
 			panic(err)
 		}
 
-		wrapped, err := messaging.NewClient(queue)
+		wrapped, err := messaging.NewWithQueue(queue)
 		if err != nil {
 			panic(err)
 		}

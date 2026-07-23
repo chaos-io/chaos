@@ -6,10 +6,9 @@ import (
 )
 
 type Subscription struct {
-	Name    string `json:"name"`
-	Topic   string `json:"topic"`
-	Group   string `json:"group"`
-	AutoAck bool   `json:"autoAck"`
+	Name  string `json:"name"`
+	Topic string `json:"topic"`
+	Group string `json:"group"`
 
 	Pull              bool          `json:"pull"`
 	AckWait           time.Duration `json:"ackWait"`
