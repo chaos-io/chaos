@@ -12,25 +12,14 @@ const (
 )
 
 type Config struct {
-	Driver        string               `json:"driver"`
-	Nats          NatsConfig           `json:"nats"`
-	Subscriptions []SubscriptionConfig `json:"subscriptions"`
+	Driver        string          `json:"driver"`
+	Nats          NatsConfig      `json:"nats"`
+	Subscriptions []*Subscription `json:"subscriptions"`
 }
 
 type NatsConfig struct {
 	URL       string `json:"url" default:"nats://127.0.0.1:4222"`
 	JetStream bool   `json:"jetStream"`
-}
-
-type SubscriptionConfig struct {
-	Name    string `json:"name"`
-	Topic   string `json:"topic"`
-	Group   string `json:"group"`
-	Service string `json:"service"`
-	Method  string `json:"method"`
-	Pull    bool   `json:"pull"`
-	AutoAck bool   `json:"autoAck"`
-	AckWait string `json:"ackWait"`
 }
 
 func New() (*Client, error) {
@@ -47,7 +36,13 @@ func NewWithConfig(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 
-	return NewClient(queue)
+	client, err := NewClient(queue)
+	if err != nil {
+		queue.Shutdown()
+		return nil, err
+	}
+	client.subscriptions = cfg.Subscriptions
+	return client, nil
 }
 
 func (c *Config) normalized() (*Config, error) {

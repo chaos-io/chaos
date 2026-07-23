@@ -8,7 +8,6 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
@@ -19,26 +18,6 @@ import (
 	"github.com/chaos-io/chaos/logs"
 	"github.com/chaos-io/chaos/messaging"
 )
-
-func toConsumer(s messaging.SubscriptionConfig) (Consumer, error) {
-	consumer := Consumer{
-		Subscription: messaging.Subscription{
-			Name:    s.Name,
-			Topic:   s.Topic,
-			Group:   s.Group,
-			AutoAck: s.AutoAck,
-		},
-		Pull: s.Pull,
-	}
-	if s.AckWait != "" {
-		ackWait, err := time.ParseDuration(s.AckWait)
-		if err != nil {
-			return Consumer{}, err
-		}
-		consumer.AckWait = ackWait
-	}
-	return consumer, nil
-}
 
 func Test_PublishStartTask(t *testing.T) {
 	traceID := uuid.New().String()
@@ -60,17 +39,12 @@ func Test_Subscription(t *testing.T) {
 
 	for _, spec := range cfg.Subscriptions {
 		spec := spec
-		if spec.Service != "" && spec.Service != "Agent" {
+		if spec.Endpoint.Service != "" && spec.Endpoint.Service != "Agent" {
 			continue
 		}
 
-		consumer, err := toConsumer(spec)
-		if err != nil {
-			t.Fatalf("invalid consumer config: %v", err)
-		}
-
-		if err := client.SubscribeConsumer(consumer, func(ctx context.Context, s *messaging.Subscription, m *messaging.SubMessage) error {
-			switch spec.Method {
+		if err := client.Subscribe(spec, func(ctx context.Context, s *messaging.Subscription, m *messaging.SubMessage) error {
+			switch spec.Endpoint.Method {
 			case "start_task":
 				request := &startTaskRequest{}
 				if err := jsoniter.ConfigFastest.UnmarshalFromString(m.Data, request); err != nil {
@@ -208,18 +182,6 @@ func Test_ClearStream(t *testing.T) {
 	}
 }
 
-func TestConsumerValidate(t *testing.T) {
-	consumer := Consumer{}
-	if err := consumer.Validate(); !errors.Is(err, messaging.ErrEmptyTopic) {
-		t.Fatalf("expect ErrEmptyTopic, got %v", err)
-	}
-
-	consumer.Subscription.Topic = "topic"
-	if err := consumer.Validate(); err != nil {
-		t.Fatalf("expect nil error, got %v", err)
-	}
-}
-
 func TestNatsSubscribeValidation(t *testing.T) {
 	queue := &Nats{}
 
@@ -232,14 +194,6 @@ func TestNatsSubscribeValidation(t *testing.T) {
 	}
 
 	if err := queue.Subscribe(&messaging.Subscription{Topic: "topic"}, nil); !errors.Is(err, messaging.ErrNilHandler) {
-		t.Fatalf("expect ErrNilHandler, got %v", err)
-	}
-
-	if err := queue.SubscribeConsumer(Consumer{}, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrEmptyTopic) {
-		t.Fatalf("expect ErrEmptyTopic, got %v", err)
-	}
-
-	if err := queue.SubscribeConsumer(Consumer{Subscription: messaging.Subscription{Topic: "topic"}}, nil); !errors.Is(err, messaging.ErrNilHandler) {
 		t.Fatalf("expect ErrNilHandler, got %v", err)
 	}
 }

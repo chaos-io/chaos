@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	chaosconfig "github.com/chaos-io/chaos/config"
 )
@@ -83,17 +84,35 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("new with config init", func(t *testing.T) {
-		client, err := NewWithConfig(&Config{Driver: driver})
+		subscriptions := []*Subscription{{
+			Name:     "agent-start-task",
+			Topic:    "demo.start-task",
+			Endpoint: Endpoint{Service: "Agent", Method: "start_task"},
+		}}
+		client, err := NewWithConfig(&Config{Driver: driver, Subscriptions: subscriptions})
 		if err != nil {
 			t.Fatalf("new client with config failed: %v", err)
 		}
 		if client == nil || client.queue == nil {
 			t.Fatal("expect non-nil client queue")
 		}
+		if len(client.Subscriptions()) != 1 || client.Subscriptions()[0] != subscriptions[0] {
+			t.Fatalf("expect configured subscriptions, got %#v", client.Subscriptions())
+		}
 	})
 
 	t.Run("loads config", func(t *testing.T) {
-		loadTestConfig(t, "messaging.yaml", "messaging:\n  driver: "+defaultDriver+"\n")
+		loadTestConfig(t, "messaging.yaml", `messaging:
+  driver: `+defaultDriver+`
+  subscriptions:
+    - name: agent-start-task
+      topic: demo.start-task
+      pull: true
+      ackWait: 5m
+      endpoint:
+        service: Agent
+        method: start_task
+`)
 
 		client, err := New()
 		if err != nil {
@@ -101,6 +120,13 @@ func TestNew(t *testing.T) {
 		}
 		if client == nil || client.queue == nil {
 			t.Fatal("expect non-nil client queue")
+		}
+		subscriptions := client.Subscriptions()
+		if len(subscriptions) != 1 {
+			t.Fatalf("expect one subscription, got %#v", subscriptions)
+		}
+		if subscriptions[0].AckWait != 5*time.Minute || subscriptions[0].Endpoint.Method != "start_task" {
+			t.Fatalf("unexpected loaded subscription: %#v", subscriptions[0])
 		}
 	})
 }

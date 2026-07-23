@@ -27,21 +27,8 @@ type Nats struct {
 	subMu         sync.Mutex
 }
 
-type Consumer struct {
-	Subscription      messaging.Subscription
-	Pull              bool
-	AckWait           time.Duration
-	PullMaxWaiting    int
-	PendingMsgLimit   int
-	PendingBytesLimit int
-}
-
 func Register() {
 	messaging.Register(messaging.DriverNATS, NewQueue)
-}
-
-func (c Consumer) Validate() error {
-	return c.Subscription.Validate()
 }
 
 func NewWithConfig(cfg *messaging.NatsConfig) (*Nats, error) {
@@ -137,18 +124,10 @@ func (n *Nats) publish(ctx context.Context, topic string, msg []byte) error {
 }
 
 func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
-	if err := s.Validate(); err != nil {
-		return err
-	}
-	return n.SubscribeConsumer(Consumer{Subscription: *s}, h)
-}
-
-func (n *Nats) SubscribeConsumer(consumer Consumer, h messaging.Handler) error {
-	s := &consumer.Subscription
 	if h == nil {
 		return messaging.ErrNilHandler
 	}
-	if err := consumer.Validate(); err != nil {
+	if err := s.Validate(); err != nil {
 		return err
 	}
 
@@ -204,9 +183,9 @@ func (n *Nats) SubscribeConsumer(consumer Consumer, h messaging.Handler) error {
 		err error
 	)
 	if len(s.Group) > 0 {
-		sub, err = n.queueSubscribe(consumer, callback)
+		sub, err = n.queueSubscribe(s, callback)
 	} else {
-		sub, err = n.subscribe(consumer, callback)
+		sub, err = n.subscribe(s, callback)
 	}
 	if err != nil {
 		return err
@@ -237,15 +216,14 @@ func (n *Nats) setSubscription(s *messaging.Subscription, sub *nats.Subscription
 	n.subMu.Unlock()
 }
 
-func (n *Nats) queueSubscribe(consumer Consumer, cb nats.MsgHandler) (*nats.Subscription, error) {
-	s := consumer.Subscription
+func (n *Nats) queueSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
 	var (
 		sub *nats.Subscription
 		err error
 	)
 	if n.js != nil {
-		if consumer.Pull {
-			sub, err = n.pullSubscribe(consumer, cb)
+		if s.Pull {
+			sub, err = n.pullSubscribe(s, cb)
 		} else {
 			sub, err = n.js.QueueSubscribe(s.Topic, s.Group, cb)
 		}
@@ -256,14 +234,13 @@ func (n *Nats) queueSubscribe(consumer Consumer, cb nats.MsgHandler) (*nats.Subs
 		return nil, err
 	}
 
-	if err := setPendingLimit(sub, consumer); err != nil {
+	if err := setPendingLimit(sub, s); err != nil {
 		return nil, err
 	}
 	return sub, nil
 }
 
-func (n *Nats) subscribe(consumer Consumer, cb nats.MsgHandler) (*nats.Subscription, error) {
-	s := consumer.Subscription
+func (n *Nats) subscribe(s *messaging.Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
 	var (
 		sub *nats.Subscription
 		err error
@@ -277,25 +254,24 @@ func (n *Nats) subscribe(consumer Consumer, cb nats.MsgHandler) (*nats.Subscript
 		return nil, err
 	}
 
-	if err := setPendingLimit(sub, consumer); err != nil {
+	if err := setPendingLimit(sub, s); err != nil {
 		return nil, err
 	}
 	return sub, nil
 }
 
-func (n *Nats) pullSubscribe(consumer Consumer, cb nats.MsgHandler) (*nats.Subscription, error) {
-	s := consumer.Subscription
+func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
 	durableName := strings.Join([]string{s.Group, s.Name}, "-")
 	if durableName == "-" || durableName == "" {
 		durableName = strings.ReplaceAll(s.Topic, ".", "-")
 	}
 
 	subOpts := []nats.SubOpt{}
-	if consumer.PullMaxWaiting > 0 {
-		subOpts = append(subOpts, nats.PullMaxWaiting(consumer.PullMaxWaiting))
+	if s.PullMaxWaiting > 0 {
+		subOpts = append(subOpts, nats.PullMaxWaiting(s.PullMaxWaiting))
 	}
-	if consumer.AckWait > 0 {
-		subOpts = append(subOpts, nats.AckWait(consumer.AckWait))
+	if s.AckWait > 0 {
+		subOpts = append(subOpts, nats.AckWait(s.AckWait))
 	}
 
 	sub, err := n.js.PullSubscribe(s.Topic, durableName, subOpts...)
@@ -333,14 +309,13 @@ func (n *Nats) pullSubscribe(consumer Consumer, cb nats.MsgHandler) (*nats.Subsc
 	return sub, nil
 }
 
-func setPendingLimit(sub *nats.Subscription, consumer Consumer) error {
+func setPendingLimit(sub *nats.Subscription, s *messaging.Subscription) error {
 	if sub == nil {
 		return nil
 	}
 
-	s := consumer.Subscription
-	msgLimit := consumer.PendingMsgLimit
-	bytesLimit := consumer.PendingBytesLimit
+	msgLimit := s.PendingMsgLimit
+	bytesLimit := s.PendingBytesLimit
 	if msgLimit != 0 || bytesLimit != 0 {
 		if msgLimit == 0 {
 			msgLimit = nats.DefaultSubPendingMsgsLimit

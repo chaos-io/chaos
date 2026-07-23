@@ -32,10 +32,16 @@ type Message struct {
 
 ```go
 type Subscription struct {
-    Name    string
-    Topic   string
-    Group   string
-    AutoAck bool
+    Name              string
+    Topic             string
+    Group             string
+    AutoAck           bool
+    Pull              bool
+    AckWait           time.Duration
+    PullMaxWaiting    int
+    PendingMsgLimit   int
+    PendingBytesLimit int
+    Endpoint          Endpoint
 }
 ```
 
@@ -96,8 +102,9 @@ messaging:
       group: start-task
       pull: true
       ackWait: 5m
-      service: Agent
-      method: start_task
+      endpoint:
+        service: Agent
+        method: start_task
 ```
 
 ### 2. 手动初始化底层队列
@@ -228,19 +235,19 @@ err := client.Subscribe(&messaging.Subscription{
 
 这些错误用于尽早暴露调用方传参问题。
 
-## NATS 扩展
+## 配置驱动订阅
 
-[`nats`](./nats) 子包在 `Subscription` 之外额外提供了 `Consumer`：
+`New` 和 `NewWithConfig` 创建的 client 会保留配置中的订阅，可以由服务启动代码统一路由：
 
 ```go
-type Consumer struct {
-    Subscription      messaging.Subscription
-    Pull              bool
-    AckWait           time.Duration
-    PullMaxWaiting    int
-    PendingMsgLimit   int
-    PendingBytesLimit int
+for _, subscription := range client.Subscriptions() {
+    if subscription.Endpoint.Service != "Agent" {
+        continue
+    }
+    if err := client.Subscribe(subscription, handler); err != nil {
+        return err
+    }
 }
 ```
 
-适合需要 pull consumer、ack wait 或 pending limit 等 NATS 特有能力的场景。`Consumer.Validate()` 会复用 `Subscription.Validate()`。
+NATS 直接读取 `Subscription` 上的 pull、ack wait 和 pending limit，无需再转换成另一层 consumer 类型。

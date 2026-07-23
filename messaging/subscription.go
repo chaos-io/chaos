@@ -1,12 +1,28 @@
 package messaging
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 type Subscription struct {
-	Name    string
-	Topic   string
-	Group   string
-	AutoAck bool
+	Name    string `json:"name"`
+	Topic   string `json:"topic"`
+	Group   string `json:"group"`
+	AutoAck bool   `json:"autoAck"`
+
+	Pull              bool          `json:"pull"`
+	AckWait           time.Duration `json:"ackWait"`
+	PullMaxWaiting    int           `json:"pullMaxWaiting"`
+	PendingMsgLimit   int           `json:"pendingMsgLimit"`
+	PendingBytesLimit int           `json:"pendingBytesLimit"`
+
+	Endpoint Endpoint `json:"endpoint"`
+}
+
+type Endpoint struct {
+	Service string `json:"service"`
+	Method  string `json:"method"`
 }
 
 func (s *Subscription) Validate() error {

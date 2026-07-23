@@ -9,10 +9,12 @@ messaging:
       group: start-task
       pull: true
       ackWait: 5m
-      service: Agent
-      method: start_task
+      endpoint:
+        service: Agent
+        method: start_task
     - name: agent-stop-tasks-consumer
       topic: demo.stop-tasks
       ackWait: 1h
-      service: Agent
-      method: stop_tasks
+      endpoint:
+        service: Agent
+        method: stop_tasks

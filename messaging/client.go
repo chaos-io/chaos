@@ -6,7 +6,8 @@ import (
 )
 
 type Client struct {
-	queue Queue
+	queue         Queue
+	subscriptions []*Subscription
 }
 
 func NewClient(queue Queue) (*Client, error) {
@@ -21,6 +22,13 @@ func (c *Client) Shutdown() {
 		return
 	}
 	c.queue.Shutdown()
+}
+
+func (c *Client) Subscriptions() []*Subscription {
+	if c == nil {
+		return nil
+	}
+	return c.subscriptions
 }
 
 func (c *Client) Subscribe(subscription *Subscription, handler Handler) error {
