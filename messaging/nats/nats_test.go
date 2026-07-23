@@ -9,13 +9,40 @@ import (
 	"github.com/chaos-io/chaos/messaging"
 )
 
+var errConfigureSubscription = errors.New("configure subscription")
+
+type failingSubscription struct {
+	unsubscribed atomic.Bool
+}
+
+func (*failingSubscription) SetPendingLimits(int, int) error {
+	return errConfigureSubscription
+}
+
+func (s *failingSubscription) Unsubscribe() error {
+	s.unsubscribed.Store(true)
+	return nil
+}
+
 func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
+	t.Run("core nats does not acknowledge", func(t *testing.T) {
+		var acked atomic.Bool
+		message := &messaging.SubMessage{}
+		message.SetAck(func() { acked.Store(true) })
+
+		completeMessage(message, nil, false)
+
+		if acked.Load() {
+			t.Fatal("expected core NATS message not to be acknowledged")
+		}
+	})
+
 	t.Run("success acknowledges", func(t *testing.T) {
 		var acked atomic.Bool
 		message := &messaging.SubMessage{}
 		message.SetAck(func() { acked.Store(true) })
 
-		completeMessage(message, nil)
+		completeMessage(message, nil, true)
 
 		if !acked.Load() {
 			t.Fatal("expected successful handler to acknowledge message")
@@ -27,7 +54,7 @@ func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
 		message := &messaging.SubMessage{}
 		message.SetNak(func() { naked.Store(true) })
 
-		completeMessage(message, errors.New("handler failed"))
+		completeMessage(message, errors.New("handler failed"), true)
 
 		if !naked.Load() {
 			t.Fatal("expected failed handler to negatively acknowledge message")
@@ -41,7 +68,7 @@ func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
 		message.SetAck(func() { acked.Store(true) })
 		message.Term()
 
-		completeMessage(message, nil)
+		completeMessage(message, nil, true)
 
 		if acked.Load() {
 			t.Fatal("expected completed message not to be acknowledged again")
@@ -64,6 +91,19 @@ func TestSubscriptionCarriesNATSConsumerSettings(t *testing.T) {
 	}
 	if subscription.PullMaxWaiting != 8 || subscription.PendingMsgLimit != 64 || subscription.PendingBytesLimit != 1024 {
 		t.Fatalf("unexpected consumer limits: %#v", subscription)
+	}
+}
+
+func TestConfigureSubscriptionCleansUpAfterPendingLimitFailure(t *testing.T) {
+	subscription := &failingSubscription{}
+
+	err := configureSubscription(subscription, &messaging.Subscription{PendingMsgLimit: 1})
+
+	if !errors.Is(err, errConfigureSubscription) {
+		t.Fatalf("expected pending limit error, got %v", err)
+	}
+	if !subscription.unsubscribed.Load() {
+		t.Fatal("expected failed subscription to be unsubscribed")
 	}
 }
 

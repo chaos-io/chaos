@@ -27,6 +27,11 @@ type Nats struct {
 	subMu         sync.Mutex
 }
 
+type configurableSubscription interface {
+	SetPendingLimits(int, int) error
+	Unsubscribe() error
+}
+
 func Register() {
 	messaging.Register(messaging.DriverNATS, NewQueue)
 }
@@ -136,30 +141,32 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 			return
 		}
 
-		msg.SetAck(func() {
-			if err := raw.Ack(); err != nil {
-				logs.Warnw("Nats: failed to ack", "topic", s.Topic, "error", err)
-			}
-		})
-		msg.SetNak(func() {
-			if err := raw.Nak(); err != nil {
-				logs.Warnw("Nats: failed to nak", "topic", s.Topic, "error", err)
-			}
-		})
-		msg.SetTerm(func() {
-			if err := raw.Term(); err != nil {
-				logs.Warnw("Nats: failed to term", "topic", s.Topic, "error", err)
-			}
-		})
-		msg.SetInProgress(func() {
-			if err := raw.InProgress(); err != nil {
-				logs.Warnw("Nats: failed to inProgress", "topic", s.Topic, "error", err)
-			}
-		})
+		if n.js != nil {
+			msg.SetAck(func() {
+				if err := raw.Ack(); err != nil {
+					logs.Warnw("Nats: failed to ack", "topic", s.Topic, "error", err)
+				}
+			})
+			msg.SetNak(func() {
+				if err := raw.Nak(); err != nil {
+					logs.Warnw("Nats: failed to nak", "topic", s.Topic, "error", err)
+				}
+			})
+			msg.SetTerm(func() {
+				if err := raw.Term(); err != nil {
+					logs.Warnw("Nats: failed to term", "topic", s.Topic, "error", err)
+				}
+			})
+			msg.SetInProgress(func() {
+				if err := raw.InProgress(); err != nil {
+					logs.Warnw("Nats: failed to inProgress", "topic", s.Topic, "error", err)
+				}
+			})
+		}
 
 		ctx := messaging.WithTopic(context.Background(), s.Topic)
 		ctx = messaging.WithMessage(ctx, msg)
-		completeMessage(msg, h(ctx, s, msg))
+		completeMessage(msg, h(ctx, s, msg), n.js != nil)
 	}
 
 	var (
@@ -179,8 +186,8 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 	return nil
 }
 
-func completeMessage(message *messaging.SubMessage, handlerErr error) {
-	if message == nil || message.Done() {
+func completeMessage(message *messaging.SubMessage, handlerErr error, acknowledge bool) {
+	if message == nil || message.Done() || !acknowledge {
 		return
 	}
 	if handlerErr != nil {
@@ -217,7 +224,7 @@ func (n *Nats) queueSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*n
 		return nil, err
 	}
 
-	if err := setPendingLimit(sub, s); err != nil {
+	if err := configureSubscription(sub, s); err != nil {
 		return nil, err
 	}
 	return sub, nil
@@ -237,7 +244,7 @@ func (n *Nats) subscribe(s *messaging.Subscription, cb nats.MsgHandler) (*nats.S
 		return nil, err
 	}
 
-	if err := setPendingLimit(sub, s); err != nil {
+	if err := configureSubscription(sub, s); err != nil {
 		return nil, err
 	}
 	return sub, nil
@@ -292,11 +299,17 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 	return sub, nil
 }
 
-func setPendingLimit(sub *nats.Subscription, s *messaging.Subscription) error {
+func configureSubscription(sub configurableSubscription, s *messaging.Subscription) error {
 	if sub == nil {
 		return nil
 	}
+	if err := setPendingLimit(sub, s); err != nil {
+		return errors.Join(err, sub.Unsubscribe())
+	}
+	return nil
+}
 
+func setPendingLimit(sub configurableSubscription, s *messaging.Subscription) error {
 	msgLimit := s.PendingMsgLimit
 	bytesLimit := s.PendingBytesLimit
 	if msgLimit != 0 || bytesLimit != 0 {

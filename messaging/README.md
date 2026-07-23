@@ -175,9 +175,10 @@ err := client.Subscribe(&messaging.Subscription{
 
 默认行为：
 
-- handler 返回 `nil` 且消息还没结束时，框架自动 `Ack()`。
-- handler 返回错误且消息还没结束时，框架自动 `Nak()`。
+- JetStream handler 返回 `nil` 且消息还没结束时，框架自动 `Ack()`。
+- JetStream handler 返回错误且消息还没结束时，框架自动 `Nak()`。
 - 如果你在 handler 内主动调用了 `Ack()` / `Nak()` / `Term()`，后续不会重复执行。
+- Core NATS 没有消息确认协议，不执行上述确认操作。
 
 ## 显式终结示例
 
