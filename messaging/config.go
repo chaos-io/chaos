@@ -18,8 +18,14 @@ type Config struct {
 }
 
 type NatsConfig struct {
-	URL       string `json:"url" default:"nats://127.0.0.1:4222"`
-	JetStream bool   `json:"jetStream"`
+	URL       string        `json:"url" default:"nats://127.0.0.1:4222"`
+	JetStream bool          `json:"jetStream"`
+	Streams   []*NatsStream `json:"streams"`
+}
+
+type NatsStream struct {
+	Name     string   `json:"name"`
+	Subjects []string `json:"subjects"`
 }
 
 func New() (*Client, error) {

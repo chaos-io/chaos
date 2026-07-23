@@ -3,6 +3,8 @@ package nats
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -16,7 +18,12 @@ import (
 
 const defaultFetchWait = time.Second
 
-var ErrEmptyURL = errors.New("messaging nats: url is empty")
+var (
+	ErrEmptyURL            = errors.New("messaging nats: url is empty")
+	ErrNilStream           = errors.New("messaging nats: stream is nil")
+	ErrEmptyStreamName     = errors.New("messaging nats: stream name is empty")
+	ErrEmptyStreamSubjects = errors.New("messaging nats: stream subjects are empty")
+)
 
 type Nats struct {
 	conn          *nats.Conn
@@ -60,9 +67,64 @@ func NewWithConfig(cfg *messaging.NatsConfig) (*Nats, error) {
 			return nil, err
 		}
 		n.js = js
+		if err := ensureStreams(js, normalized.Streams); err != nil {
+			nc.Close()
+			return nil, err
+		}
 	}
 
 	return n, nil
+}
+
+func ensureStreams(js nats.JetStreamContext, streams []*messaging.NatsStream) error {
+	for _, stream := range streams {
+		if stream == nil {
+			return ErrNilStream
+		}
+
+		name := strings.TrimSpace(stream.Name)
+		if name == "" {
+			return ErrEmptyStreamName
+		}
+
+		subjects := make([]string, 0, len(stream.Subjects))
+		for _, subject := range stream.Subjects {
+			if subject = strings.TrimSpace(subject); subject != "" {
+				subjects = append(subjects, subject)
+			}
+		}
+		if len(subjects) == 0 {
+			return ErrEmptyStreamSubjects
+		}
+
+		if err := ensureStream(js, name, subjects); err != nil {
+			return fmt.Errorf("ensure stream %q: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func ensureStream(js nats.JetStreamContext, name string, subjects []string) error {
+	info, err := js.AddStream(&nats.StreamConfig{Name: name, Subjects: subjects})
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, nats.ErrStreamNameAlreadyInUse) {
+		return err
+	}
+
+	info, err = js.StreamInfo(name)
+	if err != nil {
+		return err
+	}
+	if slices.Equal(info.Config.Subjects, subjects) {
+		return nil
+	}
+
+	config := info.Config
+	config.Subjects = subjects
+	_, err = js.UpdateStream(&config)
+	return err
 }
 
 func NewQueue(cfg *messaging.Config) (messaging.Queue, error) {

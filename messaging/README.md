@@ -94,6 +94,10 @@ messaging:
   nats:
     url: nats://127.0.0.1:4222
     jetStream: true
+    streams:
+      - name: demo
+        subjects:
+          - demo.>
   subscriptions:
     - name: agent-consumer
       topic: demo.start-task
@@ -104,6 +108,22 @@ messaging:
         service: Agent
         method: start_task
 ```
+
+#### NATS 配置字段
+
+- `driver`：消息队列驱动，当前 NATS 实现使用 `nats`。
+- `nats.url`：NATS Server 的连接地址。
+- `nats.jetStream`：是否启用 JetStream。启用后支持消息持久化、消费确认和重投；关闭时使用 Core NATS，`streams` 不生效。
+- `nats.streams`：应用启动时需要确保存在的 JetStream Stream 列表。Stream 不存在时自动创建，已经存在时复用并同步 `subjects`。
+- `streams[].name`：JetStream Stream 的名称，在同一个 NATS account 中必须唯一。它是服务端资源名，不是发布消息时使用的 topic。
+- `streams[].subjects`：该 Stream 接收并保存的 subject 列表。一个 Stream 可以匹配多个 subject。
+
+NATS subject 使用 `.` 分段，支持以下通配符：
+
+- `*` 只匹配一个分段，例如 `demo.*` 匹配 `demo.start-task`，但不匹配 `demo.task.started`。
+- `>` 匹配后续一个或多个分段，并且只能放在末尾。例如 `demo.>` 匹配 `demo.start-task` 和 `demo.task.started`，但不匹配 `demo` 或 `user.start-task`。
+
+上面的配置会把发布到 `demo.start-task` 等 `demo.>` subject 的消息保存到名为 `demo` 的 Stream，再由 `subscriptions` 中的 consumer 消费。
 
 ### 2. 手动初始化底层队列
 
@@ -123,6 +143,10 @@ func main() {
     queue, err := nats.NewWithConfig(&messaging.NatsConfig{
         URL:       "nats://127.0.0.1:4222",
         JetStream: true,
+        Streams: []*messaging.NatsStream{{
+            Name:     "demo",
+            Subjects: []string{"demo.>"},
+        }},
     })
     if err != nil {
         log.Fatal(err)

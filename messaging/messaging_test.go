@@ -35,12 +35,13 @@ func (s *stubQueue) Shutdown() {}
 func TestNew(t *testing.T) {
 	driver := "stub-client"
 	defaultDriver := "stub-default"
+	var loadedConfig *Config
 	Register(driver, func(cfg *Config) (Queue, error) {
 		_ = cfg
 		return &stubQueue{}, nil
 	})
 	Register(defaultDriver, func(cfg *Config) (Queue, error) {
-		_ = cfg
+		loadedConfig = cfg
 		return &stubQueue{}, nil
 	})
 
@@ -104,6 +105,11 @@ func TestNew(t *testing.T) {
 	t.Run("loads config", func(t *testing.T) {
 		loadTestConfig(t, "messaging.yaml", `messaging:
   driver: `+defaultDriver+`
+  nats:
+    streams:
+      - name: demo
+        subjects:
+          - demo.>
   subscriptions:
     - name: agent-start-task
       topic: demo.start-task
@@ -127,6 +133,9 @@ func TestNew(t *testing.T) {
 		}
 		if subscriptions[0].AckWait != 5*time.Minute || subscriptions[0].Endpoint.Method != "start_task" {
 			t.Fatalf("unexpected loaded subscription: %#v", subscriptions[0])
+		}
+		if len(loadedConfig.Nats.Streams) != 1 {
+			t.Fatalf("expect one NATS stream, got %#v", loadedConfig.Nats.Streams)
 		}
 	})
 }
