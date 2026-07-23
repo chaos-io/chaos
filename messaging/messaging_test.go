@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -13,8 +14,10 @@ import (
 )
 
 type stubQueue struct {
-	publishErr   error
-	subscribeErr error
+	publishErr    error
+	subscribeErr  error
+	subscriptions []*Subscription
+	handlers      []Handler
 }
 
 func (s *stubQueue) Publish(ctx context.Context, topic string, messages ...*Message) error {
@@ -25,8 +28,8 @@ func (s *stubQueue) Publish(ctx context.Context, topic string, messages ...*Mess
 }
 
 func (s *stubQueue) Subscribe(subscription *Subscription, handler Handler) error {
-	_ = subscription
-	_ = handler
+	s.subscriptions = append(s.subscriptions, subscription)
+	s.handlers = append(s.handlers, handler)
 	return s.subscribeErr
 }
 
@@ -181,6 +184,134 @@ func TestClientValidation(t *testing.T) {
 	client.queue = &stubQueue{subscribeErr: subscribeErr}
 	if err := client.Subscribe(&Subscription{Topic: "topic"}, func(context.Context, *Subscription, *SubMessage) error { return nil }); !errors.Is(err, subscribeErr) {
 		t.Fatalf("expect subscribe error passthrough, got %v", err)
+	}
+}
+
+func TestClientSubscribeService(t *testing.T) {
+	queue := &stubQueue{}
+	client, err := NewWithQueue(queue)
+	if err != nil {
+		t.Fatalf("NewWithQueue() failed: %v", err)
+	}
+	client.subscriptions = []*Subscription{
+		{Topic: "user.create", Endpoint: Endpoint{Service: "UserService", Method: "create_user"}},
+		{Topic: "user.update", Endpoint: Endpoint{Method: "update_user"}},
+		{Topic: "other.create", Endpoint: Endpoint{Service: "OtherService", Method: "create_user"}},
+	}
+
+	createHandler := func(context.Context, *Subscription, *SubMessage) error { return nil }
+	updateHandler := func(context.Context, *Subscription, *SubMessage) error { return nil }
+	err = client.SubscribeService("UserService", map[string]Handler{
+		"create_user": createHandler,
+		"update_user": updateHandler,
+	})
+	if err != nil {
+		t.Fatalf("SubscribeService() failed: %v", err)
+	}
+	if len(queue.subscriptions) != 2 {
+		t.Fatalf("expect two subscriptions, got %d", len(queue.subscriptions))
+	}
+	if queue.subscriptions[0].Topic != "user.create" || queue.subscriptions[1].Topic != "user.update" {
+		t.Fatalf("unexpected subscriptions: %#v", queue.subscriptions)
+	}
+}
+
+func TestClientSubscribeServiceRejectsUnknownMethod(t *testing.T) {
+	client, err := NewWithQueue(&stubQueue{})
+	if err != nil {
+		t.Fatalf("NewWithQueue() failed: %v", err)
+	}
+	client.subscriptions = []*Subscription{{
+		Topic:    "user.missing",
+		Endpoint: Endpoint{Service: "UserService", Method: "missing"},
+	}}
+
+	err = client.SubscribeService("UserService", nil)
+	if !errors.Is(err, ErrUnknownEndpoint) {
+		t.Fatalf("expect ErrUnknownEndpoint, got %v", err)
+	}
+}
+
+func TestClientSubscribeServiceWrapsSubscriptionError(t *testing.T) {
+	subscribeErr := errors.New("subscribe failed")
+	client, err := NewWithQueue(&stubQueue{subscribeErr: subscribeErr})
+	if err != nil {
+		t.Fatalf("NewWithQueue() failed: %v", err)
+	}
+	client.subscriptions = []*Subscription{{
+		Topic:    "user.create",
+		Endpoint: Endpoint{Service: "UserService", Method: "create_user"},
+	}}
+
+	err = client.SubscribeService("UserService", map[string]Handler{
+		"create_user": func(context.Context, *Subscription, *SubMessage) error { return nil },
+	})
+	if !errors.Is(err, subscribeErr) {
+		t.Fatalf("expect subscribe error, got %v", err)
+	}
+	for _, value := range []string{"UserService", "create_user", "user.create"} {
+		if !strings.Contains(err.Error(), value) {
+			t.Fatalf("expect error %q to contain %q", err, value)
+		}
+	}
+}
+
+func TestJSONEndpoint(t *testing.T) {
+	type request struct {
+		Name string `json:"name"`
+	}
+	type endpointFunc func(context.Context, any) (any, error)
+
+	endpointErr := errors.New("endpoint failed")
+	var received *request
+	endpoint := endpointFunc(func(_ context.Context, value any) (any, error) {
+		received = value.(*request)
+		return nil, endpointErr
+	})
+	handler := JSONEndpoint[request](endpoint)
+
+	subscription := &Subscription{
+		Topic:    "user.create",
+		Endpoint: Endpoint{Service: "UserService", Method: "create_user"},
+	}
+	err := handler(context.Background(), subscription, &SubMessage{
+		Message: Message{Data: `{"name":"alice"}`},
+	})
+	if !errors.Is(err, endpointErr) {
+		t.Fatalf("expect endpoint error, got %v", err)
+	}
+	if received == nil || received.Name != "alice" {
+		t.Fatalf("unexpected request: %#v", received)
+	}
+}
+
+func TestJSONEndpointTerminatesInvalidMessage(t *testing.T) {
+	called := false
+	handler := JSONEndpoint[struct{}](func(context.Context, any) (any, error) {
+		called = true
+		return nil, nil
+	})
+	message := &SubMessage{Message: Message{Data: "{"}}
+	var terminated atomic.Bool
+	message.SetTerm(func() { terminated.Store(true) })
+
+	err := handler(context.Background(), &Subscription{
+		Topic:    "user.create",
+		Endpoint: Endpoint{Method: "create_user"},
+	}, message)
+	if err == nil {
+		t.Fatal("expect decode error")
+	}
+	for _, value := range []string{"user.create", "create_user"} {
+		if !strings.Contains(err.Error(), value) {
+			t.Fatalf("expect error %q to contain %q", err, value)
+		}
+	}
+	if !terminated.Load() {
+		t.Fatal("expect invalid message terminated")
+	}
+	if called {
+		t.Fatal("expect endpoint not called")
 	}
 }
 

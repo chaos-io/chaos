@@ -2,6 +2,7 @@ package messaging
 
 import (
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -45,6 +46,41 @@ func (c *Client) Subscribe(subscription *Subscription, handler Handler) error {
 		return ErrNilHandler
 	}
 	return c.queue.Subscribe(subscription, handler)
+}
+
+func (c *Client) SubscribeService(service string, handlers map[string]Handler) error {
+	if c == nil {
+		return ErrNilClient
+	}
+	if c.queue == nil {
+		return ErrNilQueue
+	}
+
+	for _, subscription := range c.subscriptions {
+		if subscription == nil {
+			return ErrNilSubscription
+		}
+
+		endpoint := subscription.Endpoint
+		if endpoint.Service != "" && endpoint.Service != service {
+			continue
+		}
+
+		handler, ok := handlers[endpoint.Method]
+		if !ok {
+			return fmt.Errorf("%w: service %q method %q", ErrUnknownEndpoint, service, endpoint.Method)
+		}
+		if err := c.Subscribe(subscription, handler); err != nil {
+			return fmt.Errorf(
+				"messaging: subscribe service %q method %q topic %q: %w",
+				service,
+				endpoint.Method,
+				subscription.Topic,
+				err,
+			)
+		}
+	}
+	return nil
 }
 
 func (c *Client) Publish(ctx context.Context, topic string, messages ...*Message) error {

@@ -9,5 +9,6 @@ var (
 	ErrNilSubscription   = errors.New("messaging: subscription is nil")
 	ErrNilHandler        = errors.New("messaging: message handler is nil")
 	ErrEmptyTopic        = errors.New("messaging: topic is empty")
+	ErrUnknownEndpoint   = errors.New("messaging: endpoint is not registered")
 	ErrUnsupportedDriver = errors.New("messaging: driver is unsupported")
 )
